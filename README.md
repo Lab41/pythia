@@ -1,6 +1,6 @@
 # pythia
 
-![pythia logo](assets/pythia_logo.png)
+<img src="assets/pythia_logo.png" width="400" alt="pythia logo" />
 
 ## Novelty detection in text corpora
 
