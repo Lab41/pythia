@@ -1,7 +1,7 @@
 # Contributing
 
 We welcome your contributions to Pythia. You can open issues for bug fix requests, feature requests and
-in anticipation of submitting a patch. Please follow the following guidelines when 
+in anticipation of submitting a patch. Please use the following guidelines when 
 submitting issues and pull requests:
 
 ## 1. Verify that the issue can be reproduced
