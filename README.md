@@ -1,6 +1,6 @@
 # pythia
 
-![pythia logo](https://github.com/Lab41/pythia/assets/pythia_logo.png)
+![pythia logo](assets/pythia_logo.png)
 
 ## Novelty detection in text corpora
 
