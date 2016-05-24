@@ -1,4 +1,4 @@
-# pythia
+# Pythia
 
 <img src="assets/pythia_logo.png" width="400" alt="pythia logo" />
 
