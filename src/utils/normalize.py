@@ -18,7 +18,7 @@ def text_to_words(raw_text):
 
     # 1. Remove HTML
     #TODO Potentially look into using package other than BeautifulSoup for this step
-    review_text = BeautifulSoup(raw_text).get_text()
+    review_text = BeautifulSoup(raw_text, "lxml").get_text()
     #
     # 2. Remove non-letters
     letters_only = re.sub("[^a-zA-Z]", " ", review_text)
