@@ -1,6 +1,7 @@
 from src.utils import normalize, performance_metrics
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn import linear_model
+from sklearn.datasets import fetch_20newsgroups
 import argparse
 
 def run_model(train_data_text, train_labels, test_data_text, test_labels):
@@ -79,4 +80,25 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    #TODO write an example main that uses toy data, or Open sourceable data
+    #Example run uses the 20 NewsGroups data as it is very easily obtainable
+    #Here we will do a test by seeing if articles are in the Hockey or Space category
+
+    categories = [
+            'rec.sport.hockey',
+            'sci.space'
+        ]
+    remove = ('headers', 'footers', 'quotes')
+    data_train = fetch_20newsgroups(subset='train', categories=categories,
+                                    shuffle=True, random_state=42,
+                                    remove=remove)
+
+    data_test = fetch_20newsgroups(subset='test', categories=categories,
+                                   shuffle=True, random_state=42,
+                                   remove=remove)
+
+    print("Starting Bag of Words Algorithm")
+
+    predicted_labels, perform_results = run_model(data_train.data, data_train.target, data_test.data, data_test.target)
+
+    print("Algorithm details and results:")
+    print(perform_results)
