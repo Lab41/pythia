@@ -55,4 +55,6 @@ def main(argv):
    print "Bag of Words Cosine Similarity Score:", 1 - spatial.distance.cosine(wordbagVectors[0], wordbagVectors[1])   
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+   if len(sys.argv < 3):
+      print "Usage: similarityBaseline.py fil1 file2\n\nCompute cosine similairty between two documents"
+   main(sys.argv[1:])
