@@ -70,13 +70,13 @@ def run_model(train_data_text, train_labels, test_data_text, test_labels):
     return pred_labels, perform_results
 
 
-# Set up command line flag handling
-parser = argparse.ArgumentParser(
-        description="Run a Bag of Words with Logistic Regression for Text Classification",
-    )
-
 # Run only if this script is being called directly
 if __name__ == "__main__":
+    # Set up command line help message
+    parser = argparse.ArgumentParser(
+            description="Run a Bag of Words with Logistic Regression for Text Classification",
+        )
+
 
     args = parser.parse_args()
 
