@@ -16,3 +16,9 @@ If you are in the root of the repository and bs4, lxml, and scikit-learn (sklear
 ```sh
 PYTHONPATH=`pwd`:$PYTHONPATH python src/pipelines/bag_words_log_reg.py
 ```
+
+If not, you can use our docker image, again sitting in the root of the repository:
+
+```sh
+docker run -it -e PYTHONPATH=pythia -v `pwd`:/home/jovyan/work/pythia pcallier/pythia sh -c 'conda install -y lxml && python pythia/src/pipelines/bag_words_log_reg.py'
+```
