@@ -103,11 +103,9 @@ Icon
 # Packages
 *.egg
 *.egg-info
-dist
 build
 eggs
 parts
-bin
 var
 sdist
 develop-eggs
@@ -115,9 +113,6 @@ develop-eggs
 lib
 lib64
 __pycache__
-
-# The __init__.py's that scram puts everywhere
-__init__.py
 
 # Installer logs
 pip-log.txt
