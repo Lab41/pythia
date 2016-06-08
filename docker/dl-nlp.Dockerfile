@@ -32,13 +32,12 @@ RUN python -c 'import neon'
 
 # Install scikit-learn etc.
 RUN apt-get install -yq python-scipy && \
-    pip install sklearn nltk beautifulsoup4 \
-    spacy gensim 
-    
-# Spacy, or something, depends a completely bonkers version of a library called plac
-# which is Py3k by default but ends up in the Py2.7 tree. It won't work except
-# via some workaround that someone else will have to put in
-# RUN python -m spacy.en.download && python -c "import spacy; spacy.load('en'); print('Spacy OK')"
+    pip install sklearn nltk beautifulsoup4 gensim
+# Spacy is a problem child, and plac 0.9.3 doesn't install for py2.7 systems
+# Install Spacy and download data
+RUN pip install 'plac<0.9.3' && \
+    pip install spacy && \
+    python -m spacy.en.download && python -c "import spacy; spacy.load('en'); print('Spacy OK')"
 
 # Housekeeping
 WORKDIR /root
