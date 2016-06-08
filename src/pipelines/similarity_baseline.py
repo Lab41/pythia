@@ -38,7 +38,7 @@ def main(argv):
    
    # Use Spacy to tokenize documents, then remove stop words and non-alpha  
    print "Parsing files" 
-   doc1 = filterText(nlp(utext1), nlp)   
+   doc1 = filterText(nlp(utext1), nlp)      
    doc2 = filterText(nlp(utext2), nlp)
 
    # Similarity is estimated using the cosine metric, between Span.vector and other.vector. 
@@ -55,6 +55,7 @@ def main(argv):
    print "Bag of Words Cosine Similarity Score:", 1 - spatial.distance.cosine(wordbagVectors[0], wordbagVectors[1])   
 
 if __name__ == '__main__':
-   if len(sys.argv < 3):
-      print "Usage: similarity_baseline.py fil1 file2\n\nCompute cosine similarity between two documents"
+   if len(sys.argv) < 3:
+      print "Usage: similarity_baseline.py file1 file2\n\nCompute cosine similarity between two documents"
+      quit()
    main(sys.argv[1:])
