@@ -4,14 +4,17 @@ from spacy.attrs import *
 from sklearn.feature_extraction import DictVectorizer
 from scipy import spatial
 import json
-from collections import namedtuple
+from collections import namedtuple, defaultdict
+from os.path import basename
 
-def parseJSON(fileName):
+
+def parse_json(fileName):
    
     '''
     Purpose - Parses a JSON file containing document data. 
     Input - File name with JSON data
-    Output - A set of cluster IDs, a dict of document arrival order and an array of the parsed JSON document data
+    Output - A set of cluster IDs, a dictionary mapping to sets of tuples with document 
+             arrival order and indices, an array of the parsed JSON document data
         
     The JSON data schema for ingesting documents into Pythia is:
     corpus = name of corpus 
@@ -19,31 +22,39 @@ def parseJSON(fileName):
     post_id = unique identifier for element (document, post, etc)
     order = int signifying order item was received 
     body_text = text of element (document, post, etc)
-    novelty = boolean assessment of novelty 
-    
-    Function returns an array of dictionaries containing data in JSON schema 
+    novelty = boolean assessment of novelty     
     '''
            
     documentData = []
     allClusters = set()
-    lookupOrder = {}
+    lookupOrder = defaultdict(set)
     i = 0
-    
+        
     # Read JSON file line by line and retain stats about number of clusters and order of objects 
     with open(fileName,'r') as dataFile:
-        for line in dataFile: 
-            parsedData = json.loads(line)
-            allClusters.add(parsedData["cluster_id"])
-            lookupOrder[str(parsedData["cluster_id"]) + "_" + str(parsedData["order"])] = i
+        for line in dataFile:
+            parsedData = json.loads(fix_escapes(line), strict=False)
+            allClusters.add(parsedData["cluster_id"])            
+            lookupOrder[parsedData["cluster_id"]].add((parsedData["order"],i))            
             documentData.append(parsedData)
             i += 1
-                  
     return allClusters, lookupOrder, documentData
 
-def filterText(doc, nlp):
+
+def fix_escapes(line):
+    
+    # Remove embedded special leaning quote character in body_text segment of json object
+    if line.find('\\\xe2\x80\x9d'):
+        spot = line.find("body_text")
+        newLine = line[:spot+13] + line[spot+13:].replace('\\\xe2\x80\x9d','\\"')
+    else: newLine = line
+    return newLine
+
+def filter_text(doc, nlp):
    
     '''
-    Purpose - Removes stop words, out of vocabulary words and non-alpha words from a spacy document's vocabulary
+    Purpose - Removes stop words, out of vocabulary words and non-alpha words from a 
+              spacy document's vocabulary
     Input - A spacy document and the spacy English parser
     Output - A new spacy document
     '''
@@ -53,10 +64,10 @@ def filterText(doc, nlp):
     for token in doc:
        if not token.is_stop and not token.is_oov and token.is_alpha: newVocab.append(token.orth_)
     filteredDoc = nlp(' '.join(newVocab))
-
     return filteredDoc 
 
-def assessSimilarity(allClusters, lookupOrder, documentData, nlp):
+
+def assess_similarity(allClusters, lookupOrder, documentData, nlp, filename):
 
     '''
     Purpose - Do vector comparison and bag of words cosine similarity for each cluster found in JSON file
@@ -64,53 +75,59 @@ def assessSimilarity(allClusters, lookupOrder, documentData, nlp):
     Output - Array of namedtuples containing cluster_id, post_id, novelty, vector score, cosine similarity score
     '''
     
-    # Store results of similarity assessments
+    # Prepare to store results of similarity assessments
     postScores = []
-    postScore = namedtuple('postScore','cluster_id,post_id,novelty,vectorScore,bagwordsScore')    
+    postTuple = namedtuple('postScore','corpus,cluster_id,post_id,novelty,vectorScore,bagwordsScore')    
 
-    # Iterate through clusters found in JSON file, do similarity assessments, build a rolling corpus from ordered documents for each cluster
+    ''' 
+    Iterate through clusters found in JSON file, do similarity assessments, 
+    build a rolling corpus from ordered documents for each cluster
+    '''
     for cluster in allClusters:
-                
+        
+        # Determine arrival order in this cluster
+        sortedEntries = [x[1] for x in sorted(lookupOrder[cluster], key=lambda x: x[0])]
+                          
         # Set corpus to first doc in this cluster and prepare to update corpus with new document vocabulary
-        corpus = filterText( nlp( documentData[ lookupOrder[ str(cluster)+"_0"] ] ["body_text"] ), nlp) 
+        corpus = filter_text(nlp(documentData[sortedEntries[0]]["body_text"]), nlp) 
         updateCorpus = []
         for token in corpus: updateCorpus.append(token.orth_)
+        
+        # Use filename as corpus name if corpus name was not defined in JSON
+        try: corpusName = documentData[sortedEntries[0]]["corpus"]
+        except KeyError: corpusName = basename(filename)
+        
+        # Insert first document into scoring array for recordkeeping with similarity scores as -1
+        postScore = postTuple(corpusName, cluster, documentData[sortedEntries[0]]["post_id"], documentData[sortedEntries[0]]["novelty"], -1, -1)
+        postScores.append(postScore)
 
-        i=1
-        search = True
-        while search is True:
-            if lookupOrder.has_key(str(cluster) + "_" + str(i)):
+        for index in sortedEntries[1:]:
                 
-                # Find next document in order
-                index =  lookupOrder[str(cluster) + "_" + str(i)]
-                postID = documentData[index]["post_id"]
-                novelty = documentData[index]["novelty"]
-                doc = filterText(nlp(documentData[index]["body_text"]), nlp)
+	        # Find next document in order
+		    doc = filter_text(nlp(documentData[index]["body_text"]), nlp)
 
-                # Document vs Corpus vector comparison
-                vectorScore = doc.similarity(corpus) 
+		    # Document vs Corpus vector comparison
+		    vectorScore = doc.similarity(corpus) 
 
-                # Build Bag of Words with Spacy
-                docBagWords = doc.count_by(LOWER)
-                corpusBagWords = corpus.count_by(LOWER)
-                
-                # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors  
-                vect = DictVectorizer(sparse=False)
-                bagwordsVectors = vect.fit_transform([docBagWords, corpusBagWords])
-                similarityScore = 1 - spatial.distance.cosine(bagwordsVectors[0], bagwordsVectors[1])
-                
-                # Save results in namedtuple and add to array
-                postScore = (cluster, postID, novelty, vectorScore, similarityScore)
-                postScores.append(postScore)
-                
-                # Update corpus
-                for token in doc: updateCorpus.append(token.orth_)
-                corpus = nlp(' '.join(updateCorpus))
-                i += 1
-                
-            else: search = False
+		    # Build Bag of Words with Spacy
+		    docBagWords = doc.count_by(LOWER)
+		    corpusBagWords = corpus.count_by(LOWER)
+			
+		    # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors  
+		    vect = DictVectorizer(sparse=False)
+		    bagwordsVectors = vect.fit_transform([docBagWords, corpusBagWords])
+		    similarityScore = 1 - spatial.distance.cosine(bagwordsVectors[0], bagwordsVectors[1])
+			
+		    # Save results in namedtuple and add to array
+		    postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], vectorScore, similarityScore)
+		    postScores.append(postScore)
+			
+		    # Update corpus
+		    for token in doc: updateCorpus.append(token.orth_)
+		    corpus = nlp(' '.join(updateCorpus))
  
     return postScores
+
 
 def main(argv):
 
@@ -119,13 +136,13 @@ def main(argv):
     nlp = spacy.load('en')
    
     # Parse JSON file that was supplied in command line argument
-    allClusters, lookupOrder, documentData = parseJSON(argv[0])
+    allClusters, lookupOrder, documentData = parse_json(argv[0])
     
     # Assess similarity based on document/corpus vectors and bag of words cosine similarity
-    scores = assessSimilarity(allClusters, lookupOrder, documentData, nlp)    
+    scores = assess_similarity(allClusters, lookupOrder, documentData, nlp, argv[0])    
     for score in scores: print score
     
 if __name__ == '__main__':
     if len(sys.argv) < 2:
        print "Usage: similarity_baseline_json.py file1\n\nCompute bag of words cosine similarity between documents defined in JSON file (file1)"
-    main(sys.argv[1:])
+    else: main(sys.argv[1:])
