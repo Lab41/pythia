@@ -33,7 +33,7 @@ def parse_json(fileName):
     # Read JSON file line by line and retain stats about number of clusters and order of objects 
     with open(fileName,'r') as dataFile:
         for line in dataFile:
-            parsedData = json.loads(fix_escapes(line), strict=False)
+            parsedData = json.loads(fix_escapes(line))
             allClusters.add(parsedData["cluster_id"])            
             lookupOrder[parsedData["cluster_id"]].add((parsedData["order"],i))            
             documentData.append(parsedData)
