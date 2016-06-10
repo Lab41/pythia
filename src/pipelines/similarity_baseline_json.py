@@ -43,12 +43,14 @@ def parse_json(fileName):
 
 def fix_escapes(line):
     
-    # Remove embedded special leaning quote character in body_text segment of json object
+    # Remove embedded special left/right leaning quote characters in body_text segment of json object
     if line.find('\\\xe2\x80\x9d'):
         spot = line.find("body_text")
-        newLine = line[:spot+13] + line[spot+13:].replace('\\\xe2\x80\x9d','\\"')
-    else: newLine = line
-    return newLine
+        line = line[:spot+13] + line[spot+13:].replace('\\\xe2\x80\x9d','\\"')
+    if line.find('\\\xe2\x80\x9c'):
+        spot = line.find("body_text")
+        line = line[:spot+13] + line[spot+13:].replace('\\\xe2\x80\x9c','\\"')
+    return line
 
 def filter_text(doc, nlp):
    
