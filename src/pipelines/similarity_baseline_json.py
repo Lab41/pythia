@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 import spacy
 from spacy.attrs import *
