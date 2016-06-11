@@ -105,28 +105,28 @@ def assess_similarity(allClusters, lookupOrder, documentData, nlp, filename):
 
         for index in sortedEntries[1:]:
                 
-	        # Find next document in order
-		    doc = filter_text(nlp(documentData[index]["body_text"]), nlp)
+            # Find next document in order
+            doc = filter_text(nlp(documentData[index]["body_text"]), nlp)
 
-		    # Document vs Corpus vector comparison
-		    vectorScore = doc.similarity(corpus) 
+            # Document vs Corpus vector comparison
+            vectorScore = doc.similarity(corpus) 
 
-		    # Build Bag of Words with Spacy
-		    docBagWords = doc.count_by(LOWER)
-		    corpusBagWords = corpus.count_by(LOWER)
-			
-		    # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors  
-		    vect = DictVectorizer(sparse=False)
-		    bagwordsVectors = vect.fit_transform([docBagWords, corpusBagWords])
-		    similarityScore = 1 - spatial.distance.cosine(bagwordsVectors[0], bagwordsVectors[1])
-			
-		    # Save results in namedtuple and add to array
-		    postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], vectorScore, similarityScore)
-		    postScores.append(postScore)
-			
-		    # Update corpus
-		    for token in doc: updateCorpus.append(token.orth_)
-		    corpus = nlp(' '.join(updateCorpus))
+            # Build Bag of Words with Spacy
+            docBagWords = doc.count_by(LOWER)
+            corpusBagWords = corpus.count_by(LOWER)
+            
+            # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors  
+            vect = DictVectorizer(sparse=False)
+            bagwordsVectors = vect.fit_transform([docBagWords, corpusBagWords])
+            similarityScore = 1 - spatial.distance.cosine(bagwordsVectors[0], bagwordsVectors[1])
+            
+            # Save results in namedtuple and add to array
+            postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], vectorScore, similarityScore)
+            postScores.append(postScore)
+            
+            # Update corpus
+            for token in doc: updateCorpus.append(token.orth_)
+            corpus = nlp(' '.join(updateCorpus))
  
     return postScores
 
