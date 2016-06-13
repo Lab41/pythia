@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 import spacy
 from spacy.attrs import *
@@ -61,4 +63,6 @@ def main(argv):
 if __name__ == '__main__':
     if len(sys.argv < 3):
         print "Usage: similarity_baseline.py fil1 file2\n\nCompute cosine similarity between two documents"
-    main(sys.argv[1:])
+    else: 
+        main(sys.argv[1:])
+

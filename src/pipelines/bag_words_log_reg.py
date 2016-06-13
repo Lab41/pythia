@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from src.utils import normalize, performance_metrics
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn import linear_model
