@@ -27,34 +27,38 @@ def filterText(doc, nlp):
    return filteredDoc 
 
 def main(argv):
-
-   # Load Spacy's English tokenizer model
-   print "Loading Spacy's English model"
-   nlp = spacy.load('en')
-   
-   # Download two news articles from internet, supplied as urls in command line arguments
-   utext1 = getOnlyText(argv[0])
-   utext2 = getOnlyText(argv[1])
-   
-   # Use Spacy to tokenize documents, then remove stop words and non-alpha  
-   print "Parsing files" 
-   doc1 = filterText(nlp(utext1), nlp)   
-   doc2 = filterText(nlp(utext2), nlp)
-
-   # Similarity is estimated using the cosine metric, between Span.vector and other.vector. 
-   # By default, Span.vector is computed by averaging the vectors of its tokens. [spacy.io]
-   print "Document Vectors Similarity Score:", doc1.similarity(doc2)
+    if not argv or len(argv) < 2:
+        raise TypeError("not enough arguments. two are required")
     
-   # Build Bag of Words with Spacy
-   wordBag1 = doc1.count_by(LOWER)
-   wordBag2 = doc2.count_by(LOWER)
+    # Load Spacy's English tokenizer model
+    print "Loading Spacy's English model"
+    nlp = spacy.load('en')
    
-   # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors  
-   vect = DictVectorizer(sparse=False)
-   wordbagVectors = vect.fit_transform([wordBag2, wordBag1])
-   print "Bag of Words Cosine Similarity Score:", 1 - spatial.distance.cosine(wordbagVectors[0], wordbagVectors[1])   
+    # Download two news articles from internet, supplied as urls in command line arguments
+    utext1 = getOnlyText(argv[0])
+    utext2 = getOnlyText(argv[1])
+
+    # Use Spacy to tokenize documents, then remove stop words and non-alpha  
+    print "Parsing files" 
+    doc1 = filterText(nlp(utext1), nlp)   
+    doc2 = filterText(nlp(utext2), nlp)
+
+    # Similarity is estimated using the cosine metric, between Span.vector and other.vector. 
+    # By default, Span.vector is computed by averaging the vectors of its tokens. [spacy.io]
+    print "Document Vectors Similarity Score:", doc1.similarity(doc2)
+
+    # Build Bag of Words with Spacy
+    wordBag1 = doc1.count_by(LOWER)
+    wordBag2 = doc2.count_by(LOWER)
+
+    # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors  
+    vect = DictVectorizer(sparse=False)
+    wordbagVectors = vect.fit_transform([wordBag2, wordBag1])
+    score = 1 - spatial.distance.cosine(wordbagVectors[0], wordbagVectors[1])
+    print "Bag of Words Cosine Similarity Score:", score
+    return score
 
 if __name__ == '__main__':
-   if len(sys.argv < 3):
-      print "Usage: similarity_baseline.py fil1 file2\n\nCompute cosine similarity between two documents"
-   main(sys.argv[1:])
+    if len(sys.argv < 3):
+        print "Usage: similarity_baseline.py fil1 file2\n\nCompute cosine similarity between two documents"
+    main(sys.argv[1:])
