@@ -2,6 +2,8 @@ import sys
 import spacy
 from spacy.attrs import *
 from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np
 from scipy import spatial
 import json
 from collections import namedtuple, defaultdict
@@ -33,7 +35,10 @@ def parse_json(fileName):
     # Read JSON file line by line and retain stats about number of clusters and order of objects 
     with open(fileName,'r') as dataFile:
         for line in dataFile:
-            parsedData = json.loads(fix_escapes(line))
+            try: parsedData = json.loads(fix_escapes(line))
+            except ValueError:
+                print "Error parsing JSON object from file at line " + str(i+1) + ":", sys.exc_info()[1]
+                quit()
             allClusters.add(parsedData["cluster_id"])            
             lookupOrder[parsedData["cluster_id"]].add((parsedData["order"],i))            
             documentData.append(parsedData)
@@ -42,15 +47,21 @@ def parse_json(fileName):
 
 
 def fix_escapes(line):
-    
-    # Remove embedded special left/right leaning quote characters in body_text segment of json object
-    if line.find('\\\xe2\x80\x9d'):
+
+    ''' 
+    Purpose - Removes embedded special left/right leaning quote characters in body_text segment of json object received as string
+    Input - String
+    Output - String without left/right leaning quote characters
+    '''
+
+    if line.find('\\\xe2\x80\x9d') != -1:
         spot = line.find("body_text")
         line = line[:spot+13] + line[spot+13:].replace('\\\xe2\x80\x9d','\\"')
-    if line.find('\\\xe2\x80\x9c'):
+    if line.find('\\\xe2\x80\x9c') != -1:
         spot = line.find("body_text")
         line = line[:spot+13] + line[spot+13:].replace('\\\xe2\x80\x9c','\\"')
     return line
+
 
 def filter_text(doc, nlp):
    
@@ -68,7 +79,6 @@ def filter_text(doc, nlp):
     filteredDoc = nlp(' '.join(newVocab))
     return filteredDoc 
 
-
 def assess_similarity(allClusters, lookupOrder, documentData, nlp, filename):
 
     '''
@@ -79,7 +89,7 @@ def assess_similarity(allClusters, lookupOrder, documentData, nlp, filename):
     
     # Prepare to store results of similarity assessments
     postScores = []
-    postTuple = namedtuple('postScore','corpus,cluster_id,post_id,novelty,vectorScore,bagwordsScore')    
+    postTuple = namedtuple('postScore','corpus,cluster_id,post_id,novelty,vectorScore,bagwordsScore,tfidfScore')    
 
     ''' 
     Iterate through clusters found in JSON file, do similarity assessments, 
@@ -94,39 +104,54 @@ def assess_similarity(allClusters, lookupOrder, documentData, nlp, filename):
         corpus = filter_text(nlp(documentData[sortedEntries[0]]["body_text"]), nlp) 
         updateCorpus = []
         for token in corpus: updateCorpus.append(token.orth_)
+                  
+        # Create a document array for TFIDF
+        corpusArray = []
+        corpusArray.append(' '.join(updateCorpus))
         
         # Use filename as corpus name if corpus name was not defined in JSON
         try: corpusName = documentData[sortedEntries[0]]["corpus"]
         except KeyError: corpusName = basename(filename)
         
         # Insert first document into scoring array for recordkeeping with similarity scores as -1
-        postScore = postTuple(corpusName, cluster, documentData[sortedEntries[0]]["post_id"], documentData[sortedEntries[0]]["novelty"], -1, -1)
+        postScore = postTuple(corpusName, cluster, documentData[sortedEntries[0]]["post_id"], documentData[sortedEntries[0]]["novelty"], None, None, None)
         postScores.append(postScore)
 
         for index in sortedEntries[1:]:
                 
-	        # Find next document in order
-		    doc = filter_text(nlp(documentData[index]["body_text"]), nlp)
+            # Find next document in order
+            doc = filter_text(nlp(documentData[index]["body_text"]), nlp)
+            rawdoc = []
+            for item in doc: rawdoc.append(item.orth_)
+            docLength = len(rawdoc)
+		    
+            # Calculate L1 normalized TFIDF summation as Novelty Score for new document against Corpus
+            # Credit to http://cgi.di.uoa.gr/~antoulas/pubs/ntoulas-novelty-wise.pdf 
+            corpusArray.append(' '.join(rawdoc))
+            vectorizer = TfidfVectorizer(norm=None)            
+            tfidf = vectorizer.fit_transform(corpusArray)
+            vectorValues = tfidf.toarray()
+            tfidfScore = np.sum(vectorValues[-1])/docLength
+            
+            # Document vs Corpus vector comparison
+            vectorScore = doc.similarity(corpus)
 
-		    # Document vs Corpus vector comparison
-		    vectorScore = doc.similarity(corpus) 
-
-		    # Build Bag of Words with Spacy
-		    docBagWords = doc.count_by(LOWER)
-		    corpusBagWords = corpus.count_by(LOWER)
-			
-		    # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors  
-		    vect = DictVectorizer(sparse=False)
-		    bagwordsVectors = vect.fit_transform([docBagWords, corpusBagWords])
-		    similarityScore = 1 - spatial.distance.cosine(bagwordsVectors[0], bagwordsVectors[1])
-			
-		    # Save results in namedtuple and add to array
-		    postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], vectorScore, similarityScore)
-		    postScores.append(postScore)
-			
-		    # Update corpus
-		    for token in doc: updateCorpus.append(token.orth_)
-		    corpus = nlp(' '.join(updateCorpus))
+            # Build Bag of Words with Spacy
+            docBagWords = doc.count_by(LOWER)
+            corpusBagWords = corpus.count_by(LOWER)
+            
+            # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors  
+            vect = DictVectorizer(sparse=False)            
+            bagwordsVectors = vect.fit_transform([docBagWords, corpusBagWords])
+            similarityScore = 1 - spatial.distance.cosine(bagwordsVectors[0], bagwordsVectors[1])
+	
+            # Save results in namedtuple and add to array
+            postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], vectorScore, similarityScore, tfidfScore)
+            postScores.append(postScore)
+	
+            # Update corpus
+            for token in doc: updateCorpus.append(token.orth_)
+            corpus = nlp(' '.join(updateCorpus))
  
     return postScores
 
@@ -141,9 +166,16 @@ def main(argv):
     allClusters, lookupOrder, documentData = parse_json(argv[0])
     
     # Assess similarity based on document/corpus vectors and bag of words cosine similarity
-    scores = assess_similarity(allClusters, lookupOrder, documentData, nlp, argv[0])    
-    for score in scores: print score
+    scores = assess_similarity(allClusters, lookupOrder, documentData, nlp, argv[0])
+    print "\n\nSimilarity and Novelty Scoring of a Document vs Corpus"
+    for score in scores: 
+        print "\n\nPost ID:", score.post_id
+        print "Novelty Label:", score.novelty
+        print "Document Vector Similarity Score (1 = Identical, 0 = Completely Different):", score.vectorScore
+        print "Bag of Words Similarity Score (1 = Identical, 0 = Completely Different):", score.bagwordsScore
+        print "TFIDF Novelty Score (higher value indicates a larger difference):", score.tfidfScore
     
+        
 if __name__ == '__main__':
     if len(sys.argv) < 2:
        print "Usage: similarity_baseline_json.py file1\n\nCompute bag of words cosine similarity between documents defined in JSON file (file1)"
