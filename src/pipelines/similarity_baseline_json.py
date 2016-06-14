@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 import spacy
 from spacy.attrs import *
@@ -124,7 +126,7 @@ def assess_similarity(allClusters, lookupOrder, documentData, nlp, filename):
             rawdoc = []
             for item in doc: rawdoc.append(item.orth_)
             docLength = len(rawdoc)
-		    
+    
             # Calculate L1 normalized TFIDF summation as Novelty Score for new document against Corpus
             # Credit to http://cgi.di.uoa.gr/~antoulas/pubs/ntoulas-novelty-wise.pdf 
             corpusArray.append(' '.join(rawdoc))
@@ -141,14 +143,15 @@ def assess_similarity(allClusters, lookupOrder, documentData, nlp, filename):
             corpusBagWords = corpus.count_by(LOWER)
             
             # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors  
+
             vect = DictVectorizer(sparse=False)            
             bagwordsVectors = vect.fit_transform([docBagWords, corpusBagWords])
             similarityScore = 1 - spatial.distance.cosine(bagwordsVectors[0], bagwordsVectors[1])
-	
+
             # Save results in namedtuple and add to array
             postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], vectorScore, similarityScore, tfidfScore)
             postScores.append(postScore)
-	
+
             # Update corpus
             for token in doc: updateCorpus.append(token.orth_)
             corpus = nlp(' '.join(updateCorpus))
