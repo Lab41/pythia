@@ -31,12 +31,13 @@ def load_json_as_pandas(file_path):
         try:
             for filename in os.listdir(file_path):
                 if filename.endswith('.json'):
-                    with open(file_path + filename) as f:
+                    with open(os.path.join(file_path, filename)) as f:
                         for line in f:
                             full_data_dict.append(json.loads(line))
-        except:
+        except Exception as e:
             print("Only *.json files or folders can be processed.  Error processing: " + file_path)
-            pass
+
+            raise
 
     full_data_df = pd.DataFrame(full_data_dict)
 
