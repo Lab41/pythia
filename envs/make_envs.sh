@@ -39,5 +39,5 @@ source activate py3-pythia && \
     path_info=$(python -m ipykernel install --user --name py3-pythia --display-name 'Python 3 (Pythia)') && \
     # Now add environment information on the second line of kernel.json
     kernel_path=$(echo $path_info | python -c "import re; print(re.sub(r'^.*?(/[^ ]+py3-pythia).*$', r'\\1', '$path_info'))") && \
-    sed -i '2i  "env" : { "PYTHONPATH" : "'"$PYTHIA_ROOT"'" },' "$kernel_path/kernel.json" && \
+    sed -i '2i  "env" : { "PYTHONPATH" : "'"$PYTHONPATH":"$PYTHIA_ROOT"'" },' "$kernel_path/kernel.json" && \
     echo "Editing " $kernel_path/kernel.json"..." && cat "$kernel_path/kernel.json" && echo && sleep 3
