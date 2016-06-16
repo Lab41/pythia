@@ -1,3 +1,7 @@
+#!/usr/bin/env python 
+
+import sys
+import os
 import py7zlib
 
 class un7zip(object):
@@ -9,12 +13,12 @@ class un7zip(object):
         is7z = False
         fp = None
         try:
-            print "opening "+filepath
+            print("opening "+filepath)
             fp = open(filepath, 'rb')
             archive = py7zlib.Archive7z(fp)
             n = len(archive.getnames())
             is7z = True
-            print "7zip file"
+            print("7zip file")
         finally:
             if fp:
                 fp.close()
