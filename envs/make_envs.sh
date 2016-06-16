@@ -18,6 +18,10 @@ source activate py3-pythia && \
 source activate py3-pythia && \
     pip install --upgrade nose-parameterized Theano keras
 
+# install bleeding-edge pylzma
+source activate py3-pythia && \
+    pip install git+https://github.com/fancycode/pylzma
+
 # install Jupyter kernel
 source activate py3-pythia && \
     pip install ipykernel && \
