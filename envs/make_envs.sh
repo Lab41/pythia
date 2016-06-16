@@ -11,8 +11,12 @@ fi
 
 # install tensorflow (CPU) and tflearn
 source activate py3-pythia && \
-    pip install --upgrade --user https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.8.0-cp34-cp34m-linux_x86_64.whl && \
-    pip install --upgrade --user tflearn
+    pip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.8.0-cp34-cp34m-linux_x86_64.whl && \
+    pip install --upgrade tflearn
+
+# install theano and keras
+source activate py3-pythia && \
+    pip install --upgrade nose-parameterized Theano keras
 
 # install Jupyter kernel
 source activate py3-pythia && \
