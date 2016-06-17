@@ -58,6 +58,9 @@ make_env () {
     # install bleeding-edge pylzma (for Stack Exchange)
     pip install git+https://github.com/fancycode/pylzma
 
+    # Install Sacred
+    pip install sacred
+
     # install Jupyter kernel, preserving PYTHONPATH and adding Pythia
     pip install ipykernel && \
     path_info=$(python -m ipykernel install --user --name $env_name --display-name "$display_name") && \
