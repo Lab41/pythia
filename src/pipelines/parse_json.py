@@ -2,8 +2,11 @@
 
 import sys
 import json
-#import os.path
+import os.path
 from os.path import basename
+from collections import defaultdict, namedtuple, OrderedDict
+from nltk.tokenize import word_tokenize
+import numpy
 
 def parse_json(folder):
    
@@ -25,8 +28,9 @@ def parse_json(folder):
     documentData = []
     allClusters = set()
     lookupOrder = defaultdict(set)
+    wordcount = defaultdict(int)
     i = 0
-        
+            
     for file_name in os.listdir (folder):
         #print "file: ", file_name
         if file_name.endswith(".json"):
@@ -37,10 +41,11 @@ def parse_json(folder):
                 for line in dataFile:
                     parsedData = json.loads(fix_escapes(line))
                     allClusters.add(parsedData["cluster_id"])            
-                    lookupOrder[parsedData["cluster_id"]].add((parsedData["order"],i))            
+                    lookupOrder[parsedData["cluster_id"]].add((parsedData["order"],i))
+                    wordcount = count_vocab(parsedData["body_text"], wordcount)            
                     documentData.append(parsedData)
                     i += 1
-    return allClusters, lookupOrder, documentData
+    return allClusters, lookupOrder, documentData, wordcount
 
 
 def fix_escapes(line):
@@ -54,16 +59,46 @@ def fix_escapes(line):
         line = line[:spot+13] + line[spot+13:].replace('\\\xe2\x80\x9c','\\"')
     return line
 
+def count_vocab(text, wordcount):
+    
+    # Tokenize text and add words to corpus dictionary
+    wordlist = word_tokenize(text)
+    for word in wordlist: wordcount[word] += 1
+                         
+    return wordcount
+
+def order_vocab(tokencount):
+
+    # Determine descending order for word counts
+    # Credit to https://github.com/ryankiros/skip-thoughts/
+    words = tokencount.keys()
+    freqs = tokencount.values()
+    sorted_idx = numpy.argsort(freqs)[::-1]
+    
+    wordorder = OrderedDict()
+    for idx, sidx in enumerate(sorted_idx): wordorder[words[sidx]] = idx+2
+    return wordorder
+
 def main(argv):
   
     print "parsing json files..."
+        
     # Parse JSON file that was supplied in command line argument
-    allClusters, lookupOrder, documentData = parse_json(argv[0])
+    allClusters, lookupOrder, documentdata, wordcount = parse_json(argv[0])
+
+    # Determine descending order for words based on count
+    wordorder = order_vocab(wordcount)
     
-    return allClusters, lookupOrder, documentData
+    # Create a corpus dictionary of named tuples with count and unique ids    
+    corpusdict = OrderedDict()
+    corpusTuple = namedtuple('corpusTuple','count, id')        
+    for word in wordorder:
+        corpusdict[word] = corpusTuple(wordcount[word], wordorder[word])
+
+    return allClusters, lookupOrder, documentdata, corpusdict
         
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-       print "Usage: parse_json.py dir1\n\nparses data from JSON files defined in directory (dir1)"
+        print "Usage: parse_json.py dir1\n\nparses data from JSON files defined in directory (dir1)"
     else: 
         main(sys.argv[1:])
