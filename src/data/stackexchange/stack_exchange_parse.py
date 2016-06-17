@@ -1,9 +1,10 @@
 import os
-import urllib
+from urllib import request
 import subprocess
 import json
 from lxml import etree
 from bs4 import BeautifulSoup
+from src.utils import py7z_extractall
 
 def gen_url(section):
     return 'https://ia800500.us.archive.org/22/items/stackexchange/' + section + '.stackexchange.com.7z'
@@ -57,12 +58,12 @@ def section_setup(section, directory, zip_directory, corpus_directory):
 def load(url, file_name, folder):
 
     #downloads file from url
-    testfile = urllib.URLopener()
+    testfile = request.URLopener()
     testfile.retrieve(url, file_name)
 
     #un-zips file and puts contents in folder
-    cmd = r'"/usr/local/bin/7z" x ' + file_name + ' -o' + folder
-    subprocess.call(cmd, shell = True)
+    a = py7z_extractall.un7zip(file_name)
+    a.extractall(folder)
     
 def get_links(folder):
     tree = etree.parse(folder +"/PostLinks.xml")
@@ -113,7 +114,7 @@ def gen_clusters(links):
             related[cluster_id] = related[cluster_id].union(new_ids)
         else: # l.attrib['LinkTypeId'] == duplicate:
             if not l.attrib['LinkTypeId'] == duplicate_link:
-                print l.attrib['LinkTypeId']
+                print(l.attrib['LinkTypeId'])
             duplicates[cluster_id] = clusters[cluster_id].union(new_ids)
     return clusters, related, duplicates, unique_posts
 
@@ -144,10 +145,10 @@ def write_json_files(clusters, related, duplicates, corpus, corpus_directory):
         file_name = str(next_cluster_id) + '.json'
         full_file_name = os.path.join(corpus_directory, file_name)
         with open(full_file_name, 'w') as outfile:
-            if duplicates.has_key(cluster_id):
+            if cluster_id in duplicates:
                 novel = True
                 for duplicate in duplicates[cluster_id]:
-                    if corpus.has_key(duplicate):
+                    if duplicate in corpus:
                         d = dict()
                         d['cluster_id'] = next_cluster_id
                         d['post_id'] = duplicate
@@ -160,8 +161,8 @@ def write_json_files(clusters, related, duplicates, corpus, corpus_directory):
                         time_stamp+=1
                         file_empty = False
             for related_post in related[cluster_id]:
-                if not duplicates.has_key(related_post):
-                    if corpus.has_key(related_post):
+                if not related_post in duplicates:
+                    if related_post in corpus:
                         r = dict()
                         r['cluster_id'] = next_cluster_id
                         r['post_id'] = related_post
