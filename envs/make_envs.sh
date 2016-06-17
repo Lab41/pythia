@@ -33,11 +33,11 @@ make_env () {
     echo "Matched environment line: $search_for_environment"
     if [ "$search_for_environment" = "$env_name" ]; then
         echo "Environment exists, installing original configuration..."
-        source activate $env_name && conda install python=$python_version scikit-learn \
+        source activate $env_name && conda install -y python=$python_version scikit-learn \
             beautifulsoup4 lxml jupyter pandas nltk seaborn gensim
     else
         echo "Creating new environment..."
-        conda create --name $env_name python=$python_version scikit-learn beautifulsoup4 lxml \
+        conda create -y --name $env_name python=$python_version scikit-learn beautifulsoup4 lxml \
             jupyter pandas nltk seaborn gensim
         # Activate environment
         source activate $env_name
