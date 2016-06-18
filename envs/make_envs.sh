@@ -32,6 +32,7 @@ make_env () {
     
     search_for_environment="$(conda info -e 2>/dev/null | grep -Po '^ *'$env_name'(?= )' | head -n1)"
     echo "Matched environment line: $search_for_environment"
+    source deactivate
     if [ "$search_for_environment" = "$env_name" ]; then
         echo "Environment exists, installing original configuration..."
         source activate $env_name && conda install -y python=$python_version scikit-learn \
@@ -63,15 +64,14 @@ make_env () {
     pip install sacred
 
     # install Jupyter kernel, preserving PYTHONPATH and adding Pythia
-    pip install ipykernel && \
-    path_info=$(python -m ipykernel install --user --name $env_name --display-name "$display_name") && \
-    # Now add environment information on the second line of kernel.json
-    kernel_path=$(python -c "import re; print(re.sub(r'^.*?(/[^ ]+"$env_name").*$', r'\\1', '$path_info'))") && \
-    sed -i '2i  "env" : { "PYTHONPATH" : "'"$PYTHONPATH:$PYTHIA_ROOT"'" },' "$kernel_path/kernel.json" && \
-    echo "Editing $kernel_path/kernel.json..." && cat "$kernel_path/kernel.json" && echo "" && sleep 3
+    pip install ipykernel
 
-    # Return to original environment
-    source deactivate
+    path_info=$(python -m ipykernel install --user --name $env_name --display-name "$display_name")
+    # Now add environment information on the second line of kernel.json
+    kernel_path=$(python -c "import re; print(re.sub(r'^.*?(/[^ ]+"$env_name").*$', r'\\1', '$path_info'))")
+    sed -i '2i  "env" : { "PYTHONPATH" : "'"$PYTHONPATH:$PYTHIA_ROOT"'" },' "$kernel_path/kernel.json"
+    echo "Editing $kernel_path/kernel.json..." && cat "$kernel_path/kernel.json" && echo ""
+
 }
 
 make_env "py3-pythia-tf" "Python 3.4 (Pythia, TF)" "3.4"
