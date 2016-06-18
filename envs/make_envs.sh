@@ -5,7 +5,8 @@
 # Requires Anaconda and Jupyter
 
 if [ "$PYTHIA_ROOT" = "" ]; then
-  PYTHIA_ROOT="$HOME/pythia"
+    printf "PYTHIA_ROOT must be defined.\nSuggested usage (will clone Pythia in pwd): PYTHIA_ROOT=pythia make_envs.sh\n"
+    exit 1
 else
   PYTHIA_ROOT=$(cd "$PYTHIA_ROOT" && pwd)
 fi
