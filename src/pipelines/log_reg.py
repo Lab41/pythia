@@ -3,7 +3,6 @@
 from src.utils import performance_metrics
 import numpy as np
 import sys
-import cosine_json
 from sklearn import linear_model
 from collections import namedtuple
 
@@ -21,21 +20,21 @@ def run_model(train_data, train_labels, test_data, test_labels):
         pred_labels: The predicted labels as determined by logistic regression
     '''
 
-    #Now with the data in the correct formats, use Logistic Regression to train a model
+    #use Logistic Regression to train a model
     logreg = linear_model.LogisticRegression(C=1e5)
-    # we create an instance of Neighbours Classifier and fit the data.
     
+    # we create an instance of Neighbours Classifier and fit the data.
     logreg.fit(train_data, train_labels)
+    
     #Now that we have something trained we can check if it is accurate with the test set
     pred_labels = logreg.predict(test_data)
-
     perform_results = performance_metrics.get_perform_metrics(test_labels, pred_labels)
+    
     #Perform_results is a dictionary, so we should add other pertinent information to the run
     perform_results['vector'] = 'Bag_of_Words'
     perform_results['alg'] = 'Logistic_Regression'
 
     return pred_labels, perform_results
-
 
 def main(argv):
     
@@ -48,7 +47,7 @@ def main(argv):
     return predicted_labels, perform_results
     
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-       print "Usage: bag_of_words_log_reg_python file1\n\nCompute bag of words log reg between documents defined in JSON file (file1)"
+    if len(sys.argv) < 5:
+        print("Usage: log_reg.py train_data, train_labels, test_data, test_labels\n\nCompute log reg between data (defined in train_data, train_labels, test_data, test_labels)")
     else: main(sys.argv[1:])
 

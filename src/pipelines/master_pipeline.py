@@ -2,7 +2,7 @@
 
 import argparse
 from collections import namedtuple
-import parse_json, observations, features_and_labels, log_reg
+import parse_json, preprocess, observations, features_and_labels, log_reg
 
 def main(argv):
     
@@ -13,19 +13,28 @@ def main(argv):
     directory = argv[0]
     features = argv[1]
     
-    print "parsing json data..."
-    allClusters, lookupOrder, documentData, corpusDict = parse_json.main([directory])
+    #parsing
+    print("parsing json data...")
+    clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main([directory])
     
+    #preprocessing
+    vocab = preprocess.main([features, corpusdict])
     
-    print "generating observations and features..."
-    scores = observations.main([allClusters, lookupOrder, documentData, directory, features, corpusDict])
+    #featurization step 1
+    print("generating observations and features...")
+    train_scores = observations.main([clusters, order, data, directory, features, vocab])
+    test_scores = observations.main([test_clusters, test_order, test_data, directory, features, vocab])
     
-    print "generating training and testing data..."
-    train_data, train_target, test_data, test_target = features_and_labels.main([scores, features])
+    #featurization step 2
+    print("generating training and testing data...")
+    train_data, train_target = features_and_labels.main([train_scores, features])
+    test_data, test_target = features_and_labels.main([test_scores, features])
 
-    print "running algorithms..."
+    #modeling
+    print("running algorithms...")
     predicted_labels, perform_results = log_reg.main([train_data, train_target, test_data, test_target])
 
+    #results
     print("Algorithm details and Results:")
     print(perform_results)
     
@@ -40,11 +49,10 @@ if __name__ == '__main__':
     featureTuple = namedtuple('features','cosine, tf_idf')
     features = featureTuple(args.cosine, args.tf_idf)
     
-    args = [args.directory, features]
-    print args
+    if not (args.cosine and args.tf_idf):
+        print("Error: pipeline requires at least one feature")
+        quit()
     
+    args = [args.directory, features]
+    print(args)
     main(args)
-
-    # if len(sys.argv) < 3:
-    #     print "Usage: master_pipeline.py dir1 feature1 feature2...\n\n\computes logistic regression on data in directory (dir1) using features (feature1, featrue2...)"
-    # else: main(sys.argv[1:])

@@ -1,44 +1,34 @@
 #!/usr/bin/env python
 
 import sys
-import spacy
-from spacy.attrs import *
+from src.utils import normalize
 from sklearn.feature_extraction import DictVectorizer
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import numpy as np
-
 from scipy import spatial
-import json
+#import json
 from collections import namedtuple, defaultdict
 import os.path
 from os.path import basename
 
-def filter_text(doc, nlp):
+def filter_text(doc):
    
     '''
-    Purpose - Removes stop words, out of vocabulary words and non-alpha words from a 
-              spacy document's vocabulary
-    Input - A spacy document and the spacy English parser
-    Output - A new spacy document
+    Purpose - to clean and normalize text
+    Input - a string of text
+    Output - the cleaned up version of that string
     '''
-   
-    # Remove stop words, out of vocabulary and non-alpha tokens from document vocabulary   
-    newVocab = []
-    for token in doc:
-        if not token.is_stop and not token.is_oov and token.is_alpha: newVocab.append(token.orth_)
-    filteredDoc = nlp(' '.join(newVocab))
-    return filteredDoc 
+    
+    clean_text = normalize.text_to_words(doc)
+    return clean_text
 
-def assess_similarity(allClusters, lookupOrder, documentData, nlp, filename, features, corpusDict):
+def gen_observations(allClusters, lookupOrder, documentData, filename, features, vocab):
 
     '''
-    Purpose - Do vector comparison and bag of words cosine similarity for each cluster found in JSON file
-    Input - A set of cluster IDs, a dict of document arrival order, an array of the parsed JSON document data, and a spacy English parser
-    Output - Array of namedtuples containing cluster_id, post_id, novelty, vector score, cosine similarity score
+    Purpose - generate observations for each cluster found in JSON file and calculate the desired features
+    Input - A set of cluster IDs, a dict of document arrival order, an array of the parsed JSON document data, the name of the corpus file, the desired features and the vocabulary
+    Output - Array of namedtuples containing cluster_id, post_id, novelty, tfidf score, cosine similarity score (scores are None if feature is unwanted)
     '''
-    if features.cosine:
-        print("make bag of words")
-
     
     # Prepare to store results of similarity assessments
     postScores = []
@@ -54,28 +44,20 @@ def assess_similarity(allClusters, lookupOrder, documentData, nlp, filename, fea
         sortedEntries = [x[1] for x in sorted(lookupOrder[cluster], key=lambda x: x[0])]
                           
         # Set corpus to first doc in this cluster and prepare to update corpus with new document vocabulary
-        corpus = filter_text(nlp(documentData[sortedEntries[0]]["body_text"]), nlp) 
-        updateCorpus = []
-        for token in corpus: updateCorpus.append(token.orth_)
+        corpus = filter_text(documentData[sortedEntries[0]]["body_text"]) 
                   
         # Create a document array for TFIDF
-        corpusArray = []
-        corpusArray.append(' '.join(updateCorpus))
+        corpusArray = corpus.split()
         
         # Use filename as corpus name if corpus name was not defined in JSON
         try: corpusName = documentData[sortedEntries[0]]["corpus"]
         except KeyError: corpusName = basename(filename)
-        
-        # Insert first document into scoring array for recordkeeping with similarity scores as -1
-        # postScore = postTuple(corpusName, cluster, documentData[sortedEntries[0]]["post_id"], documentData[sortedEntries[0]]["novelty"], None, None, None)
-        # postScores.append(postScore)
 
         for index in sortedEntries[1:]:
                 
             # Find next document in order
-            doc = filter_text(nlp(documentData[index]["body_text"]), nlp)
-            rawdoc = []
-            for item in doc: rawdoc.append(item.orth_)
+            doc = filter_text(documentData[index]["body_text"])
+            rawdoc = doc.split()
             docLength = len(rawdoc)
     
             similarityScore = None
@@ -90,15 +72,15 @@ def assess_similarity(allClusters, lookupOrder, documentData, nlp, filename, fea
                 vectorValues = tfidf.toarray()
                 tfidfScore = np.sum(vectorValues[-1])/docLength
             
-            if features.cosine:
-                # Build Bag of Words with Spacy
-                docBagWords = doc.count_by(LOWER)
-                corpusBagWords = corpus.count_by(LOWER)
+            if features.cosine:  
+                # Initialize the "CountVectorizer" object, which is scikit-learn's
+                # bag of words tool.
+                #http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
+                vectorizer = CountVectorizer(analyzer = "word",  \
+                                             vocabulary = vocab)
 
                 # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors  
-
-                vect = DictVectorizer(sparse=False)            
-                bagwordsVectors = vect.fit_transform([docBagWords, corpusBagWords])
+                bagwordsVectors = (vectorizer.transform([doc, corpus])).toarray()
                 similarityScore = 1 - spatial.distance.cosine(bagwordsVectors[0], bagwordsVectors[1])
 
             # Save results in namedtuple and add to array
@@ -106,26 +88,21 @@ def assess_similarity(allClusters, lookupOrder, documentData, nlp, filename, fea
             postScores.append(postScore)
 
             # Update corpus
-            for token in doc: updateCorpus.append(token.orth_)
-            corpus = nlp(' '.join(updateCorpus))
+            corpus+=doc
  
     return postScores
 
 
 def main(argv):
-    allClusters, lookupOrder, documentData, file_name, features, corpusDict = argv[0], argv[1], argv[2], argv[3], argv[4], args[5]
-    
-    # Load Spacy's English tokenizer model
-    print "Loading Spacy's English model. This can take a few seconds."
-    nlp = spacy.load('en')
+    allClusters, lookupOrder, documentData, file_name, features, vocab = argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]
     
     # Assess similarity based on document/corpus vectors and bag of words cosine similarity
-    scores = assess_similarity(allClusters, lookupOrder, documentData, nlp, file_name, features)
-    # print "\n\nSimilarity and Novelty Scoring of a Document vs Corpus"
-    # for score in scores: 
-    #     print "\n\nPost ID:", score.post_id
-    #     print "Novelty Label:", score.novelty
-    #     print "Bag of Words Similarity Score (1 = Identical, 0 = Completely Different):", score.bagwordsScore
-    #     print "TFIDF Novelty Score (higher value indicates a larger difference):", score.tfidfScore
+    scores = gen_observations(allClusters, lookupOrder, documentData, file_name, features, vocab)
+#     print("\n\nSimilarity and Novelty Scoring of a Document vs Corpus")
+#     for score in scores: 
+#         print("\n\nPost ID:", score.post_id)
+#         print("Novelty Label:", score.novelty)
+#         print("Bag of Words Similarity Score (1 = Identical, 0 = Completely Different):", score.bagwordsScore)
+#         print("TFIDF Novelty Score (higher value indicates a larger difference):", score.tfidfScore)
     
     return scores

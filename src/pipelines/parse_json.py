@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
+import random
 import sys
 import json
 import os.path
 from os.path import basename
 from collections import defaultdict, namedtuple, OrderedDict
+import nltk
 from nltk.tokenize import word_tokenize
 import numpy
 
@@ -25,27 +27,40 @@ def parse_json(folder):
     novelty = boolean assessment of novelty     
     '''
            
-    documentData = []
-    allClusters = set()
-    lookupOrder = defaultdict(set)
+    data = []
+    clusters = set()
+    order = defaultdict(set)
     wordcount = defaultdict(int)
     i = 0
-            
+    
+    test_data = []
+    test_clusters = set()
+    test_order = defaultdict(set)
+    j = 0
+    
+    random.seed(1)        
     for file_name in os.listdir (folder):
-        #print "file: ", file_name
         if file_name.endswith(".json"):
             # Read JSON file line by line and retain stats about number of clusters and order of objects
             full_file_name = os.path.join(folder, file_name)
+            
             with open(full_file_name,'r') as dataFile:
-                #print "open"
-                for line in dataFile:
-                    parsedData = json.loads(fix_escapes(line))
-                    allClusters.add(parsedData["cluster_id"])            
-                    lookupOrder[parsedData["cluster_id"]].add((parsedData["order"],i))
-                    wordcount = count_vocab(parsedData["body_text"], wordcount)            
-                    documentData.append(parsedData)
+                if random.random() > 0.2:
+                    for line in dataFile:
+                        parsedData = json.loads(fix_escapes(line))
+                        clusters.add(parsedData["cluster_id"])            
+                        order[parsedData["cluster_id"]].add((parsedData["order"],i))
+                        wordcount = count_vocab(parsedData["body_text"], wordcount)            
+                        data.append(parsedData)
                     i += 1
-    return allClusters, lookupOrder, documentData, wordcount
+                else:
+                    for line in dataFile:
+                        parsedData = json.loads(fix_escapes(line))
+                        test_clusters.add(parsedData["cluster_id"])            
+                        test_order[parsedData["cluster_id"]].add((parsedData["order"],j))
+                        test_data.append(parsedData)
+                    j += 1
+    return clusters, order, data, test_clusters, test_order, test_data, wordcount
 
 
 def fix_escapes(line):
@@ -71,8 +86,8 @@ def order_vocab(tokencount):
 
     # Determine descending order for word counts
     # Credit to https://github.com/ryankiros/skip-thoughts/
-    words = tokencount.keys()
-    freqs = tokencount.values()
+    words = list(tokencount.keys())
+    freqs = list(tokencount.values())
     sorted_idx = numpy.argsort(freqs)[::-1]
     
     wordorder = OrderedDict()
@@ -81,10 +96,10 @@ def order_vocab(tokencount):
 
 def main(argv):
   
-    print "parsing json files..."
+    print("parsing json files...")
         
     # Parse JSON file that was supplied in command line argument
-    allClusters, lookupOrder, documentdata, wordcount = parse_json(argv[0])
+    clusters, order, data, test_clusters, test_order, test_data, wordcount = parse_json(argv[0])
 
     # Determine descending order for words based on count
     wordorder = order_vocab(wordcount)
@@ -95,10 +110,10 @@ def main(argv):
     for word in wordorder:
         corpusdict[word] = corpusTuple(wordcount[word], wordorder[word])
 
-    return allClusters, lookupOrder, documentdata, corpusdict
+    return clusters, order, data, test_clusters, test_order, test_data, corpusdict
         
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print "Usage: parse_json.py dir1\n\nparses data from JSON files defined in directory (dir1)"
+        print("Usage: parse_json.py dir1\n\nparses data from JSON files defined in directory (dir1)")
     else: 
         main(sys.argv[1:])
