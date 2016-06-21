@@ -22,6 +22,25 @@ def filter_text(doc):
     clean_text = normalize.text_to_words(doc)
     return clean_text
 
+def bag_of_words(doc, corpus, vocab):
+   
+    '''
+    Purpose - creat bag of words vectors for doc and corpus
+    Input - doc, corpus
+    Output - an array of the bog vectors
+    '''
+    
+    # Initialize the "CountVectorizer" object, which is scikit-learn's
+    # bag of words tool.
+    #http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
+    vectorizer = CountVectorizer(analyzer = "word",  \
+                                 vocabulary = vocab)
+
+    # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors  
+    bagwordsVectors = (vectorizer.transform([doc, corpus])).toarray()
+    return bagwordsVectors
+
+
 def gen_observations(allClusters, lookupOrder, documentData, filename, features, vocab):
 
     '''
@@ -32,7 +51,7 @@ def gen_observations(allClusters, lookupOrder, documentData, filename, features,
     
     # Prepare to store results of similarity assessments
     postScores = []
-    postTuple = namedtuple('postScore','corpus,cluster_id,post_id,novelty,bagwordsScore,tfidfScore')    
+    postTuple = namedtuple('postScore','corpus,cluster_id,post_id,novelty,bagwordsScore,tfidfScore,bog')    
 
     ''' 
     Iterate through clusters found in JSON file, do similarity assessments, 
@@ -62,6 +81,7 @@ def gen_observations(allClusters, lookupOrder, documentData, filename, features,
     
             similarityScore = None
             tfidfScore = None
+            bog = None
             
             if features.tf_idf:
                 # Calculate L1 normalized TFIDF summation as Novelty Score for new document against Corpus
@@ -73,18 +93,16 @@ def gen_observations(allClusters, lookupOrder, documentData, filename, features,
                 tfidfScore = np.sum(vectorValues[-1])/docLength
             
             if features.cosine:  
-                # Initialize the "CountVectorizer" object, which is scikit-learn's
-                # bag of words tool.
-                #http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
-                vectorizer = CountVectorizer(analyzer = "word",  \
-                                             vocabulary = vocab)
-
-                # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors  
-                bagwordsVectors = (vectorizer.transform([doc, corpus])).toarray()
+                bagwordsVectors = bag_of_words(doc, corpus, vocab)
                 similarityScore = 1 - spatial.distance.cosine(bagwordsVectors[0], bagwordsVectors[1])
+            
+            if features.bog:
+                bagwordsVectors = bag_of_words(doc, corpus, vocab)
+                bog = np.concatenate(bagwordsVectors, axis=0)
+                print(bog)
 
             # Save results in namedtuple and add to array
-            postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], similarityScore, tfidfScore)
+            postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], similarityScore, tfidfScore, bog)
             postScores.append(postScore)
 
             # Update corpus

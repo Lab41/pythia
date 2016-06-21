@@ -43,13 +43,15 @@ if __name__ == '__main__':
     parser.add_argument("directory", help="directory holding corpus")
     parser.add_argument("--cosine", "-c", help="add cosine similarity as a feature", action="store_true")
     parser.add_argument("--tf_idf", "-t", help="add tf_idf as a feature", action="store_true")
+    parser.add_argument("--bag_of_words", "-b", help="add bag of words vectors as a feature", action="store_true")
+
 
     args = parser.parse_args()
     
-    featureTuple = namedtuple('features','cosine, tf_idf')
-    features = featureTuple(args.cosine, args.tf_idf)
+    featureTuple = namedtuple('features','cosine, tf_idf, bog')
+    features = featureTuple(args.cosine, args.tf_idf, args.bag_of_words)
     
-    if not (args.cosine and args.tf_idf):
+    if not (args.cosine or args.tf_idf or args.bag_of_words):
         print("Error: pipeline requires at least one feature")
         quit()
     
