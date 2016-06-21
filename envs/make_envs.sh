@@ -24,29 +24,27 @@ PYTHIA_CONFIG="$1"
 
 
 make_env () {
-    env_name=$1
-    display_name=$2
-    python_version=$3
-
-    # Create conda environments with needful packages readied
-    sudo apt-get install -yq libjpeg-dev
+    env_name="$1"
+    display_name="$2"
+    python_version="$3"
     
     search_for_environment="$(conda info -e 2>/dev/null | grep -Po '^ *'$env_name'(?= )' | head -n1)"
     echo "Matched environment line: $search_for_environment"
     source deactivate
+    sleep 2
     if [ "$search_for_environment" = "$env_name" ]; then
         echo "Environment exists, installing original configuration..."
+        sleep 2
         source activate $env_name && conda install -y python=$python_version scikit-learn \
-            beautifulsoup4 lxml jupyter pandas nltk seaborn gensim
+            beautifulsoup4 lxml jupyter pandas nltk seaborn gensim pip==8.1.1 pymongo
     else
         echo "Creating new environment..."
-        conda create -y --name $env_name python=$python_version scikit-learn beautifulsoup4 lxml \
-            jupyter pandas nltk seaborn gensim
+        sleep 2
+        conda create -y --name "$env_name" python="$python_version" scikit-learn beautifulsoup4 lxml \
+            jupyter pandas nltk seaborn gensim pip==8.1.1 pymongo
         # Activate environment
-        source activate $env_name
+        source activate "$env_name"
     fi
-
-    
     
     # install tensorflow (CPU) and tflearn (py3.4 only)
     if [ "$python_version" = "3.4" ]; then
