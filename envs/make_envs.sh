@@ -4,22 +4,23 @@
 # in Python
 # Requires Anaconda and Jupyter
 
-if [ "$PYTHIA_ROOT" = "" ]; then
-    printf "PYTHIA_ROOT must be defined.\nSuggested usage (will clone Pythia in pwd): PYTHIA_ROOT=pythia make_envs.sh\n"
-    exit 1
-else
-  PYTHIA_ROOT=$(cd "$PYTHIA_ROOT" && pwd)
-fi
-
+PYTHIA_CONFIG="$1"
+#if [ "$PYTHIA_ROOT" = "" ]; then
+#    printf "PYTHIA_ROOT must be defined.\nSuggested usage (will clone Pythia in pwd): PYTHIA_ROOT=pythia make_envs.sh\n"
+#    exit 1
+#else
+#  PYTHIA_ROOT=$(cd "$PYTHIA_ROOT" && pwd)
+#fi
+#
 # Create pythia in home directory if it doesn't exist
-if [ ! -d "$PYTHIA_ROOT" ]; then
-    echo "Cloning pythia into $PYTHIA_ROOT, adding to PYTHONPATH"
-    sleep 3
-    git clone https://github.com/Lab41/pythia
-else
-    echo "Using $PYTHIA_ROOT on PYTHONPATH"
-    sleep 3
-fi
+#if [ ! -d "$PYTHIA_ROOT" ]; then
+#    echo "Cloning pythia into $PYTHIA_ROOT, adding to PYTHONPATH"
+#    sleep 3
+#    git clone https://github.com/Lab41/pythia
+#else
+#    echo "Using $PYTHIA_ROOT on PYTHONPATH"
+#    sleep 3
+#fi
 
 
 make_env () {
