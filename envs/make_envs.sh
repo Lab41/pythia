@@ -65,11 +65,21 @@ make_env () {
     # install Jupyter kernel, preserving PYTHONPATH and adding Pythia
     pip install ipykernel
 
+    # Install the kernel and retrieve its destination directory
     path_info=$(python -m ipykernel install --user --name $env_name --display-name "$display_name")
-    # Now add environment information on the second line of kernel.json
-    kernel_path=$(python -c "import re; print(re.sub(r'^.*?(/[^ ]+"$env_name").*$', r'\\1', '$path_info'))")
-    sed -i '2i  "env" : { "PYTHONPATH" : "'"$PYTHONPATH:$PYTHIA_ROOT"'" },' "$kernel_path/kernel.json"
-    echo "Editing $kernel_path/kernel.json..." && cat "$kernel_path/kernel.json" && echo ""
+    
+    # Now add environment information on the second line of the new env's kernel.json
+    kernel_dir=$(python -c "import re; print(re.sub(r'^.*?(/[^ ]+"$env_name").*$', r'\\1', '$path_info'))")
+    kernel_path="$kernel_dir/kernel.json"
+    echo "Editing $kernel_path..."
+    cat <(sed -n '1p' "$kernel_path") \
+        <(echo "\"env\" : ") \
+        "$PYTHIA_CONFIG" \
+        <(echo ", ") \
+        <(sed '1d' "$kernel_path" ) > /tmp/kernel.json
+    mv /tmp/kernel.json "$kernel_path"
+    
+    cat "$kernel_path" && echo ""
 
 }
 
