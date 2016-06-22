@@ -99,8 +99,6 @@ def gen_observations(allClusters, lookupOrder, documentData, filename, features,
             if features.bog:
                 bagwordsVectors = bag_of_words(doc, corpus, vocab)
                 bog = np.concatenate(bagwordsVectors, axis=0)
-                print(bog)
-
             # Save results in namedtuple and add to array
             postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], similarityScore, tfidfScore, bog)
             postScores.append(postScore)

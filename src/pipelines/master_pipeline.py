@@ -2,7 +2,7 @@
 
 import argparse
 from collections import namedtuple
-import parse_json, preprocess, observations, features_and_labels, log_reg
+import parse_json, preprocess, observations, features_and_labels, log_reg, svm
 
 def main(argv):
     
@@ -12,6 +12,7 @@ def main(argv):
     
     directory = argv[0]
     features = argv[1]
+    algorithms = argv[2]
     
     #parsing
     print("parsing json data...")
@@ -32,8 +33,10 @@ def main(argv):
 
     #modeling
     print("running algorithms...")
-    predicted_labels, perform_results = log_reg.main([train_data, train_target, test_data, test_target])
-
+    if algorithms.log_reg:
+        predicted_labels, perform_results = log_reg.main([train_data, train_target, test_data, test_target])
+    if algorithms.svm:
+        predicted_labels, perform_results = svm.main([train_data, train_target, test_data, test_target])
     #results
     print("Algorithm details and Results:")
     print(perform_results)
@@ -44,17 +47,25 @@ if __name__ == '__main__':
     parser.add_argument("--cosine", "-c", help="add cosine similarity as a feature", action="store_true")
     parser.add_argument("--tf_idf", "-t", help="add tf_idf as a feature", action="store_true")
     parser.add_argument("--bag_of_words", "-b", help="add bag of words vectors as a feature", action="store_true")
-
+    parser.add_argument("--log_reg", "-l", help="run logistic regression", action="store_true")
+    parser.add_argument("--svm", "-s", help="run support vector machine", action="store_true")
 
     args = parser.parse_args()
     
     featureTuple = namedtuple('features','cosine, tf_idf, bog')
     features = featureTuple(args.cosine, args.tf_idf, args.bag_of_words)
     
+    algTuple = namedtuple('algorithms','log_reg, svm')
+    algorithms = algTuple(args.log_reg, args.svm)
+    
     if not (args.cosine or args.tf_idf or args.bag_of_words):
         print("Error: pipeline requires at least one feature")
         quit()
-    
-    args = [args.directory, features]
+
+    if not (args.log_reg or args.svm):
+        print("Error: pipeline requires at least one algorithm")
+        quit()
+        
+    args = [args.directory, features, algorithms]
     print(args)
     main(args)

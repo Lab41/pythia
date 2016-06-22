@@ -16,8 +16,8 @@ def get_data(scores, features):
             feature.append(np.array([score.bagwordsScore]))
         if features.tf_idf:
             feature.append(np.array([score.tfidfScore]))
-        if feature.bog:
-            feature.append(np.array([score.bog]))
+        if features.bog:
+            feature.append(score.bog)
         feature = np.concatenate(feature, axis=0)
         data.append(feature)
         if score.novelty: labels.append(1)
