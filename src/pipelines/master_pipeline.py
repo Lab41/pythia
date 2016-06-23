@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-
+import sys
 import argparse
 from collections import namedtuple
-import parse_json, preprocess, observations, features_and_labels, log_reg, svm
+from src.pipelines import parse_json, preprocess, observations, features_and_labels, log_reg, svm
 
 def main(argv):
+    
+    return
     
     ''' 
     controls the over-arching implmentation of the algorithms
@@ -41,6 +43,8 @@ def main(argv):
     print("Algorithm details and Results:")
     print(perform_results)
     
+    
+    
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = "predict novelty in a corpus")
     parser.add_argument("directory", help="directory holding corpus")
@@ -59,13 +63,19 @@ if __name__ == '__main__':
     algorithms = algTuple(args.log_reg, args.svm)
     
     if not (args.cosine or args.tf_idf or args.bag_of_words):
-        print("Error: pipeline requires at least one feature")
-        quit()
+        parser.exit(status=1, message="Error: pipeline requires at least one feature\n")
+
 
     if not (args.log_reg or args.svm):
-        print("Error: pipeline requires at least one algorithm")
-        quit()
+        parser.exit(status=3, message="Error: pipeline requires at least one algorithm\n")
+
         
     args = [args.directory, features, algorithms]
     print(args)
     main(args)
+    parser.exit(status=0, message=None)
+
+    
+    
+    
+    
