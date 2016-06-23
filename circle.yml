@@ -1,0 +1,16 @@
+test:
+  override:
+    - py.test --cov=./
+  post:
+    - bash <(curl -s https://codecov.io/bash)
+
+dependencies:
+  pre:
+    # - bash envs/make_envs.sh
+    - pip install -v scipy
+    - pip install pytest-cov
+  post:
+    - python -m nltk.downloader punkt
+machine:
+  python:
+    version: 3.5.1

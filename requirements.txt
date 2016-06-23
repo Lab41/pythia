@@ -1,0 +1,6 @@
+nltk
+numpy
+bs4
+scipy
+sklearn
+lxml
