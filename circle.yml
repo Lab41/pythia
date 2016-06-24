@@ -5,3 +5,7 @@ test:
 dependencies:
     pre:
        -  pip install pytest
+
+machine:
+  python:
+    version: python-3.5
