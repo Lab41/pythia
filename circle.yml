@@ -1,6 +1,6 @@
 test:
     override:
-        - py.test /src/tests
+        - py.test
 
 dependencies:
     pre:
