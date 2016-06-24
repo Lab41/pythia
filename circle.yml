@@ -1,6 +1,6 @@
 test:
     override:
-        - py.test /src/tests
+        - py.test Users/aflower/pythia/src/tests
 
 dependencies:
     pre:
