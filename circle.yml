@@ -5,3 +5,4 @@ test:
 dependencies:
     pre:
        -  pip install pytest
+       -  cd src/tests
