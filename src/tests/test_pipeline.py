@@ -3,6 +3,7 @@ import subprocess
 import os
 
 def test_no_directory():
+    print(os.getcwd())
     os.chdir('../pipelines')
     dir_ = os.getcwd()
     file_ = os.path.join(dir_, "master_pipeline.py")
