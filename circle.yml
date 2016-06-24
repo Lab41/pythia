@@ -1,6 +1,7 @@
 test:
     override:
-        - py.test
+       -  cd src/tests
+       - py.test
 
 dependencies:
     pre:
