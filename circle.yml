@@ -1,0 +1,7 @@
+test:
+    override:
+        - py.test /src/tests
+
+dependencies:
+    pre:
+       -  pip install pytest
