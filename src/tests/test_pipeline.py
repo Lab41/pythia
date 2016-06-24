@@ -4,14 +4,14 @@ import os
 
 def test_no_directory():
     print(os.getcwd())
-    os.chdir('/pipelines')
+    os.chdir('pipelines')
     dir_ = os.getcwd()
     file_ = os.path.join(dir_, "master_pipeline.py")
     result = subprocess.run([file_])
     assert result.returncode == 2
 
 def test_no_features():
-    os.chdir('/pipelines')
+    os.chdir('./pipelines')
     dir_ = os.getcwd()
     file_ = os.path.join(dir_, "master_pipeline.py")
     result = subprocess.run([file_, "dir"])
