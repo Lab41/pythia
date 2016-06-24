@@ -1,3 +1,4 @@
 nltk
 numpy
 bs4
+sklearn.feature_extraction
