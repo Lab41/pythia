@@ -29,10 +29,15 @@ def hashDocument(text, window_size = 25, words = False, sliding = True, sliding_
 	#Error if sliding_window is bigger than or equal to window_size and sliding is turned on
 	if sliding_window >= window_size and sliding:
 		raise ValueError("sliding_window must be smaller than window_size;")
+	returnText = ""
 	#
+	#Check to see if document length is less than window_size and just hash the whole doc if that's the case
+	if len(text) < window_size:
+		m = hashlib.md5()
+		m.update(text.encode("utf-8"))
+		return str(m.digest())[2:].strip().strip("'").strip()
 	#Split text into distinct blocks for hashing
 	textSplit = splitText(text, window_size, words, sliding, sliding_window)
-	returnText = ""
 	#
 	#Md5 hash each part of the text and return the text as a long string of these hashes
 	for item in textSplit:
