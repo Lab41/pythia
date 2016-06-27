@@ -1,10 +1,12 @@
 test:
-    override:
-       -  cd src/tests && py.test
+  override:
+    - cd src/tests && py.test
+  post:
+    - bash <(curl -s https://codecov.io/bash)
 
 dependencies:
-    pre:
-       -  pip install pytest
+  pre:
+    - pip install pytest
 
 machine:
   python:
