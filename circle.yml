@@ -1,12 +1,12 @@
 test:
   override:
-    - cd src/tests && py.test
+    - cd src && py.test --cov=./
   post:
     - bash <(curl -s https://codecov.io/bash)
 
 dependencies:
   pre:
-    - pip install pytest
+    - pip install pytest-cov
 
 machine:
   python:
