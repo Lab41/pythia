@@ -7,10 +7,10 @@
 PYTHIA_CONFIG="$1"
 if [ "$PYTHIA_CONFIG" = "" ]; then
     printf "Must pass in JSON object of configuration variables.\nSuggested usage:"
-    printf "make_envs.sh <(echo \"{PYTHONPATH=\\\\\"\$PYTHONPATH\\\\\"}\")\n"
+    printf "make_envs.sh <(echo \"{\\\\\"PYTHONPATH\\\\\":\\\\\"\$PYTHONPATH\\\\\"}\")\n"
     exit 1
 else
-
+    PYTHIA_CONFIG="$(cat $PYTHIA_CONFIG)"
 fi
 
 
@@ -71,7 +71,7 @@ make_env () {
     echo "Editing $kernel_path..."
     cat <(sed -n '1p' "$kernel_path") \
         <(echo "\"env\" : ") \
-        "$PYTHIA_CONFIG" \
+        <(echo "$PYTHIA_CONFIG") \
         <(echo ", ") \
         <(sed '1d' "$kernel_path" ) > /tmp/kernel.json
     mv /tmp/kernel.json "$kernel_path"
