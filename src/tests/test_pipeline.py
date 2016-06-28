@@ -1,4 +1,4 @@
-import py,test
+import py.test
 from src.pipelines import master_pipeline
 import subprocess
 import os
