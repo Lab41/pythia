@@ -1,4 +1,6 @@
-import py.test
+''' tests master pipeline module'''
+
+import pytest
 from src.pipelines import master_pipeline
 import subprocess
 import os
@@ -7,6 +9,7 @@ import os
 
 @pytest.fixture
 def set_directory():
+    
     os.chdir('src/pipelines')
 
 def test_no_directory():
