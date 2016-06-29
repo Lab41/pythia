@@ -29,4 +29,4 @@ def test_combo():
     
 def test_fake():
     print(os.getcwd())
-    assert
+    assert False
