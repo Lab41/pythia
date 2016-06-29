@@ -9,7 +9,6 @@ import os
 
 @pytest.fixture
 def set_directory():
-    
     os.chdir('src/pipelines')
 
 def test_no_directory():
