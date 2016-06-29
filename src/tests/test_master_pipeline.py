@@ -3,11 +3,13 @@ from src.pipelines import master_pipeline
 import subprocess
 import os
 
-'''
-TEST FROM PYTHIA
-'''
-def test_no_directory():
+'''TEST FROM PYTHIA'''
+
+@pytest.fixture
+def set_directory():
     os.chdir('src/pipelines')
+
+def test_no_directory():
     dir_ = os.getcwd()
     file_ = os.path.join(dir_, "master_pipeline.py")
     result = subprocess.run([file_])

@@ -6,6 +6,7 @@ test:
 
 dependencies:
   pre:
+    - pip install -v scipy
     - pip install pytest-cov
 
 machine:
