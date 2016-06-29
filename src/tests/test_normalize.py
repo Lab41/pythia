@@ -26,3 +26,7 @@ def test_stop_words():
     
 def test_combo():
     assert normalize.text_to_words("<p> <title=cats> <body> Cats pounce all the time! <http://catlink.com> is a video of cats JUMPING 10 times!! cool, right? </body></p>") == "cats pounce time video cats jumping times cool right"
+    
+def test_fake():
+    print(os.getcwd())
+    assert
