@@ -10,8 +10,8 @@ import os
 def setup_module(module):
     os.chdir('src/pipelines')
     
-def teardown_moduel(module):
-    os.chdir('../tests')
+def teardown_module(module):
+    os.chdir('../..')
 
 def test_no_directory():
     dir_ = os.getcwd()
