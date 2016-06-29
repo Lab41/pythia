@@ -10,7 +10,7 @@ import os
 def setup_module(module):
     os.chdir('src/pipelines')
 
-def test_no_directory(set_directory):
+def test_no_directory():
     dir_ = os.getcwd()
     file_ = os.path.join(dir_, "master_pipeline.py")
     result = subprocess.run([file_])
