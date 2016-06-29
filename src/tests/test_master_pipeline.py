@@ -8,7 +8,7 @@ import os
 '''TEST FROM PYTHIA'''
 
 @pytest.fixture
-def set_directory():
+def set_directory(scope="module"):
     os.chdir('src/pipelines')
 
 def test_no_directory():
