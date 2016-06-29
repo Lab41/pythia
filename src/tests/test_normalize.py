@@ -4,7 +4,7 @@ import subprocess
 import os
 
 '''
-TEST FROM SRC
+TEST FROM PYTHIA
 '''
 def test_empty_string():
     assert normalize.text_to_words("") == ""

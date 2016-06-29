@@ -1,6 +1,6 @@
 test:
   override:
-    - cd src && py.test --cov=./
+    - py.test --cov=./
   post:
     - bash <(curl -s https://codecov.io/bash)
 
