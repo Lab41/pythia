@@ -10,8 +10,7 @@ dependencies:
     - pip install -v scipy
     - pip install pytest-cov
   post:
-    - sudo python -m /home/ubuntu/virtualenvs/venv-3.5.1/lib/python3.5/site-packages/nltk.downloader -d /home/ubuntu/virtualenvs/venv-3.5.1/lib/python3.5/site-packages/nltk_data all
-
+    - python -m nltk.downloader punkt
 machine:
   python:
     version: 3.5.1
