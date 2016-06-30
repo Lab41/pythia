@@ -5,22 +5,13 @@
 # Requires Anaconda and Jupyter
 
 PYTHIA_CONFIG="$1"
-#if [ "$PYTHIA_ROOT" = "" ]; then
-#    printf "PYTHIA_ROOT must be defined.\nSuggested usage (will clone Pythia in pwd): PYTHIA_ROOT=pythia make_envs.sh\n"
-#    exit 1
-#else
-#  PYTHIA_ROOT=$(cd "$PYTHIA_ROOT" && pwd)
-#fi
-#
-# Create pythia in home directory if it doesn't exist
-#if [ ! -d "$PYTHIA_ROOT" ]; then
-#    echo "Cloning pythia into $PYTHIA_ROOT, adding to PYTHONPATH"
-#    sleep 3
-#    git clone https://github.com/Lab41/pythia
-#else
-#    echo "Using $PYTHIA_ROOT on PYTHONPATH"
-#    sleep 3
-#fi
+if [ "$PYTHIA_CONFIG" = "" ]; then
+    printf "Must pass in JSON object of configuration variables.\nSuggested usage:"
+    printf "make_envs.sh <(echo \"{\\\\\"PYTHONPATH\\\\\":\\\\\"\$PYTHONPATH\\\\\"}\")\n"
+    exit 1
+else
+    PYTHIA_CONFIG="$(cat $PYTHIA_CONFIG)"
+fi
 
 
 make_env () {
@@ -28,9 +19,15 @@ make_env () {
     display_name="$2"
     python_version="$3"
     
+    echo $env_name
+    echo $display_name
+    echo $python_version
+    echo $PYTHIA_CONFIG
+
+
     search_for_environment="$(conda info -e 2>/dev/null | grep -Po '^ *'$env_name'(?= )' | head -n1)"
     echo "Matched environment line: $search_for_environment"
-    source deactivate
+    source deactivate 2>/dev/null
     sleep 2
     if [ "$search_for_environment" = "$env_name" ]; then
         echo "Environment exists, installing original configuration..."
@@ -74,7 +71,7 @@ make_env () {
     echo "Editing $kernel_path..."
     cat <(sed -n '1p' "$kernel_path") \
         <(echo "\"env\" : ") \
-        "$PYTHIA_CONFIG" \
+        <(echo "$PYTHIA_CONFIG") \
         <(echo ", ") \
         <(sed '1d' "$kernel_path" ) > /tmp/kernel.json
     mv /tmp/kernel.json "$kernel_path"
