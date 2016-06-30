@@ -4,10 +4,7 @@ import argparse
 from collections import namedtuple
 from src.pipelines import parse_json, preprocess, observations, features_and_labels, log_reg, svm
 
-def main(argv):
-    
-    return
-    
+def main(argv):    
     ''' 
     controls the over-arching implmentation of the algorithms
     '''
