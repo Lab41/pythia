@@ -6,10 +6,11 @@ test:
 
 dependencies:
   pre:
-    - bash envs/make_envs.sh
+    # - bash envs/make_envs.sh
     - pip install -v scipy
-    - sudo python -m nltk.downloader -d /usr/local/share/nltk_data all
     - pip install pytest-cov
+  post:
+    - sudo python -m nltk.downloader -d /usr/local/share/nltk_data all
 
 machine:
   python:
