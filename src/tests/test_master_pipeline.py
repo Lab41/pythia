@@ -26,5 +26,5 @@ def test_no_algorithms():
 
 def test_successful_run():
     '''tests that pipeline has an exit code of zero (runs all the way through) when the right args are provided'''
-    result = subprocess.run(['src/pipelines/master_pipeline.py', "../data/stackexchange/stack_exchange_data/corpus/anime", "-c", "-s"])
+    result = subprocess.run(['src/pipelines/master_pipeline.py', "src/data/stackexchange/stack_exchange_data/corpus/anime", "-c", "-s"])
     assert result.returncode == 0
