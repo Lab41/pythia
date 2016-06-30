@@ -3,6 +3,8 @@
 <img src="assets/pythia_logo.png" width="400" alt="pythia logo" />
 
 [![CircleCI](https://circleci.com/gh/Lab41/pythia.svg?style=svg)](https://circleci.com/gh/Lab41/pythia)
+[![codecov](https://codecov.io/gh/Lab41/pythia/branch/master/graph/badge.svg)](https://codecov.io/gh/Lab41/pythia)
+
 
 ## Novelty detection in text corpora
 
