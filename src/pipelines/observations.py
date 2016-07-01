@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+from src.featurizers import skipthoughts as sk
 from src.utils import normalize
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
@@ -12,113 +13,124 @@ import os.path
 from os.path import basename
 
 def filter_text(doc):
-   
+
     '''
     Purpose - to clean and normalize text
     Input - a string of text
     Output - the cleaned up version of that string
     '''
-    
+
     clean_text = normalize.text_to_words(doc)
     return clean_text
 
 def bag_of_words(doc, corpus, vocab):
-   
+
     '''
     Purpose - creat bag of words vectors for doc and corpus
     Input - doc, corpus
     Output - an array of the bog vectors
     '''
-    
+
     # Initialize the "CountVectorizer" object, which is scikit-learn's
     # bag of words tool.
     #http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
     vectorizer = CountVectorizer(analyzer = "word",  \
                                  vocabulary = vocab)
 
-    # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors  
+    # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors
     bagwordsVectors = (vectorizer.transform([doc, corpus])).toarray()
     return bagwordsVectors
 
 
-def gen_observations(allClusters, lookupOrder, documentData, filename, features, vocab):
+def gen_observations(allClusters, lookupOrder, documentData, filename, features, vocab, encoder_decoder):
 
     '''
     Purpose - generate observations for each cluster found in JSON file and calculate the desired features
     Input - A set of cluster IDs, a dict of document arrival order, an array of the parsed JSON document data, the name of the corpus file, the desired features and the vocabulary
     Output - Array of namedtuples containing cluster_id, post_id, novelty, tfidf score, cosine similarity score (scores are None if feature is unwanted)
     '''
-    
+
     # Prepare to store results of similarity assessments
     postScores = []
-    postTuple = namedtuple('postScore','corpus,cluster_id,post_id,novelty,bagwordsScore,tfidfScore,bog')    
+    postTuple = namedtuple('postScore','corpus,cluster_id,post_id,novelty,bagwordsScore,tfidfScore,bog,skipthoughts')
 
-    ''' 
-    Iterate through clusters found in JSON file, do similarity assessments, 
+    '''
+    Iterate through clusters found in JSON file, do similarity assessments,
     build a rolling corpus from ordered documents for each cluster
     '''
     for cluster in allClusters:
-        
+
         # Determine arrival order in this cluster
         sortedEntries = [x[1] for x in sorted(lookupOrder[cluster], key=lambda x: x[0])]
-                          
+
         # Set corpus to first doc in this cluster and prepare to update corpus with new document vocabulary
-        corpus = filter_text(documentData[sortedEntries[0]]["body_text"]) 
-                  
+        corpus = filter_text(documentData[sortedEntries[0]]["body_text"])
+
         # Create a document array for TFIDF
         corpusArray = corpus.split()
-        
+
+        # Store a list of sentences in the cluster at each iteration
+        sentences = []
+
         # Use filename as corpus name if corpus name was not defined in JSON
         try: corpusName = documentData[sortedEntries[0]]["corpus"]
         except KeyError: corpusName = basename(filename)
 
         for index in sortedEntries[1:]:
-                
+
             # Find next document in order
             doc = filter_text(documentData[index]["body_text"])
             rawdoc = doc.split()
             docLength = len(rawdoc)
-    
+
             similarityScore = None
             tfidfScore = None
             bog = None
-            
+            skipthoughts = None
+
             if features.tf_idf:
                 # Calculate L1 normalized TFIDF summation as Novelty Score for new document against Corpus
-                # Credit to http://cgi.di.uoa.gr/~antoulas/pubs/ntoulas-novelty-wise.pdf 
+                # Credit to http://cgi.di.uoa.gr/~antoulas/pubs/ntoulas-novelty-wise.pdf
                 corpusArray.append(' '.join(rawdoc))
-                vectorizer = TfidfVectorizer(norm=None)            
+                vectorizer = TfidfVectorizer(norm=None)
                 tfidf = vectorizer.fit_transform(corpusArray)
                 vectorValues = tfidf.toarray()
                 tfidfScore = np.sum(vectorValues[-1])/docLength
-            
-            if features.cosine:  
+
+            if features.cosine:
                 bagwordsVectors = bag_of_words(doc, corpus, vocab)
                 similarityScore = 1 - spatial.distance.cosine(bagwordsVectors[0], bagwordsVectors[1])
-            
+
             if features.bog:
                 bagwordsVectors = bag_of_words(doc, corpus, vocab)
                 bog = np.concatenate(bagwordsVectors, axis=0)
+
+            if features.skipthoughts:
+                # Add newest sentence to sentences vector
+                # The encode function produces an array of skipthought vectors with as many rows as there were sentences and 4800 dimensions
+                # See the combine-skip section of the skipthoughts paper for a detailed explanation of the array
+                sentences.append(doc)
+                skipthoughts = sk.encode(encoder_decoder, sentences)
             # Save results in namedtuple and add to array
-            postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], similarityScore, tfidfScore, bog)
+            postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], similarityScore, tfidfScore, bog, skipthoughts)
             postScores.append(postScore)
 
             # Update corpus
             corpus+=doc
- 
+
     return postScores
 
 
 def main(argv):
-    allClusters, lookupOrder, documentData, file_name, features, vocab = argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]
-    
+    allClusters, lookupOrder, documentData, file_name, features, vocab, encoder_decoder = argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]
+
     # Assess similarity based on document/corpus vectors and bag of words cosine similarity
-    scores = gen_observations(allClusters, lookupOrder, documentData, file_name, features, vocab)
+    scores = gen_observations(allClusters, lookupOrder, documentData, file_name, features, vocab, encoder_decoder)
 #     print("\n\nSimilarity and Novelty Scoring of a Document vs Corpus")
-#     for score in scores: 
+#     for score in scores:
 #         print("\n\nPost ID:", score.post_id)
 #         print("Novelty Label:", score.novelty)
 #         print("Bag of Words Similarity Score (1 = Identical, 0 = Completely Different):", score.bagwordsScore)
 #         print("TFIDF Novelty Score (higher value indicates a larger difference):", score.tfidfScore)
-    
+
     return scores
