@@ -1,0 +1,5 @@
+{
+  "_comment"   : "Example configuration for environment variable passthrough in Pythia",
+  "PYTHONPATH" : "/path/to/pythia/repo:/spark/jars/also",
+  "PYTHIA_MONGO_DB_URI" : "my-mongo-here.domain.net:20007"
+}
