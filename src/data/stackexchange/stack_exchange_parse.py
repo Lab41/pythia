@@ -6,14 +6,13 @@ files for processing by other Pythia algorithms.
 
 import os
 from urllib import request, error
-import subprocess
 import json
 from lxml import etree
 from bs4 import BeautifulSoup
 from src.utils import py7z_extractall
-from collections import namedtuple
-from shutil import copy
+from collections import defaultdict
 import argparse
+import re
 
 def gen_url(section):
     """URL for a given stackexchange site"""
@@ -99,16 +98,30 @@ def get_links(folder):
     tree = etree.parse(folder +"/PostLinks.xml")
     return tree.getroot()
 
-def iter_clusters(links, posts):
+def iter_clusters(links, posts, posthistory):
     related_link = '1'
     duplicate_link = '3'
-    
+    closed_duplicates = defaultdict(list)
+
     for cluster_id, link in enumerate(links):
-        src_id = link.attrib['PostId']
-        dest_id = link.attrib['RelatedPostId']
+        dest_id = link.attrib['PostId']
+        src_id = link.attrib['RelatedPostId']
         link_type = link.attrib['LinkTypeId']
-        if link_type not in (related_link, duplicate_link):
+        if link_type not in (related_link, duplicate_link) or src_id in closed_duplicates.get(dest_id,list()):
             continue
+        closed_duplicate = False
+        # Determine if dest_id has been closed as a duplicate of src_id. If true, add to closed_duplicates dict
+        if link_type == related_link:
+            history = posthistory.xpath("//row[@PostId=" + dest_id + " and @PostHistoryTypeId=10" \
+                                        + " and (@Comment=1 or @Comment=101) " + "]")
+            if len(history)>0:
+                for entry in history:
+                    start = entry.attrib['Text'].find("OriginalQuestionIds") + 22
+                    end = entry.attrib['Text'].find("]",start)
+                    question_ids = entry.attrib['Text'][start:end].split(',')
+                    if src_id in question_ids:
+                        closed_duplicates[dest_id].append(src_id)
+                        closed_duplicate = True
 
         src_text = extract_post_text(src_id, posts)
         dest_text = extract_post_text(dest_id, posts)
@@ -124,7 +137,7 @@ def iter_clusters(links, posts):
         dest_doc = { 'post_id': dest_id,
             'order' : 1,
             'body_text' : dest_text,
-            'novelty' : True if link_type == related_link else False,
+            'novelty' : True if (link_type == related_link and not closed_duplicate) else False,
             'cluster_id' : cluster_id
         }
         yield src_doc, dest_doc
@@ -148,11 +161,18 @@ def gen_clusters(links, posts):
     clusters = list(iter_clusters(links, posts))
     return clusters
 
+def get_post_history(folder):
+    tree = etree.parse(folder +"/PostHistory.xml")
+    return tree.getroot()
+
 def get_posts(folder):
     tree = etree.parse(folder +"/Posts.xml")
     return tree.getroot()
 
-def clean_up(raw_text):
+def clean_up(raw_text, isbody):
+    # Remove duplicate warning text
+    if isbody and raw_text.find('Possible Duplicate'):
+        raw_text = re.sub(r"<\/?blockquote>.*<\/?blockquote>(.*)", r"\1", raw_text, flags=re.MULTILINE | re.DOTALL)
     return BeautifulSoup(raw_text, "lxml").get_text()
 
 def extract_post_text(id, posts):
@@ -165,7 +185,7 @@ def extract_post_text(id, posts):
     """
     try:
         post = posts.find("./*[@Id='{id}']".format(id=id))
-        return clean_up(post.attrib['Title']) + ' ' + clean_up(post.attrib['Body'])
+        return clean_up(post.attrib['Title'],False) + ' ' + clean_up(post.attrib['Body'],True)
     except AttributeError:
         return None
     except KeyError:
@@ -198,12 +218,11 @@ def main(args):
         zip_file_path, unzipped_folder, corpus_section_directory = section_setup(
             section, zip_directory, corpus_directory)
 
-        done_signal_path = os.path.join(corpus_section_directory, ".done")):
+        done_signal_path = os.path.join(corpus_section_directory, ".done")
         if os.path.isfile(done_signal_path):
             continue
 
         print("Starting " + section)
-
 
         #downloads and unzips data release for a site
         load(url, zip_file_path, unzipped_folder)
@@ -214,10 +233,13 @@ def main(args):
         #gets post data from the posts table
         posts = get_posts(unzipped_folder)
 
+        #gets post history
+        posthistory = get_post_history(unzipped_folder)
+
         #creates the clusters of related and duplicate posts for a site,
         #based on links data
         # clusters, related, duplicates, unique_posts = gen_clusters(links)
-        clusters = iter_clusters(links, posts)
+        clusters = iter_clusters(links, posts, posthistory)
 
         #writes cluster information to json files
         write_json_files(clusters, corpus_section_directory)

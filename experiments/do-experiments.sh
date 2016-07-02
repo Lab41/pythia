@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if test "$#" -lt 1
+if test "$#" -ne 2
 then
     echo "Usage: do-experiments.sh CONFIG_DIR MONGODB_PATH"
     echo "    CONFIG_DIR - directory of JSON experiment configurations"
@@ -8,7 +8,7 @@ then
     exit 1
 fi
 
-find $1 -iname *.json | while read config_file
+find $1 -iname '*.json' | while read config_file
 do
     echo "Experiment config: $config_file"
     experiments/experiments.py -m "$2" with "$config_file"
