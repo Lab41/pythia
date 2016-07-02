@@ -80,7 +80,7 @@ make_env () {
     "$CONDA_PYTHON" -m nltk.downloader punkt
 
     # Install XGBoost classifier
-    "$CONDA_PYTHON" -m pip install -q xgboost==0.4a30
+    "$CONDA_PYTHON" -m pip install -q xgboost==0.4a29
 
     # Install plotly
     "$CONDA_PYTHON" -m pip install -q plotly
