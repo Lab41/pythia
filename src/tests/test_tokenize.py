@@ -12,4 +12,4 @@ def test_word_punct():
     """Test regex-based word and punctuation tokenization"""
 
     assert tokenize.word_punct_tokens("Who are you??? Stop, now!") == \
-        ["Who", "are", "you", "???", "Stop", ",", "now", "!")]
+        ["Who", "are", "you", "???", "Stop", ",", "now", "!"]
