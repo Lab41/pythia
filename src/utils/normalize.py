@@ -2,8 +2,10 @@ from bs4 import BeautifulSoup
 from sklearn.feature_extraction.stop_words import ENGLISH_STOP_WORDS
 import re
 
+link_re = re.compile(r'\/{2}[\d\w-]+(\.[\d\w-]+)*(?:(?:\/[^\s/]*))*')
+letter_re = re.compile(r"[^a-zA-Z]")
 
-def text_to_words(raw_text):
+def normalize_and_remove_stop_words(raw_text):
     '''
     Algorithm to convert raw text to a return a clean text string
     Method modified from code available at:
@@ -11,25 +13,48 @@ def text_to_words(raw_text):
     Args:
         raw_text: Original text to clean and normalize
     Returns:
-        clean_text: Cleaned text
+        clean_text: Cleaned text, converted to lower case, with punctuation removed
+        and one space between each word.
     '''
     # 1. Remove web links
-    links_removed = re.sub(r'\/{2}[\d\w-]+(\.[\d\w-]+)*(?:(?:\/[^\s/]*))*', '', raw_text)
+    links_removed = remove_links(raw_text)
     #
-    # 2. Remove HTML   
+    # 2. Remove HTML
     #TODO Potentially look into using package other than BeautifulSoup for this step
     review_text = BeautifulSoup(links_removed, "lxml").get_text()
     #
-    # 3. Remove non-letters 
-    letters_only = re.sub("[^a-zA-Z]", " ", review_text)
+    # 3. Remove non-letters
+    letters_only = letter_re.sub(" ", review_text)
     #
     # 4. Convert to lower case, split into individual words
     words = letters_only.lower().split()
     #
     # 5. Remove stop words
-    meaningful_words = [w for w in words if not w in ENGLISH_STOP_WORDS]
+    meaningful_words = remove_stop_words(words)
     #
     # 6. Join the words back into one string separated by space,
     # and return the result.
     clean_text = ( " ".join( meaningful_words ))
-    return   clean_text
+    return clean_text
+
+def xml_normalize(raw_text):
+    """Alternative normalization: HTML/XML and URLs stripped out, lower-cased,
+    but stop words and punctuation remain."""
+    # 1. Remove web links
+    links_removed = remove_links(raw_text)
+
+    # 2. Remove HTML
+    review_text = BeautifulSoup(links_removed, "lxml").get_text()
+
+    # 3. Convert to lower-case
+    lower_case = review_text.lower()
+
+    return lower_case
+
+def remove_links(text):
+    links_removed = link_re.sub('', text)
+    return links_removed
+
+def remove_stop_words(words, stop_words=ENGLISH_STOP_WORDS):
+    """Remove stop words from input"""
+    return [w for w in words if not w in stop_words]
