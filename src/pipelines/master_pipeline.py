@@ -66,7 +66,7 @@ if __name__ == '__main__':
     algTuple = namedtuple('algorithms','log_reg, svm')
     algorithms = algTuple(args.log_reg, args.svm)
 
-    if not (args.cosine or args.tfidf_sum or args.bag_of_words or args.skipthoughts):
+    if not (args.cos_similarity or args.tfidf_sum or args.bag_of_words or args.skipthoughts):
         parser.exit(status=1, message="Error: pipeline requires at least one feature\n")
 
     if not (args.log_reg or args.svm):
