@@ -1,12 +1,12 @@
 from src.featurizers import skipthoughts
 from src.utils.normalize import normalize_and_remove_stop_words
 
-def gen_vocab(features, corpusDict):
+def gen_vocab(features, corpus_dict):
     # This conditional needs to be made compatible with the cosine and bog options
     result = [None, None]
     if features.skipthoughts:
         result[1] = skipthoughts.load_model()
-    if features.cosine or features.bog:
+    if features.cos_similarity or features.bag_of_words:
         # needs preferred vocabulary size passed in (ex: vocabsize=500)
         # needs 'src.utils.normalize.normalize_and_remove_stop_words'
         # vocabdict contains the most frequently occurring words in the corpus from #1 to n, with n going as far as vocabsize if possible
@@ -15,7 +15,7 @@ def gen_vocab(features, corpusDict):
         vocabsize = 500
         index = 0
         vocabdict = dict()
-        for word in corpusDict:
+        for word in corpus_dict:
             if len(vocabdict) < vocabsize:
                 cleantext = normalize_and_remove_stop_words(word)
                 if cleantext != '':
@@ -28,7 +28,6 @@ def gen_vocab(features, corpusDict):
     return result
 
 def main(argv):
-    features, corpusDict = argv[0], argv[1]
-    result = gen_vocab(features, corpusDict)
-    vocab, encoder_decoder = result[0], result[1]
+    features, corpus_dict = argv
+    vocab, encoder_decoder = gen_vocab(features, corpus_dict)
     return vocab, encoder_decoder

@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+'''
+Generates observations including specified features and novelty tags.
+'''
 
 import sys
 from src.featurizers import skipthoughts as sk
@@ -7,7 +10,6 @@ from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import numpy as np
 from scipy import spatial
-#import json
 from collections import namedtuple, defaultdict
 import os.path
 from os.path import basename
@@ -26,13 +28,18 @@ def filter_text(doc):
 def bag_of_words(doc, corpus, vocab):
 
     '''
-    Purpose - creat bag of words vectors for doc and corpus
-    Input - doc, corpus
-    Output - an array of the bog vectors
+    Creates bag of words vectors for doc and corpus for a given vocabulary.
+    
+    Args:
+        doc (str): the text (normalized and without stop words) of the document
+        corpus (str): the text (normalized and without stop words) of the corpus for that cluster
+        vocab (dict): the vocabulary of the data set
+        
+    Returns:
+        array: an array of the bag of words vectors
     '''
 
-    # Initialize the "CountVectorizer" object, which is scikit-learn's
-    # bag of words tool.
+    # Initialize the "CountVectorizer" object, which is scikit-learn's bag of words tool.
     #http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
     vectorizer = CountVectorizer(analyzer = "word",  \
                                  vocabulary = vocab)
@@ -42,12 +49,17 @@ def bag_of_words(doc, corpus, vocab):
     return bagwordsVectors
 
 
-def gen_observations(allClusters, lookupOrder, documentData, filename, features, vocab, encoder_decoder):
+def gen_observations(all_clusters, lookup_order, documentData, filename, features, vocab, encoder_decoder):
 
     '''
-    Purpose - generate observations for each cluster found in JSON file and calculate the desired features
+    Generates observations for each cluster found in JSON file and calculates the specified features.
+    
+    Args:
+        all_clusters (set): a set of cluster IDs
+        lookup_order (dict): a dict of document arrival order
+        
     Input - A set of cluster IDs, a dict of document arrival order, an array of the parsed JSON document data, the name of the corpus file, the desired features and the vocabulary
-    Output - Array of namedtuples containing cluster_id, post_id, novelty, tfidf score, cosine similarity score (scores are None if feature is unwanted)
+    Output - Array of namedtuples containing cluster_id, post_id, novelty, tfidf sum, cosine similarity, bag of words vectors and skip thoughts  (scores are None if feature is unwanted)
     '''
 
     # Prepare to store results of similarity assessments
@@ -57,10 +69,10 @@ def gen_observations(allClusters, lookupOrder, documentData, filename, features,
     Iterate through clusters found in JSON file, do similarity assessments,
     build a rolling corpus from ordered documents for each cluster
     '''
-    for cluster in allClusters:
+    for cluster in all_clusters:
 
         # Determine arrival order in this cluster
-        sortedEntries = [x[1] for x in sorted(lookupOrder[cluster], key=lambda x: x[0])]
+        sortedEntries = [x[1] for x in sorted(lookup_order[cluster], key=lambda x: x[0])]
 
         # Set corpus to first doc in this cluster and prepare to update corpus with new document vocabulary
         corpus = filter_text(documentData[sortedEntries[0]]["body_text"])
@@ -70,6 +82,7 @@ def gen_observations(allClusters, lookupOrder, documentData, filename, features,
 
         # Store a list of sentences in the cluster at each iteration
         sentences = []
+        sentences.append(filter_text(documentData[sortedEntries[0]]["body_text"]))
 
         # Use filename as corpus name if corpus name was not defined in JSON
         try: corpusName = documentData[sortedEntries[0]]["corpus"]
@@ -108,8 +121,15 @@ def gen_observations(allClusters, lookupOrder, documentData, filename, features,
                 # Add newest sentence to sentences vector
                 # The encode function produces an array of skipthought vectors with as many rows as there were sentences and 4800 dimensions
                 # See the combine-skip section of the skipthoughts paper for a detailed explanation of the array
+                corpus_vectors = sk.encode(encoder_decoder, sentences)
+                #print('coprus vectors: ', corpus_vectors)
+                corpus_vector = np.mean(corpus_vectors, axis = 0)
+                #print('coprus vector: ', corpus_vector)
+                doc_vector = sk.encode(encoder_decoder, [doc])
+                skipthoughts = np.concatenate((doc_vector[0], corpus_vector), axis=0)
+                #print('observation: ', skipthoughts)
                 sentences.append(doc)
-                skipthoughts = sk.encode(encoder_decoder, sentences)
+
             # Save results in namedtuple and add to array
             postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], similarityScore, tfidfScore, bog, skipthoughts)
             postScores.append(postScore)
@@ -121,16 +141,7 @@ def gen_observations(allClusters, lookupOrder, documentData, filename, features,
 
 
 def main(argv):
-    allClusters, lookupOrder, documentData, file_name, features, vocab, encoder_decoder = argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]
-    allClusters, lookupOrder, documentData, file_name, features, vocab = argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]
+    all_clusters, lookupOrder, documentData, file_name, features, vocab, encoder_decoder = argv
+    observations = gen_observations(all_clusters, lookupOrder, documentData, file_name, features, vocab, encoder_decoder)
 
-    # Assess similarity based on document/corpus vectors and bag of words cosine similarity
-    scores = gen_observations(allClusters, lookupOrder, documentData, file_name, features, vocab, encoder_decoder)
-#     print("\n\nSimilarity and Novelty Scoring of a Document vs Corpus")
-#     for score in scores:
-#         print("\n\nPost ID:", score.post_id)
-#         print("Novelty Label:", score.novelty)
-#         print("Bag of Words Similarity Score (1 = Identical, 0 = Completely Different):", score.bagwordsScore)
-#         print("TFIDF Novelty Score (higher value indicates a larger difference):", score.tfidfScore)
-
-    return scores
+    return observations

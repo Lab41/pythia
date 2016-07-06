@@ -25,14 +25,15 @@ profile = False
 #-----------------------------------------------------------------------------#
 # Specify model and table locations here
 #-----------------------------------------------------------------------------#
-path_to_models = '/Users/michaelds/model_files_word_embeddings/'
-path_to_tables = '/Users/michaelds/model_files_word_embeddings/'
+path_to_models = os.path.join(os.getcwd(), 'models')
+path_to_tables = os.path.join(os.getcwd(), 'models')
 #-----------------------------------------------------------------------------#
 
-path_to_umodel = path_to_models + 'uni_skip.npz'
-path_to_bmodel = path_to_models + 'bi_skip.npz'
+path_to_umodel = os.path.join(path_to_models, 'uni_skip.npz')
+path_to_bmodel = os.path.join(path_to_models, 'bi_skip.npz')
 
 def load_model():
+
     """
     Load the model with saved tables
     """
@@ -82,9 +83,9 @@ def load_tables():
     Load the tables
     """
     words = []
-    utable = numpy.load(path_to_tables + 'utable.npy', encoding = 'bytes')
-    btable = numpy.load(path_to_tables + 'btable.npy', encoding = 'bytes')
-    f = open(path_to_tables + 'dictionary.txt', 'rb')
+    utable = numpy.load(os.path.join(path_to_tables, 'utable.npy'), encoding = 'bytes')
+    btable = numpy.load(os.path.join(path_to_tables, 'btable.npy'), encoding = 'bytes')
+    f = open(os.path.join(path_to_tables, 'dictionary.txt'), 'rb')
     for line in f:
         words.append(line.decode('utf-8').strip())
     f.close()
