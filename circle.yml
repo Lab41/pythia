@@ -12,5 +12,7 @@ dependencies:
   post:
     - python -m nltk.downloader punkt
 machine:
+  environment:
+    PYTHONPATH: "/home/ubuntu/pythia"
   python:
     version: 3.5.1

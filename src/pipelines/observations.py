@@ -20,7 +20,7 @@ def filter_text(doc):
     Output - the cleaned up version of that string
     '''
 
-    clean_text = normalize.text_to_words(doc)
+    clean_text = normalize.normalize_and_remove_stop_words(doc)
     return clean_text
 
 def bag_of_words(doc, corpus, vocab):
@@ -53,7 +53,6 @@ def gen_observations(allClusters, lookupOrder, documentData, filename, features,
     # Prepare to store results of similarity assessments
     postScores = []
     postTuple = namedtuple('postScore','corpus,cluster_id,post_id,novelty,bagwordsScore,tfidfScore,bog,skipthoughts')
-
     '''
     Iterate through clusters found in JSON file, do similarity assessments,
     build a rolling corpus from ordered documents for each cluster
@@ -123,6 +122,7 @@ def gen_observations(allClusters, lookupOrder, documentData, filename, features,
 
 def main(argv):
     allClusters, lookupOrder, documentData, file_name, features, vocab, encoder_decoder = argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]
+    allClusters, lookupOrder, documentData, file_name, features, vocab = argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]
 
     # Assess similarity based on document/corpus vectors and bag of words cosine similarity
     scores = gen_observations(allClusters, lookupOrder, documentData, file_name, features, vocab, encoder_decoder)
