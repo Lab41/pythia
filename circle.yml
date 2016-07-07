@@ -6,6 +6,7 @@ test:
 
 dependencies:
   pre:
+    - echo $LD_LIBRARY_PATH
     # - bash envs/make_envs.sh
     - pip install -v scipy
     - pip install pytest-cov
