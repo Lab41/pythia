@@ -9,6 +9,7 @@ dependencies:
     # - bash envs/make_envs.sh
     - pip install -v scipy
     - pip install pytest-cov
+    - apt-get install libpython libpython-dev
   post:
     - python -m nltk.downloader punkt
 machine:
