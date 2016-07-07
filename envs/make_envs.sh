@@ -1,14 +1,18 @@
 #!/bin/bash
 # Create conda environments and Jupyter kernels for Pythia
-# Adds Pythia repo root to PYTHONPATH so its source tree can be imported 
+# Adds Pythia repo root to PYTHONPATH so its source tree can be imported
 # in Python
 # Requires Anaconda and Jupyter
 
+set -e
+
 PYTHIA_CONFIG="$1"
 if [ "$PYTHIA_CONFIG" = "" ]; then
-    printf "Must pass in JSON object of configuration variables.\nSuggested usage:"
-    printf "make_envs.sh <(echo \"{\\\\\"PYTHONPATH\\\\\":\\\\\"\$PYTHONPATH\\\\\"}\")\n"
-    exit 1
+    printf "Did not pass in JSON file of configuration variables.\n"
+    printf "Continuing with PYTHONPATH pass-through...\n"
+    printf "Alternative usage: \n"
+    printf "\tmake_envs.sh config.json\n\n"
+    PYTHIA_CONFIG='{ "PYTHONPATH" : "'"$PYTHONPATH"'" }'
 else
     PYTHIA_CONFIG="$(cat $PYTHIA_CONFIG)"
 fi
