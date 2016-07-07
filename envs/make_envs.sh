@@ -52,13 +52,13 @@ set -e
 
     # install tensorflow (CPU) and tflearn (py3.4 only)
     if [ "$python_version" = "3.4" ]; then
-        pip install --upgrade \
+        pip install \
         https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.8.0-cp34-cp34m-linux_x86_64.whl && \
-        pip install --upgrade tflearn
+        #pip install tflearn
     fi
 
     # install theano and keras
-    pip install --upgrade nose-parameterized Theano keras
+    pip install nose-parameterized Theano keras
 
     # install bleeding-edge pylzma (for Stack Exchange)
     pip install git+https://github.com/fancycode/pylzma
