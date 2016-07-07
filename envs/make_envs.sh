@@ -53,7 +53,7 @@ set -e
     # install tensorflow (CPU) and tflearn (py3.4 only)
     if [ "$python_version" = "3.4" ]; then
         pip install \
-        https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.8.0-cp34-cp34m-linux_x86_64.whl && \
+        https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.8.0-cp34-cp34m-linux_x86_64.whl
         #pip install tflearn
     fi
 
