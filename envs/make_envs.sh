@@ -22,16 +22,19 @@ make_env () {
     env_name="$1"
     display_name="$2"
     python_version="$3"
-    
+
     echo $env_name
     echo $display_name
     echo $python_version
     echo $PYTHIA_CONFIG
 
 
+set +e
+    # Does not work with BSD grep (OS X)
     search_for_environment="$(conda info -e 2>/dev/null | grep -Po '^ *'$env_name'(?= )' | head -n1)"
     echo "Matched environment line: $search_for_environment"
-    source deactivate 2>/dev/null
+    source deactivate 2>/dev/null || true
+set -e
     sleep 2
     if [ "$search_for_environment" = "$env_name" ]; then
         echo "Environment exists, installing original configuration..."
@@ -46,7 +49,7 @@ make_env () {
         # Activate environment
         source activate "$env_name"
     fi
-    
+
     # install tensorflow (CPU) and tflearn (py3.4 only)
     if [ "$python_version" = "3.4" ]; then
         pip install --upgrade \
@@ -68,7 +71,7 @@ make_env () {
 
     # Install the kernel and retrieve its destination directory
     path_info=$(python -m ipykernel install --user --name $env_name --display-name "$display_name")
-    
+
     # Now add environment information on the second line of the new env's kernel.json
     kernel_dir=$(python -c "import re; print(re.sub(r'^.*?(/[^ ]+"$env_name").*$', r'\\1', '$path_info'))")
     kernel_path="$kernel_dir/kernel.json"
@@ -79,7 +82,7 @@ make_env () {
         <(echo ", ") \
         <(sed '1d' "$kernel_path" ) > /tmp/kernel.json
     mv /tmp/kernel.json "$kernel_path"
-    
+
     cat "$kernel_path" && echo ""
 
 }
