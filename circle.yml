@@ -6,7 +6,7 @@ test:
 
 dependencies:
   pre:
-    - echo $LD_LIBRARY_PATH
+    - sup apt-get install clang
     # - bash envs/make_envs.sh
     - pip install -v scipy
     - pip install pytest-cov
