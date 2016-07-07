@@ -57,6 +57,9 @@ set -e
         #pip install tflearn
     fi
 
+    # Download some NLTK data (punkt tokenizer)
+    python -m nltk.downloader punkt
+
     # install theano and keras
     pip install nose-parameterized Theano keras
 
