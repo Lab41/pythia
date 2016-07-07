@@ -4,4 +4,5 @@ bs4
 scipy
 sklearn
 lxml
+libpython
 theano
