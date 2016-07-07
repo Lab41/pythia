@@ -54,8 +54,20 @@ def tfidf_sum(doc, corpus):
     return tfidf_score
     
 def skipthoughts_vectors(doc, sentences, encoder_decoder):
-    # The encode function produces an array of skipthought vectors with as many rows as there were sentences and 4800 dimensions
-    # See the combine-skip section of the skipthoughts paper for a detailed explanation of the array
+    '''
+    Creates skipthoughts vector for doc and corpus for a given encoder_decoder
+    
+    The encode function produces an array of skipthought vectors with as many rows as there were sentences and 4800 dimensions.
+    See the combine-skip section of the skipthoughts paper for a detailed explanation of the array.
+    
+    Args:
+        doc (str): the text of the document (before any normalization)
+        corpus (list): the first and last sentences of each document in the corpus
+        encoder_decoder (???): the skipthoughts encoder/decoder
+        
+    Returns:
+        array: the concatenation of the corpus skipthoughts vector (the average of each indivdual skipthoughts vector) and the document skipthoughts vector (the average of the first and last sentence's skipthoughts vector)
+    '''
     corpus_vectors = sk.encode(encoder_decoder, sentences)
     corpus_vector = np.mean(corpus_vectors, axis = 0)
     doc_vector = np.mean(sk.encode(encoder_decoder, get_first_and_last_sentence(doc)), axis=0)
@@ -97,10 +109,10 @@ def gen_observations(all_clusters, lookup_order, documentData, filename, feature
         filename (str): the name of the corpus file
         features (namedTuple): the specified features to be calculated
         vocab (dict): the vocabulary of the data set
-        encoder_decoder (???): the encoder/decoder for skipthought vectors
+        encoder_decoder (???): the encoder/decoder for skipthoughts vectors
     
     Returns:
-        array: contains for each obeservation a namedtupled with the cluster_id, post_id, novelty, tfidf sum, cosine similarity, bag of words vectors and skip thoughts  (scores are None if feature is unwanted)
+        list: contains for each obeservation a namedtupled with the cluster_id, post_id, novelty, tfidf sum, cosine similarity, bag of words vectors and skip thoughts  (scores are None if feature is unwanted)
     '''
 
     # Prepare to store results of feature assessments
@@ -170,7 +182,16 @@ def gen_observations(all_clusters, lookup_order, documentData, filename, feature
 
 
 def main(argv):
-    all_clusters, lookupOrder, documentData, file_name, features, vocab, encoder_decoder = argv
-    observations = gen_observations(all_clusters, lookupOrder, documentData, file_name, features, vocab, encoder_decoder)
+    '''
+    Controls the generation of observations with the specified features.
+    
+    Args:
+        argv (list): contains a set of all the cluster IDs, a dictionary of the document arrival order, an array of parsed JSON documents, the filename of the corpus, the feature tuple with the specified features, the vocabluary of the dataset and the skipthoughts vectors encoder/decoder
+    
+    Returns:
+        list: contains for each obeservation
+    '''
+    all_clusters, lookup_order, documentData, file_name, features, vocab, encoder_decoder = argv
+    observations = gen_observations(all_clusters, lookup_order, document_data, file_name, features, vocab, encoder_decoder)
 
     return observations
