@@ -29,7 +29,14 @@ def set_up_xp():
     return ex
 
 def main():
-    subprocess.run(["src/pipelines/master_pipeline.py", "--bag-of-words", "--log-reg", "data/stackexchange/anime"])
+    xp = set_up_xp()
+    args=parse_args(["--bag-of-words", "--log-reg", "data/stackexchange/anime"])
+    pythia_main(args)
+    #xp_results = subprocess.run(["src/pipelines/master_pipeline.py",
+    #    "--bag-of-words", "--log-reg", "data/stackexchange/anime"],
+    #    stdout=subprocess.PIPE, universal_newlines=True)
+    #pprint.pprint(xp_results.stdout, stream=sys.stderr)
+    #print(json.loads(xp_results.stdout), file=sys.stderr)
 
 if __name__=="__main__":
     main()

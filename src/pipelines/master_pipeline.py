@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys
+import json
 import argparse
 from collections import namedtuple
 from src.pipelines import parse_json, preprocess, observations, features_and_labels, log_reg, svm
@@ -37,12 +38,10 @@ def main(argv):
     if algorithms.svm:
         predicted_labels, perform_results = svm.main([train_data, train_target, test_data, test_target])
     #results
-    print("Algorithm details and Results:")
-    print(perform_results)
-    
-    
-    
-if __name__ == '__main__':
+    print("Algorithm details and Results:",file=sys.stderr)
+    print(json.dumps(perform_results),file=sys.stdout)
+
+def parse_args(known_args=None):
     parser = argparse.ArgumentParser(description = "predict novelty in a corpus")
     parser.add_argument("directory", help="directory holding corpus")
     parser.add_argument("--cosine", "-c", help="add cosine similarity as a feature", action="store_true")
@@ -51,8 +50,12 @@ if __name__ == '__main__':
     parser.add_argument("--log_reg", "-l", help="run logistic regression", action="store_true")
     parser.add_argument("--svm", "-s", help="run support vector machine", action="store_true")
 
-    args = parser.parse_args()
-    
+    if known_args is not None:
+        args, extra_args = parser.parse_known_args(known_args)
+        print(args, file=sys.stderr)
+    else:
+        args = parser.parse_args()
+
     featureTuple = namedtuple('features','cosine, tf_idf, bog')
     features = featureTuple(args.cosine, args.tf_idf, args.bag_of_words)
     
@@ -66,13 +69,10 @@ if __name__ == '__main__':
     if not (args.log_reg or args.svm):
         parser.exit(status=3, message="Error: pipeline requires at least one algorithm\n")
 
-        
-    args = [args.directory, features, algorithms]
-    print(args)
+
+    return [args.directory, features, algorithms]
+
+if __name__ == '__main__':
+    args = parse_args()
     main(args)
     parser.exit(status=0, message=None)
-
-    
-    
-    
-    
