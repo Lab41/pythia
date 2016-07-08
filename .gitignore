@@ -86,3 +86,6 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# Remote sync config
+.remote-sync.json
