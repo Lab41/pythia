@@ -86,3 +86,7 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+*.xml
+*.iml
+/stack_exchange_data
