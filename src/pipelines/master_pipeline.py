@@ -38,10 +38,9 @@ def main(argv):
     if algorithms.svm:
         predicted_labels, perform_results = svm.main([train_data, train_target, test_data, test_target])
     #results
-    print("Algorithm details and Results:",file=sys.stderr)
-    print(json.dumps(perform_results),file=sys.stdout)
+    return perform_results
 
-def parse_args(known_args=None):
+def parse_args(given_args=None):
     parser = argparse.ArgumentParser(description = "predict novelty in a corpus")
     parser.add_argument("directory", help="directory holding corpus")
     parser.add_argument("--cosine", "-c", help="add cosine similarity as a feature", action="store_true")
@@ -50,9 +49,8 @@ def parse_args(known_args=None):
     parser.add_argument("--log_reg", "-l", "--log-reg", help="run logistic regression", action="store_true")
     parser.add_argument("--svm", "-s", help="run support vector machine", action="store_true")
 
-    if known_args is not None:
-        args, extra_args = parser.parse_known_args(known_args)
-        print(args, file=sys.stderr)
+    if given_args is not None:
+        args, extra_args = parser.parse_known_args(given_args)
     else:
         args = parser.parse_args()
 
