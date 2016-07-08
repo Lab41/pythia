@@ -51,29 +51,40 @@ set -e
         # Activate environment
         source activate "$env_name"
     fi
-    
+
     # install tensorflow (CPU) and tflearn (py3.4 only)
     if [ "$python_version" = "3.4" ]; then
-        pip install --upgrade \
-        https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.8.0-cp34-cp34m-linux_x86_64.whl && \
-        pip install --upgrade tflearn
+        pip install \
+        https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.8.0-cp34-cp34m-linux_x86_64.whl
+        #pip install tflearn
     fi
 
+    # Download some NLTK data (punkt tokenizer)
+    python -m nltk.downloader punkt
+
     # install theano and keras
-    pip install --upgrade nose-parameterized Theano keras
+    pip install nose-parameterized Theano keras
 
     # install bleeding-edge pylzma (for Stack Exchange)
     pip install git+https://github.com/fancycode/pylzma
 
-    # Install Sacred
-    pip install sacred
+    # Install Sacred (with patch for parse error)
+    # pip install sacred
+    pip install docopt pymongo
+    save_dir=`pwd`
+    git clone https://github.com/IDSIA/sacred /tmp/sacred
+    cd /tmp/sacred
+    git checkout 0.6.8
+    git apply "$script_dir/requirement_parse_patch.txt"
+    python setup.py install
+    cd "$save_dir"
 
     # install Jupyter kernel, preserving PYTHONPATH and adding Pythia
     pip install ipykernel
 
     # Install the kernel and retrieve its destination directory
     path_info=$(python -m ipykernel install --user --name $env_name --display-name "$display_name")
-    
+
     # Now add environment information on the second line of the new env's kernel.json
     kernel_dir=$(python -c "import re; print(re.sub(r'^.*?(/[^ ]+"$env_name").*$', r'\\1', '$path_info'))")
     kernel_path="$kernel_dir/kernel.json"
