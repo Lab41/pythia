@@ -1,3 +1,4 @@
+import sys
 from src.utils.normalize import normalize_and_remove_stop_words
 
 def gen_vocab(features, corpusDict):
@@ -6,7 +7,7 @@ def gen_vocab(features, corpusDict):
         # needs 'src.utils.normalize.normalize_and_remove_stop_words'
         # vocabdict contains the most frequently occurring words in the corpus from #1 to n, with n going as far as vocabsize if possible
         # we should be able to use vocabulary=vocabdict when setting up the CountVectorizer for clusters and new docs
-        print("making vocabulary...")
+        print("making vocabulary...",file=sys.stderr)
         vocabsize = 500
         index = 0
         vocabdict = dict()
