@@ -46,8 +46,8 @@ def parse_args(known_args=None):
     parser.add_argument("directory", help="directory holding corpus")
     parser.add_argument("--cosine", "-c", help="add cosine similarity as a feature", action="store_true")
     parser.add_argument("--tf_idf", "-t", help="add tf_idf as a feature", action="store_true")
-    parser.add_argument("--bag_of_words", "-b", help="add bag of words vectors as a feature", action="store_true")
-    parser.add_argument("--log_reg", "-l", help="run logistic regression", action="store_true")
+    parser.add_argument("--bag_of_words", "-b", "--bag-of-words", help="add bag of words vectors as a feature", action="store_true")
+    parser.add_argument("--log_reg", "-l", "--log-reg", help="run logistic regression", action="store_true")
     parser.add_argument("--svm", "-s", help="run support vector machine", action="store_true")
 
     if known_args is not None:
