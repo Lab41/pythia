@@ -4,6 +4,8 @@
 # in Python
 # Requires Anaconda and Jupyter
 
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 set -e
 
 PYTHIA_CONFIG="$1"
@@ -66,8 +68,16 @@ set -e
     # install bleeding-edge pylzma (for Stack Exchange)
     pip install git+https://github.com/fancycode/pylzma
 
-    # Install Sacred
-    pip install sacred
+    # Install Sacred (with patch for parse error)
+    # pip install sacred
+    pip install docopt pymongo
+    save_dir=`pwd`
+    git clone https://github.com/IDSIA/sacred /tmp/sacred
+    cd /tmp/sacred
+    git checkout 0.6.8
+    git apply "$script_dir/requirement_parse_patch.txt"
+    python setup.py install
+    cd "$save_dir"
 
     # install Jupyter kernel, preserving PYTHONPATH and adding Pythia
     pip install ipykernel

@@ -31,12 +31,12 @@ def get_data(scores, features):
     return data, labels
 
 def main(argv):
-    
+
     data, labels = get_data(argv[0], argv[1])
-    
+
     return data, labels
-    
+
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print ("Usage: featues_and_labelspy scores features\n\ngenerates features and labels for scores given the defined features")
+        print ("Usage: features_and_labels.py scores features\n\ngenerates features and labels for scores given the defined features")
     else: main(sys.argv[1:])

@@ -22,14 +22,14 @@ def run_model(train_data, train_labels, test_data, test_labels):
 
     #use Logistic Regression to train a model
     logreg = linear_model.LogisticRegression(C=1e5)
-    
+
     # we create an instance of Neighbours Classifier and fit the data.
     logreg.fit(train_data, train_labels)
-    
+
     #Now that we have something trained we can check if it is accurate with the test set
     pred_labels = logreg.predict(test_data)
     perform_results = performance_metrics.get_perform_metrics(test_labels, pred_labels)
-    
+
     #Perform_results is a dictionary, so we should add other pertinent information to the run
     perform_results['vector'] = 'Bag_of_Words'
     perform_results['alg'] = 'Logistic_Regression'
@@ -37,17 +37,16 @@ def run_model(train_data, train_labels, test_data, test_labels):
     return pred_labels, perform_results
 
 def main(argv):
-    
+
     train_data, train_target, test_data, test_target = argv[0], argv[1], argv[2], argv[3]
-    
-    print("running logistic regression...")
+
+    print("running logistic regression...",file=sys.stderr)
 
     predicted_labels, perform_results = run_model(train_data, train_target, test_data, test_target)
 
     return predicted_labels, perform_results
-    
+
 if __name__ == '__main__':
     if len(sys.argv) < 5:
         print("Usage: log_reg.py train_data, train_labels, test_data, test_labels\n\nCompute log reg between data (defined in train_data, train_labels, test_data, test_labels)")
     else: main(sys.argv[1:])
-
