@@ -5,34 +5,34 @@ import argparse
 from collections import namedtuple
 from src.pipelines import parse_json, preprocess, observations, features_and_labels, log_reg, svm
 
-def main(argv):    
-    ''' 
+def main(argv):
+    '''
     controls the over-arching implmentation of the algorithms
     '''
-    
+
     directory = argv[0]
     features = argv[1]
     algorithms = argv[2]
-    
+
     #parsing
-    print("parsing json data...")
+    print("parsing json data...",file=sys.stderr)
     clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main([directory])
-    
+
     #preprocessing
     vocab = preprocess.main([features, corpusdict])
-    
+
     #featurization step 1
-    print("generating observations and features...")
+    print("generating observations and features...",file=sys.stderr)
     train_scores = observations.main([clusters, order, data, directory, features, vocab])
     test_scores = observations.main([test_clusters, test_order, test_data, directory, features, vocab])
-    
+
     #featurization step 2
-    print("generating training and testing data...")
+    print("generating training and testing data...",file=sys.stderr)
     train_data, train_target = features_and_labels.main([train_scores, features])
     test_data, test_target = features_and_labels.main([test_scores, features])
 
     #modeling
-    print("running algorithms...")
+    print("running algorithms...",file=sys.stderr)
     if algorithms.log_reg:
         predicted_labels, perform_results = log_reg.main([train_data, train_target, test_data, test_target])
     if algorithms.svm:
@@ -58,10 +58,9 @@ def parse_args(known_args=None):
 
     featureTuple = namedtuple('features','cosine, tf_idf, bog')
     features = featureTuple(args.cosine, args.tf_idf, args.bag_of_words)
-    
+
     algTuple = namedtuple('algorithms','log_reg, svm')
     algorithms = algTuple(args.log_reg, args.svm)
-    
     if not (args.cosine or args.tf_idf or args.bag_of_words):
         parser.exit(status=1, message="Error: pipeline requires at least one feature\n")
 
