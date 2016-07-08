@@ -52,14 +52,14 @@ def parse_json(folder):
                         order[parsedData["cluster_id"]].add((parsedData["order"],i))
                         wordcount = count_vocab(parsedData["body_text"], wordcount)
                         data.append(parsedData)
-                    i += 1
+                        i += 1
                 else:
                     for line in dataFile:
                         parsedData = json.loads(fix_escapes(line))
                         test_clusters.add(parsedData["cluster_id"])
                         test_order[parsedData["cluster_id"]].add((parsedData["order"],j))
                         test_data.append(parsedData)
-                    j += 1
+                        j += 1
     return clusters, order, data, test_clusters, test_order, test_data, wordcount
 
 

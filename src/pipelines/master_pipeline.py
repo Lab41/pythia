@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+'''
+Controls the pipeline for Pythia.
+
+This module regulates the features and algorithms used in order to detect novelty, then adminstrates the implementation of the given specifications. It requires a directory full of JSON files, where each file contains a cluster of documents.
+'''
+
 import sys
 import json
 import argparse
@@ -9,7 +15,6 @@ def main(argv):
     '''
     controls the over-arching implmentation of the algorithms
     '''
-
     directory = argv[0]
     features = argv[1]
     algorithms = argv[2]
@@ -19,17 +24,17 @@ def main(argv):
     clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main([directory])
 
     #preprocessing
-    vocab = preprocess.main([features, corpusdict])
+    vocab, encoder_decoder = preprocess.main([features, corpusdict])
 
     #featurization step 1
-    print("generating observations and features...",file=sys.stderr)
-    train_scores = observations.main([clusters, order, data, directory, features, vocab])
-    test_scores = observations.main([test_clusters, test_order, test_data, directory, features, vocab])
+    print("generating observations and features...")
+    train_observations = observations.main([clusters, order, data, directory, features, vocab, encoder_decoder])
+    test_observations = observations.main([test_clusters, test_order, test_data, directory, features, vocab, encoder_decoder])
 
     #featurization step 2
-    print("generating training and testing data...",file=sys.stderr)
-    train_data, train_target = features_and_labels.main([train_scores, features])
-    test_data, test_target = features_and_labels.main([test_scores, features])
+    print("generating training and testing data...")
+    train_data, train_target = features_and_labels.main([train_observations, features])
+    test_data, test_target = features_and_labels.main([test_observations, features])
 
     #modeling
     print("running algorithms...",file=sys.stderr)
