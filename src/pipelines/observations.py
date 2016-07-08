@@ -26,11 +26,11 @@ def get_first_and_last_sentence(doc):
     '''
     sentences = tokenize.punkt_sentences(doc)
     first = normalize.xml_normalize(sentences[0])
-    last = normalize.xml_normalize(sentences[len(sentences) - 1])
+    last = normalize.xml_normalize(sentences[-1])
     first_and_last = [first, last]
     return first_and_last
 
-def tfidf_sum(doc, corpus):
+def tfidf_sum(doc, corpus_array, vocab):
     '''
     Calculates L1 normalized TFIDF summation as Novelty Score for new document against corpus.
     
@@ -38,19 +38,18 @@ def tfidf_sum(doc, corpus):
     
     Args:
         doc (str): the text (normalized and without stop words) of the document
-        corpus (str): the text (normalized and without stop words) of the corpus for that cluster
+        corpus (str): the text (normalized and without stop words) of the corpus for that cluster (including the current doc)
     
     Returns:
         float: the normalized TFIDF summation
     '''
-    doc_array = word_punct_tokens(doc)
-    doc_length = len(rawdoc)
-    corpus_array = word_punct_tokens(corpus)
-    corpus_array.append(' '.join(doc_array))
-    vectorizer = TfidfVectorizer(norm=None)
-    tfidf = vectorizer.fit_transform(corpusArray)
+    doc_array = tokenize.word_punct_tokens(doc)
+    doc_length = len(doc_array)
+    vectorizer = TfidfVectorizer(norm=None, vocabulary = vocab)
+    tfidf = vectorizer.fit_transform(corpus_array)
     vector_values = tfidf.toarray()
     tfidf_score = np.sum(vector_values[-1])/doc_length
+    print tfidf_score
     return tfidf_score
     
 def skipthoughts_vectors(doc, sentences, encoder_decoder):
@@ -132,7 +131,7 @@ def gen_observations(all_clusters, lookup_order, documentData, filename, feature
         corpus = normalize.normalize_and_remove_stop_words(first_doc)
 
         # Create a document array for TFIDF
-        # corpusArray = corpus.split()
+        corpus_array = [corpus]
 
         # Store a list of sentences in the cluster at each iteration
         sentences = []
@@ -150,13 +149,15 @@ def gen_observations(all_clusters, lookup_order, documentData, filename, feature
             #normalize and remove stop words from doc
             doc = normalize.normalize_and_remove_stop_words(raw_doc)
 
+            corpus_array.append(doc)
+            
             similarityScore = None
             tfidfScore = None
             bog = None
             skipthoughts = None
 
             if features.tfidf_sum:
-                tfidfScore = tfidf_sum(doc, corpus)
+                tfidfScore = tfidf_sum(doc, corpus_array, vocab)
 
             if features.cos_similarity:
                 bagwordsVectors = bag_of_words_vectors(doc, corpus, vocab)
@@ -191,7 +192,7 @@ def main(argv):
     Returns:
         list: contains for each obeservation
     '''
-    all_clusters, lookup_order, documentData, file_name, features, vocab, encoder_decoder = argv
+    all_clusters, lookup_order, document_data, file_name, features, vocab, encoder_decoder = argv
     observations = gen_observations(all_clusters, lookup_order, document_data, file_name, features, vocab, encoder_decoder)
 
     return observations

@@ -1,21 +1,8 @@
+machine:
+  services:
+    - docker
 test:
   override:
-    - py.test --cov=./
+    - docker build -t pythia .
   post:
     - bash <(curl -s https://codecov.io/bash)
-
-dependencies:
-  pre:
-    - sudo apt-get install clang
-    - sudo apt-get install python3.5-dev
-    # - bash envs/make_envs.sh
-    - pip install -v scipy
-    - pip install pytest-cov
-    - sudo apt-get install libpython-dev
-  post:
-    - python -m nltk.downloader punkt
-machine:
-  environment:
-    PYTHONPATH: "/home/ubuntu/pythia"
-  python:
-    version: 3.5.1
