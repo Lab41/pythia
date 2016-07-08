@@ -71,4 +71,4 @@ if __name__ == '__main__':
     args = parse_args()
     print("Algorithm details and Results:",file=sys.stderr)
     print(main(args), file=sys.stdout)
-    parser.exit(status=0, message=None)
+    sys.exit(0)
