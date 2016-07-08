@@ -28,15 +28,21 @@ def set_up_xp():
                                          db_name=db_name))
     return ex
 
-def main():
-    xp = set_up_xp()
-    args=parse_args(["--bag-of-words", "--log-reg", "data/stackexchange/anime"])
-    pythia_main(args)
-    #xp_results = subprocess.run(["src/pipelines/master_pipeline.py",
-    #    "--bag-of-words", "--log-reg", "data/stackexchange/anime"],
-    #    stdout=subprocess.PIPE, universal_newlines=True)
-    #pprint.pprint(xp_results.stdout, stream=sys.stderr)
-    #print(json.loads(xp_results.stdout), file=sys.stderr)
+
+xp = set_up_xp()
+
+@xp.config
+def config_variables():
+    pass
+
+@xp.main
+def run_experiment():
+    features = ["--bag-of-words"]
+    algorithms = ["--log-reg"]
+    data_path = ["data/stackexchange/anime"]
+    args=parse_args(features+algorithms+data_path)
+    return pythia_main(args)
+
 
 if __name__=="__main__":
-    main()
+    xp.run_commandline()
