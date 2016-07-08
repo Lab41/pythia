@@ -62,14 +62,13 @@ def parse_args(given_args=None):
     if not (args.cosine or args.tf_idf or args.bag_of_words):
         parser.exit(status=1, message="Error: pipeline requires at least one feature\n")
 
-
     if not (args.log_reg or args.svm):
         parser.exit(status=3, message="Error: pipeline requires at least one algorithm\n")
-
 
     return [args.directory, features, algorithms]
 
 if __name__ == '__main__':
     args = parse_args()
-    main(args)
+    print("Algorithm details and Results:",file=sys.stderr)
+    print(main(args), file=sys.stdout)
     parser.exit(status=0, message=None)
