@@ -1,10 +1,25 @@
 ##SYNOPSIS
 This is example code for implementing a word2vec model, term frequency*inverse document frequency (TF-IDF) and others.
+The examples shown here use the 20 news groups data which can be found in sklearn
 
 ##word2vec
 Example of how to use the word2vec model and using a K Means cluster for them.
+MLLib Word2Vec() expects the text to come in as a Seq[String]
 
 ```
+from math import sqrt
+from sklearn.datasets import fetch_20 newsgroups
+import random
+
+# get some data to experiment with
+categories = ['sci.space']
+remove = ('headers', 'footers', 'quotes')
+news_data = fetch_20newsgroups(subset='train', categories=categories, shuffle=True, random_state=42, remove=remove)
+
+# transform the data into the format desired by word2vec
+# you would likely want to have additional tokenizations for your data
+text = sc.parallelize(news_data.data).map(lambda row: row.split(" "))
+
 word2vec = Word2Vec()
 model = word2vec.fit(text)
 
@@ -40,6 +55,9 @@ individual word of a body of text. For instance: [ [word1, word2, word3,...], [w
 of that list is the content of a separate article.
 
 ```
+# ensure the 20 news group data is in the format desired by the algorithm
+text = sc.parallelize(news_data.data)
+
 hashingTF = HashingTF()
 tf = hashingTF.transform(text)
 idf = IDF().fit(tf)
@@ -65,7 +83,7 @@ labeled_point_SV = data.map(lambda x: labelize(x))
 training, testing = split_data(labeled_point_SV, seed = random.randint(1, 30))
 
 # Train the model
-model = SVM_module(labeled_point_SV)
+model = SVM_module(training)
 
 # Generate predictions
 predictionAndLabel = predict_and_label(model, testing)
