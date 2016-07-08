@@ -49,7 +49,6 @@ def tfidf_sum(doc, corpus_array, vocab):
     tfidf = vectorizer.fit_transform(corpus_array)
     vector_values = tfidf.toarray()
     tfidf_score = np.sum(vector_values[-1])/doc_length
-    print tfidf_score
     return tfidf_score
     
 def skipthoughts_vectors(doc, sentences, encoder_decoder):
