@@ -48,9 +48,10 @@ def main(argv):
 def parse_args(given_args=None):
     parser = argparse.ArgumentParser(description = "predict novelty in a corpus")
     parser.add_argument("directory", help="directory holding corpus")
-    parser.add_argument("--cosine", "-c", help="add cosine similarity as a feature", action="store_true")
-    parser.add_argument("--tf_idf", "-t", help="add tf_idf as a feature", action="store_true")
+    parser.add_argument("--cos_similarity", "-c", "--cos-similarity", help="add cosine similarity as a feature", action="store_true")
+    parser.add_argument("--tfidf_sum", "-t", "--tfidf-sum", help="add tfidf sum as a feature", action="store_true")
     parser.add_argument("--bag_of_words", "-b", "--bag-of-words", help="add bag of words vectors as a feature", action="store_true")
+    parser.add_argument("--skipthoughts", "-k", help="add skipthought vectors as a feature", action="store_true")
     parser.add_argument("--log_reg", "-l", "--log-reg", help="run logistic regression", action="store_true")
     parser.add_argument("--svm", "-s", help="run support vector machine", action="store_true")
 
@@ -59,12 +60,13 @@ def parse_args(given_args=None):
     else:
         args = parser.parse_args()
 
-    featureTuple = namedtuple('features','cosine, tf_idf, bog')
-    features = featureTuple(args.cosine, args.tf_idf, args.bag_of_words)
+    featureTuple = namedtuple('features','cos_similarity, tfidf_sum, bag_of_words, skipthoughts')
+    features = featureTuple(args.cos_similarity, args.tfidf_sum, args.bag_of_words, args.skipthoughts)
 
     algTuple = namedtuple('algorithms','log_reg, svm')
     algorithms = algTuple(args.log_reg, args.svm)
-    if not (args.cosine or args.tf_idf or args.bag_of_words):
+    
+    if not (args.cos_similarity or args.tfidf_sum or args.bag_of_words or args.skipthoughts):
         parser.exit(status=1, message="Error: pipeline requires at least one feature\n")
 
     if not (args.log_reg or args.svm):
