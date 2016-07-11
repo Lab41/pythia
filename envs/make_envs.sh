@@ -72,6 +72,7 @@ set -e
     # pip install sacred
     pip install docopt pymongo
     save_dir=`pwd`
+    rm -rf /tmp/sacred || true
     git clone https://github.com/IDSIA/sacred /tmp/sacred
     cd /tmp/sacred
     git checkout 0.6.8
