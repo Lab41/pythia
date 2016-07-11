@@ -12,12 +12,16 @@ def get_data(scores, features):
 
     for score in scores:
         feature = list()
-        if features.cosine:
+        if features.cos_similarity:
             feature.append(np.array([score.bagwordsScore]))
-        if features.tf_idf:
+        if features.tfidf_sum:
             feature.append(np.array([score.tfidfScore]))
-        if features.bog:
+        if features.bag_of_words:
             feature.append(score.bog)
+            #print("bag of words: ", score.bog)
+        if features.skipthoughts:
+            #print("skipthoughts: ", score.skipthoughts)
+            feature.append(score.skipthoughts)
         feature = np.concatenate(feature, axis=0)
         data.append(feature)
         if score.novelty: labels.append(1)
