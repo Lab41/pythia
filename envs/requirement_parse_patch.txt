@@ -1,0 +1,13 @@
+diff --git a/sacred/dependencies.py b/sacred/dependencies.py
+index b45f14c..6b7f71d 100644
+--- a/sacred/dependencies.py
++++ b/sacred/dependencies.py
+@@ -96,7 +96,7 @@ class PackageDependency(object):
+             return
+         try:
+             self.version = pkg_resources.get_distribution(self.name).version
+-        except pkg_resources.DistributionNotFound:
++        except (pkg_resources.DistributionNotFound, pkg_resources.RequirementParseError):
+             self.version = '<unknown>'
+ 
+     def to_tuple(self):

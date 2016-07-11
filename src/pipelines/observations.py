@@ -96,7 +96,6 @@ def bag_of_words_vectors(doc, corpus, vocab):
 
 
 def gen_observations(all_clusters, lookup_order, documentData, filename, features, vocab, encoder_decoder):
-
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
     
@@ -120,7 +119,6 @@ def gen_observations(all_clusters, lookup_order, documentData, filename, feature
     #Iterate through clusters found in JSON file, do feature assessments,
     #build a rolling corpus from ordered documents for each cluster
     for cluster in all_clusters:
-
         # Determine arrival order in this cluster
         sortedEntries = [x[1] for x in sorted(lookup_order[cluster], key=lambda x: x[0])]
         
@@ -141,7 +139,6 @@ def gen_observations(all_clusters, lookup_order, documentData, filename, feature
         except KeyError: corpusName = basename(filename)
 
         for index in sortedEntries[1:]:
-
             # Find next document in order
             raw_doc = documentData[index]["body_text"]
             
