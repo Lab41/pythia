@@ -1,19 +1,24 @@
 import os
-from urllib import request
+from urllib import request, error
 import subprocess
 import json
 from lxml import etree
 from bs4 import BeautifulSoup
 from src.utils import py7z_extractall
+from collections import namedtuple
+from shutil import copy
+import argparse
 
 def gen_url(section):
     return 'https://ia800500.us.archive.org/22/items/stackexchange/' + section + '.stackexchange.com.7z'
 
-def get_data():
+def get_data(filename):
     
     #add titles of sections to download
-    sections = {'3dprinting', 'academia', 'android', 'anime', 'apple', 'arabic', 'arduino', 'sports'}
-
+    sections = set()
+    with open(filename,'r') as dataFile:
+        for line in dataFile: sections.add(line.strip())
+        
     stack_exchange_data = list()
     for section in sections:
         stack_exchange_data.append((section, gen_url(section)))
@@ -59,7 +64,10 @@ def load(url, file_name, folder):
 
     #downloads file from url
     testfile = request.URLopener()
-    testfile.retrieve(url, file_name)
+    try: testfile.retrieve(url, file_name)
+    except error.HTTPError as e: 
+        print ("Error: URL retrieval of " + url + " failed for reason: " + e.reason)
+        quit()
 
     #un-zips file and puts contents in folder
     a = py7z_extractall.un7zip(file_name)
@@ -176,34 +184,85 @@ def write_json_files(clusters, related, duplicates, corpus, corpus_directory):
         if not file_empty:
             next_cluster_id+=1
 
-def main(argv):
+def filter_json_files(directory, corpus_directory, minpost, maxpost):
     
+    print("Filtering JSON files")    
+    filtered_corpus_directory = os.path.join(directory, 'corpus_filtered')
+    make_directory(filtered_corpus_directory)
+    
+    filestokeep = list()
+    
+    # Iterate over topic folders in corpus
+    for foldername in os.listdir(corpus_directory):
+        
+        fullfoldername = os.path.join(corpus_directory,foldername)
+        
+        if os.path.isdir(fullfoldername) == True:
+                                
+            jsonstats = []
+            
+            # Iterate over clusters in this topic       
+            for file_name in os.listdir(fullfoldername):
+                if file_name.endswith(".json"):
+                    full_file_name = os.path.join(fullfoldername, file_name)            
+                    entries = 0
+                    with open(full_file_name,'r') as dataFile:
+                        for line in dataFile: entries += 1
+                    if entries >= minpost and entries <= maxpost: filestokeep.append((full_file_name, foldername))
+
+    # Copy cluster files that meet min and max post requirements        
+    for entry in filestokeep: 
+       copylocation = os.path.join(filtered_corpus_directory, entry[1])
+       make_directory(copylocation)
+       copy(entry[0], copylocation)
+    
+    print("Filtered corpus copied to: ", filtered_corpus_directory)       
+
+def main(args):
+        
     #gets urls based on sections and creates basic directories
-    stack_exchange_data = get_data()
+    stack_exchange_data = get_data(args.filename)
     directory, zip_directory, corpus_directory = setup()
+    
+    if args.skipparse == False:    
+        for (section, url) in stack_exchange_data:
+            print("Starting " + section)
         
-    for (section, url) in stack_exchange_data:
-
-        #creates directorys for section
-        file_name, folder_name, corpus_section_directory = section_setup(section, directory, zip_directory, corpus_directory)
+            #creates directorys for section
+            file_name, folder_name, corpus_section_directory = section_setup(section, directory, zip_directory, corpus_directory)
         
-        #downloads and unzips section file
-        load(url, file_name, folder_name)
+            #downloads and unzips section file
+            load(url, file_name, folder_name)
 
-        #gets the links from the links file
-        links = get_links(folder_name)
+            #gets the links from the links file
+            links = get_links(folder_name)
 
-        #creates the clusters
-        clusters, related, duplicates, unique_posts = gen_clusters(links)
+            #creates the clusters
+            clusters, related, duplicates, unique_posts = gen_clusters(links)
 
-        #gets the posts from the posts file
-        posts = get_posts(folder_name)
+            #gets the posts from the posts file
+            posts = get_posts(folder_name)
 
-        #creates the corpus with the body text for each id in the clusters
-        corpus = gen_corpus(posts, unique_posts)
+            #creates the corpus with the body text for each id in the clusters
+            corpus = gen_corpus(posts, unique_posts)
         
-        #writes the information to json files
-        write_json_files(clusters, related, duplicates, corpus, corpus_section_directory)
+            #writes the information to json files
+            write_json_files(clusters, related, duplicates, corpus, corpus_section_directory)
+        
+            print("Completed " + section)
+        
+    if args.filter or args.skipparse: filter_json_files(directory, corpus_directory, int(args.minpost), int(args.maxpost))
+        
+        
+if __name__ == '__main__':    
 
-if __name__ == '__main__':
-    main(None)
+    parser = argparse.ArgumentParser(description = "Parse Stack Exchange user posts into JSON files for use in Pythia project")
+    parser.add_argument("filename", help="file containing list of Stack Exchange sections (ex: astronomy) to download/parse")
+    parser.add_argument("--filter", help="flag to filter JSON files after downloading/parsing Stack Exchange data, based on minpost/maxpost arguments", action="store_true")
+    parser.add_argument("--minpost", default=3, help="when filtering, set minimum allowable posts in a single JSON file (default is 3)")
+    parser.add_argument("--maxpost", default=10, help="when filtering, set maximum allowable posts in a single JSON file (default is 10)")
+    parser.add_argument("--skipparse", help="flag to bypass downloading/parsing JSON files and proceed directly to JSON file filtering; can be used if corpus was previously downloaded/parsed", action="store_true")
+    
+    args = parser.parse_args()
+    main(args)
+    parser.exit(status=0, message=None)
