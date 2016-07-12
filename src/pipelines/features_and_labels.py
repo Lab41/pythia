@@ -18,10 +18,10 @@ def get_data(scores, features):
             feature.append(np.array([score.tfidfScore]))
         if features.bag_of_words:
             feature.append(score.bog)
-            #print("bag of words: ", score.bog)
         if features.skipthoughts:
-            #print("skipthoughts: ", score.skipthoughts)
             feature.append(score.skipthoughts)
+        if features.lda:
+            feature.append(score.ldavector)
         feature = np.concatenate(feature, axis=0)
         data.append(feature)
         if score.novelty: labels.append(1)
