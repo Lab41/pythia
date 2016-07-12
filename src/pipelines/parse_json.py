@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-
+'''
+Parses Pythia-style JSON files and inventories most frequent words in the corpus.
+'''
 import random
 import sys
 import json
@@ -64,6 +66,11 @@ def parse_json(folder):
 
 
 def fix_escapes(line):
+    '''
+    Purpose - Substitutes any leaning right/left quote characters in body_text segment of JSON files.
+    Input - A line of text from a Pythia-style JSON file
+    Output - The input line with any leaning right/left quote characters replaced with standard quotes        
+    '''
 
     # Remove embedded special left/right leaning quote characters in body_text segment of json object
     if line.find('\\\xe2\x80\x9d'):
@@ -75,6 +82,11 @@ def fix_escapes(line):
     return line
 
 def count_vocab(text, wordcount):
+    '''
+    Purpose - Counts the number of times any word appears in a text string.
+    Input - A line of text and a dictionary with words and their associated counts
+    Output - An updated dictionary with words and their associated counts        
+    '''
 
     # Tokenize text and add words to corpus dictionary
     wordlist = word_tokenize(text)
@@ -83,6 +95,11 @@ def count_vocab(text, wordcount):
     return wordcount
 
 def order_vocab(tokencount):
+    '''
+    Purpose - Determine the most frequently occurring words in the corpus
+    Input - A dictionary with words and their associated counts
+    Output - An Ordered dictionary, starting with the highest frequency words        
+    '''
 
     # Determine descending order for word counts
     # Credit to https://github.com/ryankiros/skip-thoughts/

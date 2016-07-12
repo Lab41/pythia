@@ -5,8 +5,6 @@ Controls the pipeline for Pythia.
 This module regulates the features and algorithms used in order to detect novelty, then adminstrates the implementation of the given specifications. It requires a directory full of JSON files, where each file contains a cluster of documents.
 '''
 
-import sys
-import json
 import argparse
 from collections import namedtuple
 from src.pipelines import parse_json, preprocess, observations, features_and_labels, log_reg, svm
@@ -18,21 +16,22 @@ def main(argv):
     directory = argv[0]
     features = argv[1]
     algorithms = argv[2]
+    parameters = argv[3]
 
     #parsing
     print("parsing json data...",file=sys.stderr)
     clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main([directory])
 
     #preprocessing
-    vocab, encoder_decoder = preprocess.main([features, corpusdict])
+    vocab, encoder_decoder, lda = preprocess.main([features, corpusdict, data, parameters])
 
     #featurization step 1
-    print("generating observations and features...")
-    train_observations = observations.main([clusters, order, data, directory, features, vocab, encoder_decoder])
-    test_observations = observations.main([test_clusters, test_order, test_data, directory, features, vocab, encoder_decoder])
+    print("generating observations and features...",file=sys.stderr)
+    train_observations = observations.main([clusters, order, data, directory, features, vocab, encoder_decoder, lda])
+    test_observations = observations.main([test_clusters, test_order, test_data, directory, features, vocab, encoder_decoder, lda])
 
     #featurization step 2
-    print("generating training and testing data...")
+    print("generating training and testing data...",file=sys.stderr)
     train_data, train_target = features_and_labels.main([train_observations, features])
     test_data, test_target = features_and_labels.main([test_observations, features])
 
@@ -51,7 +50,10 @@ def parse_args(given_args=None):
     parser.add_argument("--cos_similarity", "-c", "--cos-similarity", help="add cosine similarity as a feature", action="store_true")
     parser.add_argument("--tfidf_sum", "-t", "--tfidf-sum", help="add tfidf sum as a feature", action="store_true")
     parser.add_argument("--bag_of_words", "-b", "--bag-of-words", help="add bag of words vectors as a feature", action="store_true")
+    parser.add_argument("--vocab_size", "-v", type=int, default=500, help="set size of vocabulary to use with features that utilize bag of words")   
     parser.add_argument("--skipthoughts", "-k", help="add skipthought vectors as a feature", action="store_true")
+    parser.add_argument("--LDA", "-L", help="add Latent Dirichlet Allocation (LDA) vectors as a feature", action="store_true")
+    parser.add_argument("--LDA_topics", "-T", type=int, default=10, help="set number of topics for Latent Dirichlet Allocation (LDA) model (default = 10)")
     parser.add_argument("--log_reg", "-l", "--log-reg", help="run logistic regression", action="store_true")
     parser.add_argument("--svm", "-s", help="run support vector machine", action="store_true")
 
@@ -60,19 +62,22 @@ def parse_args(given_args=None):
     else:
         args = parser.parse_args()
 
-    featureTuple = namedtuple('features','cos_similarity, tfidf_sum, bag_of_words, skipthoughts')
-    features = featureTuple(args.cos_similarity, args.tfidf_sum, args.bag_of_words, args.skipthoughts)
+    featureTuple = namedtuple('features','cos_similarity, tfidf_sum, bag_of_words, skipthoughts, lda')
+    features = featureTuple(args.cos_similarity, args.tfidf_sum, args.bag_of_words, args.skipthoughts, args.LDA)
 
     algTuple = namedtuple('algorithms','log_reg, svm')
     algorithms = algTuple(args.log_reg, args.svm)
+
+    paramTuple = namedtuple('parameters','vocab_size, lda_topics')
+    parameters = paramTuple(args.vocab_size, args.LDA_topics)
     
-    if not (args.cos_similarity or args.tfidf_sum or args.bag_of_words or args.skipthoughts):
+    if not (args.cos_similarity or args.tfidf_sum or args.bag_of_words or args.skipthoughts or args.LDA):
         parser.exit(status=1, message="Error: pipeline requires at least one feature\n")
 
     if not (args.log_reg or args.svm):
         parser.exit(status=3, message="Error: pipeline requires at least one algorithm\n")
 
-    return [args.directory, features, algorithms]
+    return [args.directory, features, algorithms, parameters]
 
 if __name__ == '__main__':
     args = parse_args()
