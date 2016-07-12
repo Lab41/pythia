@@ -4,7 +4,7 @@ Controls the pipeline for Pythia.
 
 This module regulates the features and algorithms used in order to detect novelty, then adminstrates the implementation of the given specifications. It requires a directory full of JSON files, where each file contains a cluster of documents.
 '''
-
+import sys
 import argparse
 from collections import namedtuple
 from src.pipelines import parse_json, preprocess, observations, features_and_labels, log_reg, svm
