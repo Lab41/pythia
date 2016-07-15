@@ -8,6 +8,7 @@ import sys
 import argparse
 from collections import namedtuple
 from src.pipelines import parse_json, preprocess, observations, features_and_labels, log_reg, svm
+from src.utils.sampling import sample
 
 def main(argv):
     '''
@@ -22,7 +23,13 @@ def main(argv):
     print("parsing json data...",file=sys.stderr)
     clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main([directory])
 
+    #resampling
+    if parameters.resampling is True:
+        print("resampling...",file=sys.stderr)
+        data, clusters, order, corpusdict = sample(data, "novelty", novelToNotNovelRatio = parameters.novel_ratio, over = parameters.oversampling, replacement = parameters.replacement)
+        
     #preprocessing
+    print("preprocessing...",file=sys.stderr)
     vocab, encoder_decoder, lda = preprocess.main([features, corpusdict, data, parameters])
 
     #featurization step 1
@@ -56,6 +63,10 @@ def parse_args(given_args=None):
     parser.add_argument("--LDA_topics", "-T", type=int, default=10, help="set number of topics for Latent Dirichlet Allocation (LDA) model (default = 10)")
     parser.add_argument("--log_reg", "-l", "--log-reg", help="run logistic regression", action="store_true")
     parser.add_argument("--svm", "-s", help="run support vector machine", action="store_true")
+    parser.add_argument("--resampling", "-r", help="conduct resampling to balance novel/non-novel ratio in training data", action="store_true")
+    parser.add_argument("--novel_ratio", "-n", type=float, default=1.0, help="set ratio of novel to non-novel sampling during resampling (0<=novel_ratio<=1.0, default = 1.0)")   
+    parser.add_argument("--oversampling", "-o", help="allow oversampling during resampling", action="store_true")   
+    parser.add_argument("--replacement", "-p", help="allow replacement during resampling", action="store_true")   
 
     if given_args is not None:
         args, extra_args = parser.parse_known_args(given_args)
@@ -68,8 +79,8 @@ def parse_args(given_args=None):
     algTuple = namedtuple('algorithms','log_reg, svm')
     algorithms = algTuple(args.log_reg, args.svm)
 
-    paramTuple = namedtuple('parameters','vocab_size, lda_topics')
-    parameters = paramTuple(args.vocab_size, args.LDA_topics)
+    paramTuple = namedtuple('parameters','vocab_size, lda_topics, resampling, novel_ratio, oversampling, replacement')
+    parameters = paramTuple(args.vocab_size, args.LDA_topics, args.resampling, args.novel_ratio, args.oversampling, args.replacement)
     
     if not (args.cos_similarity or args.tfidf_sum or args.bag_of_words or args.skipthoughts or args.LDA):
         parser.exit(status=1, message="Error: pipeline requires at least one feature\n")
