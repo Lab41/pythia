@@ -58,14 +58,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends --force-yes \
 	build-essential && \
     rm -rf /var/lib/apt/lists/*
 
-#ADD envs/make_envs.sh /usr/bin/make_envs.sh
-
-ADD . /pythiaWork
-WORKDIR /pythiaWork
-ENV PYTHONPATH=/pythiaWork
-
+# Download Pythia project and create environments
+RUN git clone https://github.com/Lab41/pythia.git
+ENV PYTHONPATH=/pythia:$PYTHONPATH
+WORKDIR pythia
 RUN envs/make_envs.sh
 
+# Activate the new conda environment whenever a bash shell is created
+RUN echo "source activate py3-pythia" >> /root/.bashrc
 
 # run tests
 RUN /bin/bash -c 'export THEANO_FLAGS=device=cpu ; source activate py3-pythia; pip install pytest-cov; py.test -v --cov=src --cov-report term-missing'

@@ -185,7 +185,9 @@ def gen_observations(all_clusters, lookup_order, documentData, filename, feature
                 sentences += get_first_and_last_sentence(doc)
 
             if features.lda:
-                ldavector = run_lda(lda, doc, vocab)
+                doclda = run_lda(lda, doc, vocab)
+                corpuslda = run_lda(lda,corpus,vocab)
+                ldavector = np.concatenate([doclda, corpuslda], axis=0)
 
             # Save results in namedtuple and add to array
             postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], similarityScore, tfidfScore, bog, skipthoughts,ldavector)
