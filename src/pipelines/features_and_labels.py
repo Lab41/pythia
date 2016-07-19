@@ -18,10 +18,10 @@ def get_data(scores, features):
             feature.append(np.array([score.tfidfScore]))
         if features.bag_of_words:
             feature.append(score.bog)
-            #print("bag of words: ", score.bog)
         if features.skipthoughts:
-            #print("skipthoughts: ", score.skipthoughts)
             feature.append(score.skipthoughts)
+        if features.lda:
+            feature.append(score.ldavector)
         feature = np.concatenate(feature, axis=0)
         data.append(feature)
         if score.novelty: labels.append(1)
@@ -31,12 +31,12 @@ def get_data(scores, features):
     return data, labels
 
 def main(argv):
-    
+
     data, labels = get_data(argv[0], argv[1])
-    
+
     return data, labels
-    
+
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print ("Usage: featues_and_labelspy scores features\n\ngenerates features and labels for scores given the defined features")
+        print ("Usage: features_and_labels.py scores features\n\ngenerates features and labels for scores given the defined features")
     else: main(sys.argv[1:])

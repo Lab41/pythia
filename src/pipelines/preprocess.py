@@ -1,34 +1,76 @@
 from src.utils.normalize import normalize_and_remove_stop_words
 from src.featurizers import skipthoughts
+from sklearn.decomposition import LatentDirichletAllocation
+from sklearn.feature_extraction.text import CountVectorizer
 
-def gen_vocab(features, corpus_dict):
-    # This conditional needs to be made compatible with the cosine and bog options
-    result = [None, None]
-    if features.skipthoughts:
-        result[1] = skipthoughts.load_model()
-    if features.cos_similarity or features.bag_of_words or features.tfidf_sum:
+def gen_vocab(corpus_dict, vocab_size):
+    '''
+    Generates a dictionary of words to be used as the vocabulary in features that utilize bag of words.
+    
+    Args:
+        corpus_dict (OrderedDict): An ordered list of the most frequently occurring tokens in the corpus
+        vocab_size (int): the number of words to be used in the vocabulary 
         
-        # needs preferred vocabulary size passed in (ex: vocabsize=500)
-        # needs 'from src.utils.normalize import text_to_words'
-        # vocabdict contains the most frequently occurring words in the corpus from #1 to n, with n going as far as vocabsize if possible
-        # we should be able to use vocabulary=vocabdict when setting up the CountVectorizer for clusters and new docs
-        print("making vocabulary...")
-        vocabsize = 500
-        index = 0
-        vocabdict = dict()
-        for word in corpus_dict:
-            if len(vocabdict) < vocabsize:
-                cleantext = normalize_and_remove_stop_words(word)
-                if cleantext != '':
-                    if not cleantext in vocabdict:
-                        vocabdict[cleantext] = index
-                        index+=1
-            else: break
-        result[0] = vocabdict
+    Returns:
+        dict: a dictionary of size vocab_size that contains the most frequent normalized and non-stop words in the corpus
+    '''
 
-    return result
+    index = 0
+    vocabdict = dict()
+    for word in corpus_dict:
+        if len(vocabdict) < vocab_size:
+            cleantext = normalize_and_remove_stop_words(word)
+            if cleantext != '':
+                if not cleantext in vocabdict:
+                    vocabdict[cleantext] = index
+                    index+=1
+        else: break
+    return vocabdict
+
+def build_lda(trainingdata, vocab, topics):
+    '''
+    Fits a LDA topic model based on the corpus vocabulary.
+    
+    Args:
+        trainingdata (list): A list containing the corpus as parsed JSON text 
+        vocab (dict): A dictionary containing the vocabulary to be used in the LDA model
+        topics (int): the number of topics to be used in the LDA model
+        
+    Returns:
+        LatentDirichletAllocation: A LDA model fit to the training data and corpus vocabulary
+    '''
+   
+    vectorizer = CountVectorizer(analyzer = "word", vocabulary = vocab)
+    trainingdocs = []
+    
+    for entry in trainingdata: trainingdocs.append(entry['body_text'])
+    trainingvectors = vectorizer.transform(trainingdocs)
+    
+    lda = LatentDirichletAllocation(n_topics=topics, random_state=0)
+    lda.fit(trainingvectors)
+    return lda
 
 def main(argv):
-    features, corpus_dict = argv
-    vocab, encoder_decoder = gen_vocab(features, corpus_dict)
-    return vocab, encoder_decoder
+    '''
+    Controls the preprocessing of the corpus, including building vocabulary and model creation.
+    
+    Args:
+        argv (list): contains a list of the command line features, a dictionary of all tokens in the corpus, an array of parsed JSON documents, a list of the command line parameters
+    
+    Returns:
+        multiple: dictionary of the corpus vocabulary, skipthoughts encoder_decoder, trained LDA model
+    '''
+ 
+    features, corpus_dict, trainingdata, parameters = argv
+
+    encoder_decoder = None
+    vocab= None
+    lda = None
+    
+    if features.skipthoughts: encoder_decoder = skipthoughts.load_model()
+    
+    if features.cos_similarity or features.bag_of_words or features.tfidf_sum or features.lda: 
+        vocab = gen_vocab(corpus_dict, parameters.vocab_size)
+        if features.lda: lda = build_lda(trainingdata, vocab, parameters.lda_topics)
+        
+    return vocab, encoder_decoder, lda

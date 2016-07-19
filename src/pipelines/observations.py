@@ -3,7 +3,6 @@
 Generates observations including specified features and novelty tags.
 '''
 
-import sys
 from src.featurizers import skipthoughts as sk
 from src.utils import normalize, tokenize
 from sklearn.feature_extraction import DictVectorizer
@@ -94,9 +93,24 @@ def bag_of_words_vectors(doc, corpus, vocab):
     bagwordsVectors = (vectorizer.transform([doc, corpus])).toarray()
     return bagwordsVectors
 
+def run_lda(lda,doc,vocab):
+    '''
+    Calculates a vector of topic probabilities for a single document based on a trained LDA model.
+    
+    Args:
+        lda (LatentDirichletAllocation): A LDA model previously fit to vocabulary of training data
+        doc (str): the text (normalized and without stop words) of the document
+        vocab (dict): the vocabulary of the data set
+        
+    Returns:
+        array: a vector of topic probabilities based on a trained LDA model
+    '''
 
-def gen_observations(all_clusters, lookup_order, documentData, filename, features, vocab, encoder_decoder):
+    vectorizer = CountVectorizer(analyzer = "word", vocabulary = vocab)
+    docvector = vectorizer.transform([doc])  
+    return lda.transform(docvector)[0]
 
+def gen_observations(all_clusters, lookup_order, documentData, filename, features, vocab, encoder_decoder, lda):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
     
@@ -115,12 +129,11 @@ def gen_observations(all_clusters, lookup_order, documentData, filename, feature
 
     # Prepare to store results of feature assessments
     postScores = []
-    postTuple = namedtuple('postScore','corpus,cluster_id,post_id,novelty,bagwordsScore,tfidfScore,bog,skipthoughts')
+    postTuple = namedtuple('postScore','corpus,cluster_id,post_id,novelty,bagwordsScore,tfidfScore,bog,skipthoughts,ldavector')
     
     #Iterate through clusters found in JSON file, do feature assessments,
     #build a rolling corpus from ordered documents for each cluster
     for cluster in all_clusters:
-
         # Determine arrival order in this cluster
         sortedEntries = [x[1] for x in sorted(lookup_order[cluster], key=lambda x: x[0])]
         
@@ -141,7 +154,6 @@ def gen_observations(all_clusters, lookup_order, documentData, filename, feature
         except KeyError: corpusName = basename(filename)
 
         for index in sortedEntries[1:]:
-
             # Find next document in order
             raw_doc = documentData[index]["body_text"]
             
@@ -154,7 +166,8 @@ def gen_observations(all_clusters, lookup_order, documentData, filename, feature
             tfidfScore = None
             bog = None
             skipthoughts = None
-
+            ldavector = None
+            
             if features.tfidf_sum:
                 tfidfScore = tfidf_sum(doc, corpus_array, vocab)
 
@@ -171,8 +184,11 @@ def gen_observations(all_clusters, lookup_order, documentData, filename, feature
                 # Add newest sentence to sentences vector
                 sentences += get_first_and_last_sentence(doc)
 
+            if features.lda:
+                ldavector = run_lda(lda, doc, vocab)
+
             # Save results in namedtuple and add to array
-            postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], similarityScore, tfidfScore, bog, skipthoughts)
+            postScore = postTuple(corpusName, cluster, documentData[index]["post_id"], documentData[index]["novelty"], similarityScore, tfidfScore, bog, skipthoughts,ldavector)
             postScores.append(postScore)
 
             # Update corpus
@@ -191,7 +207,7 @@ def main(argv):
     Returns:
         list: contains for each obeservation
     '''
-    all_clusters, lookup_order, document_data, file_name, features, vocab, encoder_decoder = argv
-    observations = gen_observations(all_clusters, lookup_order, document_data, file_name, features, vocab, encoder_decoder)
+    all_clusters, lookup_order, document_data, file_name, features, vocab, encoder_decoder, lda = argv
+    observations = gen_observations(all_clusters, lookup_order, document_data, file_name, features, vocab, encoder_decoder, lda)
 
     return observations
