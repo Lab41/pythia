@@ -35,10 +35,6 @@ def run_model(train_data, train_labels, test_data, test_labels, svm_C=1.0, svm_k
     pred_labels = svm.predict(test_data)
     perform_results = performance_metrics.get_perform_metrics(test_labels, pred_labels)
 
-    #Perform_results is a dictionary, so we should add other pertinent information to the run
-    perform_results['vector'] = 'Bag_of_Words'
-    perform_results['alg'] = 'Support_Vector_Machine'
-
     return pred_labels, perform_results
 
 def main(argv):
