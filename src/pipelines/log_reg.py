@@ -6,7 +6,10 @@ import sys
 from sklearn import linear_model
 from collections import namedtuple
 
-def run_model(train_data, train_labels, test_data, test_labels):
+def run_model(train_data, train_labels, test_data, test_labels, log_penalty='l2', log_dual=False, log_tol=1e-4, log_C=1e-4,
+              log_fit_intercept=True, log_intercept_scaling=1, log_class_weight=None, log_random_state=None,
+              log_solver='liblinear', log_max_iter=100, log_multi_class='ovr', log_verbose=0, log_warm_start=False,
+              log_n_jobs=1, *args, **kwargs):
     '''
     Algorithm which will take in a set of training text and labels to train a bag of words model
     This model is then used with a logistic regression algorithm to predict the labels for a second set of text
@@ -21,7 +24,11 @@ def run_model(train_data, train_labels, test_data, test_labels):
     '''
 
     #use Logistic Regression to train a model
-    logreg = linear_model.LogisticRegression(C=1e5)
+    logreg = linear_model.LogisticRegression(penalty=log_penalty, dual=log_dual, tol=log_tol, C=log_C, fit_intercept=log_fit_intercept,
+                                             intercept_scaling=log_intercept_scaling, class_weight=log_class_weight,
+                                             random_state=log_random_state, solver=log_solver, max_iter=log_max_iter,
+                                             multi_class=log_multi_class, verbose=log_verbose, warm_start=log_warm_start,
+                                             n_jobs=log_n_jobs)
 
     # we create an instance of Neighbours Classifier and fit the data.
     logreg.fit(train_data, train_labels)
@@ -30,19 +37,20 @@ def run_model(train_data, train_labels, test_data, test_labels):
     pred_labels = logreg.predict(test_data)
     perform_results = performance_metrics.get_perform_metrics(test_labels, pred_labels)
 
-    #Perform_results is a dictionary, so we should add other pertinent information to the run
-    perform_results['vector'] = 'Bag_of_Words'
-    perform_results['alg'] = 'Logistic_Regression'
-
     return pred_labels, perform_results
 
 def main(argv):
 
     train_data, train_target, test_data, test_target = argv[0], argv[1], argv[2], argv[3]
 
+    if len(argv)>4:
+        args_dict = argv[4]
+    else:
+        args_dict = {}
+
     print("running logistic regression...",file=sys.stderr)
 
-    predicted_labels, perform_results = run_model(train_data, train_target, test_data, test_target)
+    predicted_labels, perform_results = run_model(train_data, train_target, test_data, test_target, **args_dict)
 
     return predicted_labels, perform_results
 
