@@ -12,7 +12,7 @@ import nltk
 from nltk.tokenize import word_tokenize
 import numpy
 
-def parse_json(folder):
+def parse_json(folder, seed=1, **kwargs):
 
     '''
     Purpose - Parses a folder full of JSON files containing document data.
@@ -40,7 +40,7 @@ def parse_json(folder):
     test_order = defaultdict(set)
     j = 0
 
-    random.seed(1)
+    random.seed(seed)
     for file_name in os.listdir (folder):
         if file_name.endswith(".json"):
             # Read JSON file line by line and retain stats about number of clusters and order of objects
@@ -114,9 +114,11 @@ def order_vocab(tokencount):
 def main(argv):
 
     print("parsing json files...",file=sys.stderr)
-
+    
+    folder, parameters = argv
+    
     # Parse JSON file that was supplied in command line argument
-    clusters, order, data, test_clusters, test_order, test_data, wordcount = parse_json(argv[0])
+    clusters, order, data, test_clusters, test_order, test_data, wordcount = parse_json(folder, **parameters)
 
     # Determine descending order for words based on count
     wordorder = order_vocab(wordcount)

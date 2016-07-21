@@ -7,47 +7,42 @@ This module regulates the features and algorithms used in order to detect novelt
 import sys
 import argparse
 from collections import namedtuple
-from src.pipelines import parse_json, preprocess, observations, features_and_labels, log_reg, svm
+from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, predict
 from src.utils.sampling import sample
 
 def main(argv):
     '''
     controls the over-arching implmentation of the algorithms
     '''
-    directory = argv[0]
-    features = argv[1]
-    algorithms = argv[2]
-    parameters = argv[3]
+    directory, features, algorithms, parameters = argv
 
     #parsing
     print("parsing json data...",file=sys.stderr)
-    clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main([directory])
+    clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main([directory, parameters])
 
     #resampling
-    if parameters.resampling is True:
+    if 'resampling' in parameters:
         print("resampling...",file=sys.stderr)
-        data, clusters, order, corpusdict = sample(data, "novelty", novelToNotNovelRatio = parameters.novel_ratio, over = parameters.oversampling, replacement = parameters.replacement)
+        data, clusters, order, corpusdict = sample(data, "novelty", **parameters['resampling'])
         
     #preprocessing
     print("preprocessing...",file=sys.stderr)
-    vocab, encoder_decoder, lda = preprocess.main([features, corpusdict, data, parameters])
+    vocab, encoder_decoder, lda = preprocess.main([features, corpusdict, data])
 
-    #featurization step 1
-    print("generating observations and features...",file=sys.stderr)
-    train_observations = observations.main([clusters, order, data, directory, features, vocab, encoder_decoder, lda])
-    test_observations = observations.main([test_clusters, test_order, test_data, directory, features, vocab, encoder_decoder, lda])
-
-    #featurization step 2
+    #featurization
     print("generating training and testing data...",file=sys.stderr)
-    train_data, train_target = features_and_labels.main([train_observations, features])
-    test_data, test_target = features_and_labels.main([test_observations, features])
+    train_data, train_target = data_gen.main([clusters, order, data, features, vocab, encoder_decoder, lda])
+    test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, vocab, encoder_decoder, lda])
 
     #modeling
     print("running algorithms...",file=sys.stderr)
-    if algorithms.log_reg:
-        predicted_labels, perform_results = log_reg.main([train_data, train_target, test_data, test_target])
-    if algorithms.svm:
-        predicted_labels, perform_results = svm.main([train_data, train_target, test_data, test_target])
+    if 'log_reg' in algorithms:
+        logreg_model = log_reg.main([train_data, train_target, algorithms['log_reg']])
+        predicted_labels, perform_results = predict.main([logreg_model, test_data, test_target])
+    if 'svm' in algorithms:
+        svm_model = svm.main([train_data, train_target, algorithms['svm']])
+        predicted_labels, perform_results = predict.main([svm_model, test_data, test_target])
+ 
     #results
     return perform_results
 
@@ -90,8 +85,125 @@ def parse_args(given_args=None):
 
     return [args.directory, features, algorithms, parameters]
 
+def get_args():
+    #DIRECTORY
+    directory = 'data/stackexchange/anime'
+    
+    #FEATURES
+    #bag of words
+    BOW_APPEND = False
+    BOW_DIFFERENCE = True
+    BOW_PRODUCT = True
+    BOW_COS = True
+    BOW_TFIDF = True
+    BOW_VOCAB = None
+    
+    #skipthoughts
+    ST_APPEND = False
+    ST_DIFFERENCE = False
+    ST_PRODUCT = False
+    ST_COS = False
+    
+    #lda
+    LDA_APPEND = False
+    LDA_DIFFERENCE = False
+    LDA_PRODUCT = False
+    LDA_COS = False
+    LDA_VOCAB = 1000
+    LDA_TOPICS = 40
+    
+    #ALGORITHMS
+    #logistic regression
+    LOG_REG = True
+    LOG_PENALTY = 'l2'
+    LOG_TOL = 1e-4
+    LOG_C = 1e-4
+    
+    #svm
+    SVM = True
+    SVM_C = 0.001
+    SVM_KERNAL = 'linear'
+    SVM_GAMMA = 'auto'
+    
+    #PARAMETERS
+    #resampling
+    RESAMPLING = True
+    NOVEL_RATIO = None
+    OVERSAMPLING = False
+    REPLACEMENT = False
+    
+    SEED = None
+    
+    #get features
+    bow = None
+    st = None
+    lda = None
+    
+    if BOW_APPEND or BOW_DIFFERENCE or BOW_PRODUCT or BOW_COS or BOW_TFIDF:
+        bow = dict()
+        if BOW_APPEND: bow['append'] = BOW_APPEND
+        if BOW_DIFFERENCE: bow['difference'] = BOW_DIFFERENCE
+        if BOW_PRODUCT: bow['product'] = BOW_PRODUCT
+        if BOW_COS: bow['cos'] = BOW_COS
+        if BOW_TFIDF: bow['tfidf'] = BOW_TFIDF
+        if BOW_VOCAB: bow['vocab'] = BOW_VOCAB
+    if ST_APPEND or ST_DIFFERENCE or ST_PRODUCT or ST_COS:
+        st = dict()
+        if ST_APPEND: st['append'] = ST_APPEND
+        if ST_DIFFERENCE: st['difference'] = ST_DIFFERENCE
+        if ST_PRODUCT: st['product'] = ST_PRODUCT
+        if ST_COS: st['cos'] = ST_COS    
+    if LDA_APPEND or LDA_DIFFERENCE or LDA_PRODUCT or LDA_COS:
+        lda = dict()
+        if LDA_APPEND: lda['append'] = LDA_APPEND
+        if LDA_DIFFERENCE: lda['difference'] = LDA_DIFFERENCE
+        if LDA_PRODUCT: lda['product'] = LDA_PRODUCT
+        if LDA_COS: lda['cos'] = LDA_COS
+        if LDA_VOCAB: lda['vocab'] = LDA_VOCAB
+        if LDA_TOPICS: lda['topics'] = LDA_TOPICS
+    
+    features = dict()
+    if bow: features['bow'] = bow
+    if st: features['st'] = st
+    if lda: features['lda'] = lda
+    
+    #get algorithms
+    log_reg = None
+    svm = None
+    
+    if LOG_REG:
+        log_reg = dict()
+        if LOG_PENALTY: log_reg['log_penalty'] = LOG_PENALTY
+        if LOG_TOL: log_reg['log_tol'] = LOG_TOL
+        if LOG_C: log_reg['log_C'] = LOG_C
+    if SVM:
+        svm = dict()
+        if SVM_C: svm['svm_C'] = SVM_C
+        if SVM_KERNAL: svm['svm_kernal'] = SVM_KERNAL
+        if SVM_GAMMA: svm['svm_gamma'] = SVM_GAMMA
+    
+    algorithms = dict()    
+    if log_reg: algorithms['log_reg'] = log_reg
+    if svm: algorithms['svm'] = svm
+    
+    #get parameters
+    resampling = None
+    
+    if RESAMPLING:
+        resampling = dict()
+        if NOVEL_RATIO: resampling['novelToNotNovelRatio'] = NOVEL_RATIO
+        if OVERSAMPLING: resampling['over'] = OVERSAMPLING
+        if REPLACEMENT: resampling['replacement'] = REPLACEMENT
+            
+    parameters = dict()
+    if RESAMPLING: parameters['resampling'] = resampling
+    if SEED: parameters['seed'] = SEED
+    
+    return [directory, features, algorithms, parameters]
+
 if __name__ == '__main__':
-    args = parse_args()
+    #args = parse_args()
+    args = get_args()
     print("Algorithm details and Results:",file=sys.stderr)
     print(main(args), file=sys.stdout)
     sys.exit(0)
