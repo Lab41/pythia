@@ -4,12 +4,11 @@ from src.utils import performance_metrics
 import numpy as np
 import sys
 from sklearn import linear_model
-from collections import namedtuple
 
-def run_model(train_data, train_labels, test_data, test_labels, log_penalty='l2', log_dual=False, log_tol=1e-4, log_C=1e-4,
+def run_model(train_data, train_labels, log_penalty='l2', log_dual=False, log_tol=1e-4, log_C=1e-4,
               log_fit_intercept=True, log_intercept_scaling=1, log_class_weight=None, log_random_state=None,
               log_solver='liblinear', log_max_iter=100, log_multi_class='ovr', log_verbose=0, log_warm_start=False,
-              log_n_jobs=1, *args, **kwargs):
+              log_n_jobs=1, **kwargs):
     '''
     Algorithm which will take in a set of training text and labels to train a bag of words model
     This model is then used with a logistic regression algorithm to predict the labels for a second set of text
@@ -33,26 +32,22 @@ def run_model(train_data, train_labels, test_data, test_labels, log_penalty='l2'
     # we create an instance of Neighbours Classifier and fit the data.
     logreg.fit(train_data, train_labels)
 
-    #Now that we have something trained we can check if it is accurate with the test set
-    pred_labels = logreg.predict(test_data)
-    perform_results = performance_metrics.get_perform_metrics(test_labels, pred_labels)
-
-    return pred_labels, perform_results
+    return logreg
 
 def main(argv):
 
-    train_data, train_target, test_data, test_target = argv[0], argv[1], argv[2], argv[3]
+    train_data, train_target = argv[0], argv[1]
 
-    if len(argv)>4:
-        args_dict = argv[4]
+    if len(argv)>2:
+        args_dict = argv[2]
     else:
         args_dict = {}
 
     print("running logistic regression...",file=sys.stderr)
 
-    predicted_labels, perform_results = run_model(train_data, train_target, test_data, test_target, **args_dict)
+    logreg = run_model(train_data, train_target, **args_dict)
 
-    return predicted_labels, perform_results
+    return logreg
 
 if __name__ == '__main__':
     if len(sys.argv) < 5:

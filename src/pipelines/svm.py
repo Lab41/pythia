@@ -5,11 +5,10 @@ import numpy as np
 import sys
 from sklearn import svm
 from sklearn.svm import SVC
-from collections import namedtuple
 
-def run_model(train_data, train_labels, test_data, test_labels, svm_C=1.0, svm_kernel='rbf', svm_degree=3, svm_gamma='auto', svm_coef0=0.0,
+def run_model(train_data, train_labels, svm_C=1.0, svm_kernel='rbf', svm_degree=3, svm_gamma='auto', svm_coef0=0.0,
               svm_shrinking=True, svm_probability=False, svm_tol=0.001, svm_cache_size=200, svm_class_weight=None, svm_verbose=False,
-              svm_max_iter=-1, svm_decision_function_shape=None, svm_random_state=None, *args, **kwargs):
+              svm_max_iter=-1, svm_decision_function_shape=None, svm_random_state=None, **kwargs):
     '''
     Algorithm which will take in a set of training text and labels to train a bag of words model
     This model is then used with a logistic regression algorithm to predict the labels for a second set of text
@@ -30,27 +29,23 @@ def run_model(train_data, train_labels, test_data, test_labels, svm_C=1.0, svm_k
 
     # we create an instance of Neighbours Classifier and fit the data.
     svm.fit(train_data, train_labels)
-
-    #Now that we have something trained we can check if it is accurate with the test set
-    pred_labels = svm.predict(test_data)
-    perform_results = performance_metrics.get_perform_metrics(test_labels, pred_labels)
-
-    return pred_labels, perform_results
+    
+    return svm
 
 def main(argv):
 
-    train_data, train_target, test_data, test_target = argv[0], argv[1], argv[2], argv[3]
+    train_data, train_target = argv[0], argv[1]
 
-    if len(argv)>4:
-        args_dict = argv[4]
+    if len(argv)>2:
+        args_dict = argv[2]
     else:
         args_dict = {}
 
     print("running support vector machine...",file=sys.stderr)
 
-    predicted_labels, perform_results = run_model(train_data, train_target, test_data, test_target, **args_dict)
+    svm = run_model(train_data, train_target, **args_dict)
 
-    return predicted_labels, perform_results
+    return svm
 
 if __name__ == '__main__':
     if len(sys.argv) < 5:
