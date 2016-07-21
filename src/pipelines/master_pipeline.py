@@ -86,6 +86,7 @@ def parse_args(given_args=None):
     return [args.directory, features, algorithms, parameters]
 
 def get_args():
+    #DIRECTORY
     directory = 'data/stackexchange/anime'
     
     #FEATURES
@@ -124,12 +125,16 @@ def get_args():
     SVM_KERNAL = 'linear'
     SVM_GAMMA = 'auto'
     
+    #PARAMETERS
+    #resampling
     RESAMPLING = True
     NOVEL_RATIO = None
     OVERSAMPLING = False
     REPLACEMENT = False
+    
     SEED = None
     
+    #get features
     bow = None
     st = None
     lda = None
@@ -162,6 +167,7 @@ def get_args():
     if st: features['st'] = st
     if lda: features['lda'] = lda
     
+    #get algorithms
     log_reg = None
     svm = None
     
@@ -180,6 +186,7 @@ def get_args():
     if log_reg: algorithms['log_reg'] = log_reg
     if svm: algorithms['svm'] = svm
     
+    #get parameters
     resampling = None
     
     if RESAMPLING:
@@ -194,7 +201,6 @@ def get_args():
     
     return [directory, features, algorithms, parameters]
 
-    
 if __name__ == '__main__':
     #args = parse_args()
     args = get_args()
