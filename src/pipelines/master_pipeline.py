@@ -193,7 +193,7 @@ def get_args():
         resampling = dict()
         if NOVEL_RATIO: resampling['novelToNotNovelRatio'] = NOVEL_RATIO
         if OVERSAMPLING: resampling['over'] = OVERSAMPLING
-        if REPLACEMENT: resampling['replacement'] = replacement
+        if REPLACEMENT: resampling['replacement'] = REPLACEMENT
             
     parameters = dict()
     if RESAMPLING: parameters['resampling'] = resampling

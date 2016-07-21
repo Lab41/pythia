@@ -23,7 +23,8 @@ def run_model(train_data, train_labels, log_penalty='l2', log_dual=False, log_to
     '''
 
     #use Logistic Regression to train a model
-    logreg = linear_model.LogisticRegression(penalty=log_penalty, dual=log_dual, tol=log_tol, C=log_C, fit_intercept=log_fit_intercept,
+    logreg = linear_model.LogisticRegression(penalty=log_penalty, dual=log_dual, tol=log_tol, C=log_C,
+                                             fit_intercept=log_fit_intercept,
                                              intercept_scaling=log_intercept_scaling, class_weight=log_class_weight,
                                              random_state=log_random_state, solver=log_solver, max_iter=log_max_iter,
                                              multi_class=log_multi_class, verbose=log_verbose, warm_start=log_warm_start,
@@ -50,6 +51,6 @@ def main(argv):
     return logreg
 
 if __name__ == '__main__':
-    if len(sys.argv) < 5:
-        print("Usage: log_reg.py train_data, train_labels, test_data, test_labels\n\nCompute log reg between data (defined in train_data, train_labels, test_data, test_labels)")
+    if len(sys.argv) < 2:
+        print("Usage: log_reg.py train_data, train_labels, args_dict\n\nCreates logistic regression classifier from the data")
     else: main(sys.argv[1:])

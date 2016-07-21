@@ -48,6 +48,6 @@ def main(argv):
     return svm
 
 if __name__ == '__main__':
-    if len(sys.argv) < 5:
-        print("Usage: log_reg.py train_data, train_labels, test_data, test_labels\n\nCompute log reg between data (defined in train_data, train_labels, test_data, test_labels)")
+    if len(sys.argv) < 2:
+        print("Usage: log_reg.py train_data, train_labels, args_dict\n\nCreates svm classifier from the data")
     else: main(sys.argv[1:])
