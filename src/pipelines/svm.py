@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-from src.utils import performance_metrics
-import numpy as np
 import sys
-from sklearn import svm
 from sklearn.svm import SVC
 
 def run_model(train_data, train_labels, svm_C=1.0, svm_kernel='rbf', svm_degree=3, svm_gamma='auto', svm_coef0=0.0,
