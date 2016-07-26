@@ -1,0 +1,3 @@
+[submodule "src/memory_net"]
+	path = src/memory_net
+	url = https://github.com/YerevaNN/Dynamic-memory-networks-in-Theano.git
