@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # coding: utf-8
-from src.utils import performance_metrics
-import numpy as np
 import sys
 from sklearn import linear_model
 

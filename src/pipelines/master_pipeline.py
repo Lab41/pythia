@@ -7,7 +7,7 @@ This module regulates the features and algorithms used in order to detect novelt
 import sys
 import argparse
 from collections import namedtuple
-from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, predict
+from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict
 from src.utils.sampling import sample
 
 def main(argv):
@@ -42,7 +42,10 @@ def main(argv):
     if 'svm' in algorithms:
         svm_model = svm.main([train_data, train_target, algorithms['svm']])
         predicted_labels, perform_results = predict.main([svm_model, test_data, test_target])
- 
+    if 'xgb' in algorithms:
+        xgb_model = xgb.main([train_data, train_target, algorithms['xgb']])
+        predicted_labels, perform_results = predict.main([xgb_model, test_data, test_target])
+
     #results
     return perform_results
 
@@ -87,8 +90,8 @@ def parse_args(given_args=None):
 
 def get_args():
     #DIRECTORY
-    directory = 'data/stackexchange/anime'
-    
+    directory = '/data/stackexchange/anime'
+
     #FEATURES
     #bag of words
     BOW_APPEND = False
@@ -121,10 +124,17 @@ def get_args():
     
     #svm
     SVM = True
-    SVM_C = 0.001
+    SVM_C = 2000
     SVM_KERNAL = 'linear'
     SVM_GAMMA = 'auto'
-    
+
+    #xgboost
+    XGB = True
+    XGB_LEARNRATE = 0.1
+    XGB_MAXDEPTH = 3
+    XGB_MINCHILDWEIGHT = 1
+    XGB_COLSAMPLEBYTREE = 1
+
     #PARAMETERS
     #resampling
     RESAMPLING = True
@@ -170,6 +180,7 @@ def get_args():
     #get algorithms
     log_reg = None
     svm = None
+    xgb = None
     
     if LOG_REG:
         log_reg = dict()
@@ -181,10 +192,17 @@ def get_args():
         if SVM_C: svm['svm_C'] = SVM_C
         if SVM_KERNAL: svm['svm_kernal'] = SVM_KERNAL
         if SVM_GAMMA: svm['svm_gamma'] = SVM_GAMMA
-    
+    if XGB:
+        xgb = dict()
+        if XGB_LEARNRATE: xgb['x_learning_rate'] = XGB_LEARNRATE
+        if XGB_MAXDEPTH: xgb['x_max_depth'] = XGB_MAXDEPTH
+        if XGB_COLSAMPLEBYTREE: xgb['svm_gamma'] = XGB_COLSAMPLEBYTREE
+        if XGB_MINCHILDWEIGHT: xgb['svm_gamma'] = XGB_MINCHILDWEIGHT
+
     algorithms = dict()    
     if log_reg: algorithms['log_reg'] = log_reg
     if svm: algorithms['svm'] = svm
+    if xgb: algorithms['xgb'] = xgb
     
     #get parameters
     resampling = None

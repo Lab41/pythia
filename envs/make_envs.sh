@@ -62,6 +62,9 @@ set -e
     # Download some NLTK data (punkt tokenizer)
     python -m nltk.downloader punkt
 
+    # Install XGBoost classifier
+    pip install xgboost
+
     # install theano and keras
     pip install nose-parameterized Theano keras
 
@@ -101,5 +104,5 @@ set -e
 
 }
 
-make_env "py3-pythia-tf" "Python 3.4 (Pythia, TF)" "3.4"
+#make_env "py3-pythia-tf" "Python 3.4 (Pythia, TF)" "3.4"
 make_env "py3-pythia" "Python 3.5 (Pythia/Spark-compatible)" "3.5"
