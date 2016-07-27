@@ -9,6 +9,7 @@ import argparse
 from collections import namedtuple
 from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict
 from src.utils.sampling import sample
+from src.mem_net import main_mem_net
 
 def main(argv):
     '''
@@ -24,15 +25,17 @@ def main(argv):
     if 'resampling' in parameters:
         print("resampling...",file=sys.stderr)
         data, clusters, order, corpusdict = sample(data, "novelty", **parameters['resampling'])
-        
+
     #preprocessing
     print("preprocessing...",file=sys.stderr)
     vocab, encoder_decoder, lda = preprocess.main([features, corpusdict, data])
 
     #featurization
-    print("generating training and testing data...",file=sys.stderr)
-    train_data, train_target = data_gen.main([clusters, order, data, features, vocab, encoder_decoder, lda])
-    test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, vocab, encoder_decoder, lda])
+    #this portion doesn't run if memory networks are used
+    if len(features)>1:
+        print("generating training and testing data...",file=sys.stderr)
+        train_data, train_target = data_gen.main([clusters, order, data, features, vocab, encoder_decoder, lda])
+        test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, vocab, encoder_decoder, lda])
 
     #modeling
     print("running algorithms...",file=sys.stderr)
@@ -45,6 +48,10 @@ def main(argv):
     if 'xgb' in algorithms:
         xgb_model = xgb.main([train_data, train_target, algorithms['xgb']])
         predicted_labels, perform_results = predict.main([xgb_model, test_data, test_target])
+    if 'mem_net' in algorithms:
+        mem_net_model, model_name = main_mem_net.run_mem_net(directory, **algorithms['mem_net'])
+        predicted_labels, perform_results = main_mem_net.test_mem_network(mem_net_model, model_name, **algorithms['mem_net'])
+
 
     #results
     return perform_results
@@ -94,12 +101,14 @@ def get_args(
 
     #FEATURES
     #bag of words
+
     BOW_APPEND = False,
     BOW_DIFFERENCE = True,
     BOW_PRODUCT = True,
     BOW_COS = True,
     BOW_TFIDF = True,
     BOW_VOCAB = None,
+
     
     #skipthoughts
     ST_APPEND = False,
@@ -134,6 +143,14 @@ def get_args(
     XGB_MAXDEPTH = 3,
     XGB_MINCHILDWEIGHT = 1,
     XGB_COLSAMPLEBYTREE = 1,
+
+    #memory network
+    MEM_NET = True,
+    #The memory network vocab uses Glove which can be 50, 100, 200 or 300 depending on the models you have in /data/glove
+    MEM_VOCAB = 50,
+    MEM_TYPE = 'dmn_basic',
+    MEM_BATCH = 1,
+    MEM_EPOCHS = 5,
 
     #PARAMETERS
     #resampling
@@ -181,6 +198,7 @@ def get_args(
     log_reg = None
     svm = None
     xgb = None
+    mem_net = None
     
     if LOG_REG:
         log_reg = dict()
@@ -198,11 +216,20 @@ def get_args(
         if XGB_MAXDEPTH: xgb['x_max_depth'] = XGB_MAXDEPTH
         if XGB_COLSAMPLEBYTREE: xgb['svm_gamma'] = XGB_COLSAMPLEBYTREE
         if XGB_MINCHILDWEIGHT: xgb['svm_gamma'] = XGB_MINCHILDWEIGHT
+    if MEM_NET:
+        mem_net = dict()
+        if MEM_VOCAB: mem_net['word_vector_size'] = MEM_VOCAB
+        if SEED: mem_net['seed'] = SEED
+        if MEM_TYPE: mem_net['network'] = MEM_TYPE
+        if MEM_BATCH: mem_net['batch_size'] = MEM_BATCH
+        if MEM_EPOCHS: mem_net['epochs'] = MEM_EPOCHS
+
 
     algorithms = dict()    
     if log_reg: algorithms['log_reg'] = log_reg
     if svm: algorithms['svm'] = svm
     if xgb: algorithms['xgb'] = xgb
+    if mem_net: algorithms['mem_net']=mem_net
     
     #get parameters
     resampling = None

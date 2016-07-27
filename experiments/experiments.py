@@ -39,7 +39,7 @@ def config_variables():
 
     # FEATURES
     # bag of words
-    BOW_APPEND = True
+    BOW_APPEND = False
     BOW_DIFFERENCE = False
     BOW_PRODUCT = False
     BOW_COS = False
@@ -59,6 +59,13 @@ def config_variables():
     LDA_COS = False
     LDA_VOCAB = 10000
     LDA_TOPICS = 50
+    
+    #Mem_nets
+    MEM_NET = True
+    MEM_VOCAB = 50
+    MEM_TYPE = 'dmn_basic'
+    MEM_BATCH = 1
+    MEM_EPOCHS = 5 
 
     # ALGORITHMS
     # logistic regression
@@ -74,7 +81,7 @@ def config_variables():
     SVM_GAMMA = 'auto'
 
     # xgboost
-    XGB = True
+    XGB = False
     XGB_LEARNRATE = 0.1
     XGB_MAXDEPTH = 3
     XGB_MINCHILDWEIGHT = 1
@@ -121,6 +128,11 @@ def run_experiment(
     XGB_MAXDEPTH,
     XGB_MINCHILDWEIGHT,
     XGB_COLSAMPLEBYTREE,
+    MEM_NET,
+    MEM_VOCAB,
+    MEM_TYPE,
+    MEM_BATCH,
+    MEM_EPOCHS,
     RESAMPLING,
     NOVEL_RATIO,
     OVERSAMPLING,
@@ -159,6 +171,11 @@ def run_experiment(
             XGB_MAXDEPTH,
             XGB_MINCHILDWEIGHT,
             XGB_COLSAMPLEBYTREE,
+            MEM_NET,
+            MEM_VOCAB,
+            MEM_TYPE,
+            MEM_BATCH,
+            MEM_EPOCHS,
             RESAMPLING,
             NOVEL_RATIO,
             OVERSAMPLING,

@@ -64,6 +64,10 @@ set -e
     # install theano and keras
     pip install nose-parameterized Theano keras
 
+    # install Lasagne
+    pip install -r https://raw.githubusercontent.com/Lasagne/Lasagne/master/requirements.txt
+    pip install https://github.com/Lasagne/Lasagne/archive/master.zip
+
     # install bleeding-edge pylzma (for Stack Exchange)
     pip install git+https://github.com/fancycode/pylzma
 
@@ -100,4 +104,8 @@ set -e
 
 }
 
+<<<<<<< HEAD
+=======
+make_env "py3-pythia-tf" "Python 3.4 (Pythia, TF)" "3.4"
+>>>>>>> roll memory network alg into pipeline
 make_env "py3-pythia" "Python 3.5 (Pythia/Spark-compatible)" "3.5"

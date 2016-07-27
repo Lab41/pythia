@@ -4,7 +4,8 @@ import os as os
 import numpy as np
 import json
 import re
-import math
+import random
+from src.utils.normalize import normalize_and_remove_stop_words
 
 from bs4 import BeautifulSoup
 from sklearn.feature_extraction.stop_words import ENGLISH_STOP_WORDS
@@ -13,41 +14,54 @@ from sklearn.feature_extraction.stop_words import ENGLISH_STOP_WORDS
 # This module processes the data into tasks that can be used for training.
 # The data is split into information blocks, question blocks, and answer blocks to process
 # through the neural network. Returns the data as a list of dictionaries.
-def init_data(fname):
+def init_data(fname, seed):
     print("==> Loading test from %s" % fname)
-    tasks = [] # list that will be returned
-    documents = ""
+    train_tasks = [] # training list that will be returned
+    test_tasks = [] # training list that will be returned
+
     num_files = 0
+
+    random.seed(seed)
     for f in os.listdir(fname):
+        documents = ""
         inData = open(fname + "/" + f)
         num_files += 1
-        for i, line in enumerate(inData):
-            #print(i, line)
-            line = line.strip()
-            try:
-                post = json.loads(line) # make sure we can parse the json
-            except Exception:
-                print("Error with file " +  f)
-                #continue
-            text = post["body_text"]
-            text = text_to_words(text) # call text_to_words to process the text. See text_to_words
-            novelty = post["novelty"]
-            task = {"C": "","Q": "", "A": ""}
-            if i < 2:
-                documents += text # add the first 2 documents before setting any tasks
-            elif i < 200:
-                task["C"] += documents # add the next 200 documents as a task with the new document as a question.
-                task["Q"] = text
-                task["A"] = novelty
-                tasks.append(task.copy())
-                documents += text
+        if random.random()>0.2:
+            train_tasks.extend(parse_file(inData, f))
+        else:
+            test_tasks.extend(parse_file(inData, f))
+
     #documents = ""
+    return train_tasks, test_tasks
+
+def parse_file(inData, f):
+    documents = ""
+    tasks = []
+    for i, line in enumerate(inData):
+        #print(i, line)
+        line = line.strip()
+        try:
+            post = json.loads(line) # make sure we can parse the json
+        except Exception:
+            print("Error with file " +  f)
+            #continue
+        text = post["body_text"]
+        text = normalize_and_remove_stop_words(text) # call function from pythia normalize
+        novelty = post["novelty"]
+        task = {"C": "","Q": "", "A": ""}
+        if i < 1:
+            documents += text # add the first document before setting any tasks
+        elif i < 200:
+            task["C"] += documents # add the next 200 documents as a task with the new document as a question.
+            task["Q"] = text
+            task["A"] = novelty
+            tasks.append(task.copy())
+            documents += text
     return tasks
 
 # Go fetch and process the raw data from the file system using init_data. See init_data.
-def get_raw_data(input_file_train, input_file_test):
-    raw_data_train = init_data(input_file_train)
-    raw_data_test = init_data(input_file_test)
+def get_raw_data(directory, seed):
+    raw_data_train, raw_data_test = init_data(directory, seed)
     return raw_data_train, raw_data_test
 
 # Load glove data for word2vec            
@@ -55,7 +69,7 @@ def load_glove(dim):
     word2vec = {}
     
     print("==> loading glove")
-    with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "data/glove/glove.6B." + str(dim) + "d.txt")) as f:
+    with open("data/glove/glove.6B." + str(dim) + "d.txt") as f:
         for line in f:    
             l = line.split()
             word2vec[l[0]] = list(map(float, l[1:]))
@@ -94,37 +108,6 @@ def get_norm(x):
     x = np.array(x)
     return np.sum(x * x)
 
-def text_to_words(raw_text):
-	'''
-	Algorithm to convert raw text to a return a clean text string
-	Method modified from code available at:
-        https://www.kaggle.com/c/word2vec-nlp-tutorial/details/part-1-for-beginners-bag-of-words
-
-	Args:
-		raw_text: Original text to clean and normalize
-
-	Returns:
-		clean_text: Cleaned text
-	'''
-
-	# 1. Remove HTML
-	#TODO Potentially look into using package other than BeautifulSoup for this step
-	#review_text = BeautifulSoup(raw_text, "lxml").get_text()
-	#
-	# 2. Remove non-letters
-	#letters_only = re.sub("[^a-zA-Z]", " ", review_text)
-	#
-	letters_only = re.sub("[^a-zA-Z]", " ", raw_text)
-	# 3. Convert to lower case, split into individual words
-	words = letters_only.lower().split()
-	#
-	# 4. Remove stop words
-	meaningful_words = [w for w in words if not w in ENGLISH_STOP_WORDS]
-	#
-	# 5. Join the words back into one string separated by space,
-	# and return the result.
-	clean_text = ( " ".join( meaningful_words ))
-	return   clean_text
 
 def get_one_hot_doc(txt, char_vocab, replace_vocab=None, replace_char=' ',
                 min_length=10, max_length=300, pad_out=True,
