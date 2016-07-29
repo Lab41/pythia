@@ -23,14 +23,18 @@ from nltk.tokenize import word_tokenize
 import urllib.request
 import errno
 import sys
-
 profile = False
 
 #-----------------------------------------------------------------------------#
-# Specify model and table locations here
+# Look at environment variable 'PYTHIA_MODELS_PATH' for user-defined model location
+# If environment variable is not defined, use current working directory
 #-----------------------------------------------------------------------------#
-path_to_models = os.path.join(os.getcwd(), 'models')
-path_to_tables = os.path.join(os.getcwd(), 'models')
+if os.environ.get('PYTHIA_MODELS_PATH') is not None:
+    path_to_models = os.environ.get('PYTHIA_MODELS_PATH')
+    path_to_tables = os.environ.get('PYTHIA_MODELS_PATH')
+else:
+    path_to_models = os.path.join(os.getcwd(), 'models')
+    path_to_tables = os.path.join(os.getcwd(), 'models')
 #-----------------------------------------------------------------------------#
 
 path_to_umodel = os.path.join(path_to_models, 'uni_skip.npz')
@@ -51,7 +55,7 @@ def load_model():
     for model in models:
         if not os.path.isfile(os.path.join(path_to_models, model)):
             print('Skip-Thought %s model not found in %s, downloading...' % (model,path_to_models),file=sys.stderr)
-            urllib.request.urlretrieve("http://www.cs.toronto.edu/~rkiros/models/" + model,"models/" + model)
+            urllib.request.urlretrieve("http://www.cs.toronto.edu/~rkiros/models/" + model, os.path.join(path_to_models, model))
 
     # Load model options
     print('Loading model parameters...',file=sys.stderr)
@@ -103,7 +107,7 @@ def load_tables():
     for table in tables:
         if not os.path.isfile(os.path.join(path_to_tables, table)):
             print('Skip-Thought %s table not found in %s, downloading...' % (table,path_to_tables),file=sys.stderr)
-            urllib.request.urlretrieve("http://www.cs.toronto.edu/~rkiros/models/" + table,"models/" + table)
+            urllib.request.urlretrieve("http://www.cs.toronto.edu/~rkiros/models/" + table, os.path.join(path_to_tables, table))
 
     words = []
     utable = numpy.load(os.path.join(path_to_tables, 'utable.npy'), encoding = 'bytes')
