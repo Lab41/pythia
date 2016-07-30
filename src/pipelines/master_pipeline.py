@@ -88,62 +88,61 @@ def parse_args(given_args=None):
 
     return [args.directory, features, algorithms, parameters]
 
-def get_args():
+def get_args(
     #DIRECTORY
-    directory = '/data/stackexchange/anime'
+    directory = '/data/stackexchange/anime',
 
     #FEATURES
     #bag of words
-    BOW_APPEND = False
-    BOW_DIFFERENCE = True
-    BOW_PRODUCT = True
-    BOW_COS = True
-    BOW_TFIDF = True
-    BOW_VOCAB = None
+    BOW_APPEND = False,
+    BOW_DIFFERENCE = True,
+    BOW_PRODUCT = True,
+    BOW_COS = True,
+    BOW_TFIDF = True,
+    BOW_VOCAB = None,
 
     #skipthoughts
-    ST_APPEND = False
-    ST_DIFFERENCE = False
-    ST_PRODUCT = False
-    ST_COS = False
+    ST_APPEND = False,
+    ST_DIFFERENCE = False,
+    ST_PRODUCT = False,
+    ST_COS = False,
 
     #lda
-    LDA_APPEND = False
-    LDA_DIFFERENCE = False
-    LDA_PRODUCT = False
-    LDA_COS = False
-    LDA_VOCAB = 1000
-    LDA_TOPICS = 40
+    LDA_APPEND = False,
+    LDA_DIFFERENCE = False,
+    LDA_PRODUCT = False,
+    LDA_COS = False,
+    LDA_VOCAB = 1000,
+    LDA_TOPICS = 40,
 
     #ALGORITHMS
     #logistic regression
-    LOG_REG = True
-    LOG_PENALTY = 'l2'
-    LOG_TOL = 1e-4
-    LOG_C = 1e-4
+    LOG_REG = True,
+    LOG_PENALTY = 'l2',
+    LOG_TOL = 1e-4,
+    LOG_C = 1e-4,
 
     #svm
-    SVM = True
-    SVM_C = 2000
-    SVM_KERNAL = 'linear'
-    SVM_GAMMA = 'auto'
+    SVM = True,
+    SVM_C = 2000,
+    SVM_KERNAL = 'linear',
+    SVM_GAMMA = 'auto',
 
     #xgboost
-    XGB = True
-    XGB_LEARNRATE = 0.1
-    XGB_MAXDEPTH = 3
-    XGB_MINCHILDWEIGHT = 1
-    XGB_COLSAMPLEBYTREE = 1
+    XGB = True,
+    XGB_LEARNRATE = 0.1,
+    XGB_MAXDEPTH = 3,
+    XGB_MINCHILDWEIGHT = 1,
+    XGB_COLSAMPLEBYTREE = 1,
 
     #PARAMETERS
     #resampling
-    RESAMPLING = True
-    NOVEL_RATIO = None
-    OVERSAMPLING = False
-    REPLACEMENT = False
+    RESAMPLING = True,
+    NOVEL_RATIO = None,
+    OVERSAMPLING = False,
+    REPLACEMENT = False,
 
-    SEED = None
-
+    SEED = None):
     #get features
     bow = None
     st = None

@@ -20,13 +20,21 @@ from collections import OrderedDict, defaultdict
 from scipy.linalg import norm
 from nltk.tokenize import word_tokenize
 
+import urllib.request
+import errno
+import sys
 profile = False
 
 #-----------------------------------------------------------------------------#
-# Specify model and table locations here
+# Look at environment variable 'PYTHIA_MODELS_PATH' for user-defined model location
+# If environment variable is not defined, use current working directory
 #-----------------------------------------------------------------------------#
-path_to_models = os.path.join(os.getcwd(), 'models')
-path_to_tables = os.path.join(os.getcwd(), 'models')
+if os.environ.get('PYTHIA_MODELS_PATH') is not None:
+    path_to_models = os.environ.get('PYTHIA_MODELS_PATH')
+    path_to_tables = os.environ.get('PYTHIA_MODELS_PATH')
+else:
+    path_to_models = os.path.join(os.getcwd(), 'models')
+    path_to_tables = os.path.join(os.getcwd(), 'models')
 #-----------------------------------------------------------------------------#
 
 path_to_umodel = os.path.join(path_to_models, 'uni_skip.npz')
@@ -37,8 +45,20 @@ def load_model():
     """
     Load the model with saved tables
     """
+    # Check if 'models' directory exists and contains the Skip-Thought models, download if not found
+    try:
+        os.makedirs(path_to_models)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST: raise
+
+    models = ["uni_skip.npz.pkl", "bi_skip.npz.pkl", "uni_skip.npz", "bi_skip.npz"]
+    for model in models:
+        if not os.path.isfile(os.path.join(path_to_models, model)):
+            print('Skip-Thought %s model not found in %s, downloading...' % (model,path_to_models),file=sys.stderr)
+            urllib.request.urlretrieve("http://www.cs.toronto.edu/~rkiros/models/" + model, os.path.join(path_to_models, model))
+
     # Load model options
-    print('Loading model parameters...')
+    print('Loading model parameters...',file=sys.stderr)
     with open('%s.pkl'%path_to_umodel, 'rb') as f:
         uoptions = pkl.load(f)
     with open('%s.pkl'%path_to_bmodel, 'rb') as f:
@@ -46,27 +66,27 @@ def load_model():
 
     # Load parameters
     uparams = init_params(uoptions)
-    print(path_to_umodel)
+    print(path_to_umodel,file=sys.stderr)
     uparams = load_params(path_to_umodel, uparams)
     utparams = init_tparams(uparams)
     bparams = init_params_bi(boptions)
-    print(path_to_bmodel)
+    print(path_to_bmodel,file=sys.stderr)
     bparams = load_params(path_to_bmodel, bparams)
     btparams = init_tparams(bparams)
 
     # Extractor functions
-    print('Compiling encoders...')
+    print('Compiling encoders...',file=sys.stderr)
     embedding, x_mask, ctxw2v = build_encoder(utparams, uoptions)
     f_w2v = theano.function([embedding, x_mask], ctxw2v, name='f_w2v')
     embedding, x_mask, ctxw2v = build_encoder_bi(btparams, boptions)
     f_w2v2 = theano.function([embedding, x_mask], ctxw2v, name='f_w2v2')
 
     # Tables
-    print('Loading tables...')
+    print('Loading tables...',file=sys.stderr)
     utable, btable = load_tables()
 
     # Store everything we need in a dictionary
-    print('Packing up...')
+    print('Packing up...',file=sys.stderr)
     model = {}
     model['uoptions'] = uoptions
     model['boptions'] = boptions
@@ -82,6 +102,13 @@ def load_tables():
     """
     Load the tables
     """
+    # Check for the Skip-Thought tables and download if not found
+    tables = ["utable.npy", "btable.npy", "dictionary.txt"]
+    for table in tables:
+        if not os.path.isfile(os.path.join(path_to_tables, table)):
+            print('Skip-Thought %s table not found in %s, downloading...' % (table,path_to_tables),file=sys.stderr)
+            urllib.request.urlretrieve("http://www.cs.toronto.edu/~rkiros/models/" + table, os.path.join(path_to_tables, table))
+
     words = []
     utable = numpy.load(os.path.join(path_to_tables, 'utable.npy'), encoding = 'bytes')
     btable = numpy.load(os.path.join(path_to_tables, 'btable.npy'), encoding = 'bytes')
@@ -94,7 +121,7 @@ def load_tables():
     return utable, btable
 
 
-def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False):
+def encode(model, X, use_norm=True, verbose=False, batch_size=128, use_eos=False):
     """
     Encode sentences in the list X. Each entry will return a vector
     """
@@ -117,7 +144,7 @@ def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False)
     # Get features. This encodes by length, in order to avoid wasting computation
     for k in list(ds.keys()):
         if verbose:
-            print(k)
+            print(k,file=sys.stderr)
         numbatches = len(ds[k]) // batch_size + 1
         for minibatch in range(numbatches):
             caps = ds[k][minibatch::numbatches]
@@ -186,10 +213,10 @@ def nn(model, text, vectors, query, k=5):
     scores = numpy.dot(qf, vectors.T).flatten()
     sorted_args = numpy.argsort(scores)[::-1]
     sentences = [text[a] for a in sorted_args[:k]]
-    print('QUERY: ' + query)
-    print('NEAREST: ')
+    print('QUERY: ' + query,file=sys.stderr)
+    print('NEAREST: ',file=sys.stderr)
     for i, s in enumerate(sentences):
-        print(s, sorted_args[i])
+        print(s, sorted_args[i],file=sys.stderr)
 
 
 def word_features(table):
@@ -213,10 +240,10 @@ def nn_words(table, wordvecs, query, k=10):
     scores = numpy.dot(qf, wordvecs.T).flatten()
     sorted_args = numpy.argsort(scores)[::-1]
     words = [keys[a] for a in sorted_args[:k]]
-    print('QUERY: ' + query)
+    print('QUERY: ' + query,file=sys.stderr)
     print('NEAREST: ')
     for i, w in enumerate(words):
-        print(w)
+        print(w,file=sys.stderr)
 
 
 def _p(pp, name):
