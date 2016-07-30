@@ -2,20 +2,32 @@ from src.featurizers import skipthoughts as sk
 from src.utils import normalize, tokenize
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.preprocessing import OneHotEncoder
+
 import numpy as np
 from scipy import spatial
 from collections import defaultdict
 
-def gen_feature(vectors, feature_dict, feature):
-    if 'append' in feature_dict:
-        feature.append(np.concatenate(vectors, axis=0))
-    if 'difference' in feature_dict:
-        feature.append(np.subtract(vectors[0], vectors[1]))
-    if 'product' in feature_dict:
-        feature.append(np.multiply(vectors[0], vectors[1]))
-    if 'cos' in feature_dict:
-        similarity = 1 - spatial.distance.cosine(vectors[0], vectors[1])
-        feature.append(np.array([similarity]))
+def gen_feature(new_vectors, requested_transformations, feature_vector):
+    """Take newly generated feature vectors, look up which
+    transformations have been requested for them, and append the
+    transformed feature vectors to the existing feature collection.
+
+    Args:
+        new_vectors (list, np.NDArray): feature vectors to be transformed
+        requested_transformations (list): should feature vectors be concatenated,
+            subtracted, multiplied, or other forms of comparison made?
+        feature_vector (list?): existing list of feature vectors
+     """
+    if 'append' in requested_transformations:
+        feature_vector.append(np.concatenate(new_vectors, axis=0))
+    if 'difference' in requested_transformations:
+        feature_vector.append(np.subtract(new_vectors[0], new_vectors[1]))
+    if 'product' in requested_transformations:
+        feature_vector.append(np.multiply(new_vectors[0], new_vectors[1]))
+    if 'cos' in requested_transformations:
+        similarity = 1 - spatial.distance.cosine(new_vectors[0], new_vectors[1])
+        feature_vector.append(np.array([similarity]))
     return feature
 
 def bow(doc, corpus, corpus_array, vocab, bow, feature):
@@ -28,12 +40,12 @@ def bow(doc, corpus, corpus_array, vocab, bow, feature):
 def bag_of_words_vectors(doc, corpus, vocab):
     '''
     Creates bag of words vectors for doc and corpus for a given vocabulary.
-    
+
     Args:
         doc (str): the text (normalized and without stop words) of the document
         corpus (str): the text (normalized and without stop words) of the corpus for that cluster
         vocab (dict): the vocabulary of the data set
-        
+
     Returns:
         array: contains the bag of words vectors
     '''
@@ -50,13 +62,13 @@ def bag_of_words_vectors(doc, corpus, vocab):
 def tfidf_sum(doc, corpus_array, vocab, feature):
     '''
     Calculates L1 normalized TFIDF summation as Novelty Score for new document against corpus.
-    
+
     Credit to http://cgi.di.uoa.gr/~antoulas/pubs/ntoulas-novelty-wise.pdf
-    
+
     Args:
         doc (str): the text (normalized and without stop words) of the document
         corpus (str): the text (normalized and without stop words) of the corpus for that cluster (including the current doc)
-    
+
     Returns:
         float: the normalized TFIDF summation
     '''
@@ -74,19 +86,19 @@ def st(doc, sentences, encoder_decoder, st, feature):
     vectors = skipthoughts_vectors(doc, sentences, encoder_decoder)
     feature = gen_feature(vectors, st, feature)
     return feature
-    
+
 def skipthoughts_vectors(doc, sentences, encoder_decoder):
     '''
     Creates skipthoughts vector for doc and corpus for a given encoder_decoder
-    
+
     The encode function produces an array of skipthought vectors with as many rows as there were sentences and 4800 dimensions.
     See the combine-skip section of the skipthoughts paper for a detailed explanation of the array.
-    
+
     Args:
         doc (str): the text of the document (before any normalization)
         corpus (list): the first and last sentences of each document in the corpus
         encoder_decoder (???): the skipthoughts encoder/decoder
-        
+
     Returns:
         array: the concatenation of the corpus skipthoughts vector (the average of each indivdual skipthoughts vector) and the document skipthoughts vector (the average of the first and last sentence's skipthoughts vector)
     '''
@@ -99,10 +111,10 @@ def skipthoughts_vectors(doc, sentences, encoder_decoder):
 def get_first_and_last_sentence(doc):
     '''
     Finds the first and last sentance of a document and normalizes them.
-    
+
     Args:
         doc (str): the text of the document (before any preprocessing)
-    
+
     Returns:
         array: the first and last sentance after normalizing
     '''
@@ -122,24 +134,43 @@ def lda(doc, corpus, vocab, lda_topics, lda, feature):
 def run_lda(lda_topics, doc, vocab):
     '''
     Calculates a vector of topic probabilities for a single document based on a trained LDA model.
-    
+
     Args:
-        lda (LatentDirichletAllocation): A LDA model previously fit to vocabulary of training data
+        lda_topics (LatentDirichletAllocation): A LDA model previously fit to vocabulary of training data
         doc (str): the text (normalized and without stop words) of the document
         vocab (dict): the vocabulary of the data set
-        
+
     Returns:
         array: a vector of topic probabilities based on a trained LDA model
     '''
 
     vectorizer = CountVectorizer(analyzer = "word", vocabulary = vocab)
-    docvector = vectorizer.transform([doc])  
+    docvector = vectorizer.transform([doc])
     return lda_topics.transform(docvector)[0]
+
+def wordonehot(doc, corpus, vocab, transformations, feature, min_length=None, max_length=None):
+    # TODO: do we need to normalize here too?
+    doc_array = tokenize.word_punct_tokens(doc)
+    # transform only the non-null entries in the document
+    doc_indices = [doc_idx for doc_idx in
+                        [ vocab.get(wd, None) for wd in doc_array ]
+                        if doc_idx is not None]
+    vocab_size = len(vocab)
+    doc_onehot = np.zeros((vocab_size, len(doc_indices)))
+    for token_idx, token in enumerate(doc_indices):
+        doc_onehot[token, token_idx] = 1
+
+    # TODO: add truncation and padding
+
+    feature = gen_feature(doc_onehot, transformations, feature)
+
+    return feature
+
 
 def gen_observations(all_clusters, lookup_order, documentData, features, vocab, encoder_decoder, lda_topics):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
-    
+
     Args:
         all_clusters (set): cluster IDs
         lookup_order (dict): document arrival order
@@ -148,7 +179,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, vocab, 
         features (namedTuple): the specified features to be calculated
         vocab (dict): the vocabulary of the data set
         encoder_decoder (???): the encoder/decoder for skipthoughts vectors
-    
+
     Returns:
         list: contains for each obeservation a namedtupled with the cluster_id, post_id, novelty, tfidf sum, cosine similarity, bag of words vectors and skip thoughts  (scores are None if feature is unwanted)
     '''
@@ -162,7 +193,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, vocab, 
     for cluster in all_clusters:
         # Determine arrival order in this cluster
         sortedEntries = [x[1] for x in sorted(lookup_order[cluster], key=lambda x: x[0])]
-        
+
         first_doc = documentData[sortedEntries[0]]["body_text"]
 
         # Set corpus to first doc in this cluster and prepare to update corpus with new document vocabulary
@@ -178,12 +209,12 @@ def gen_observations(all_clusters, lookup_order, documentData, features, vocab, 
         for index in sortedEntries[1:]:
             # Find next document in order
             raw_doc = documentData[index]["body_text"]
-            
+
             #normalize and remove stop words from doc
             doc = normalize.normalize_and_remove_stop_words(raw_doc)
 
             corpus_array.append(doc)
-            
+
             feature = list()
 
             if 'bow' in features:
@@ -195,25 +226,28 @@ def gen_observations(all_clusters, lookup_order, documentData, features, vocab, 
             if 'lda' in features:
                 feature = lda(doc, corpus, vocab, lda_topics, features['lda'], feature)
 
+            if 'wordonehot' in features:
+                feature = wordonehot(doc, corpus, features['wordonehot'], feature)
+
             # Save feature and label
             feature = np.concatenate(feature, axis=0)
             data.append(feature)
             if documentData[index]["novelty"]: labels.append(1)
             else: labels.append(0)
-           
+
             # Update corpus and add newest sentence to sentences vector
             corpus+=doc
             sentences += get_first_and_last_sentence(doc)
 
     return data, labels
-            
+
 def main(argv):
     '''
     Controls the generation of observations with the specified features.
-    
+
     Args:
         argv (list): contains a set of all the cluster IDs, a dictionary of the document arrival order, an array of parsed JSON documents, the filename of the corpus, the feature tuple with the specified features, the vocabluary of the dataset and the skipthoughts vectors encoder/decoder
-    
+
     Returns:
         list: contains for each obeservation
     '''
