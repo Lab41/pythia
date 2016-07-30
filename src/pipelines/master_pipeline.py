@@ -112,8 +112,14 @@ def get_args(
     LDA_DIFFERENCE = False,
     LDA_PRODUCT = False,
     LDA_COS = False,
-    LDA_VOCAB = 1000,
+    LDA_VOCAB = 5000,
     LDA_TOPICS = 40,
+
+    # wordonehot (will not play nicely with other featurization methods b/c not
+    # vector)
+    WORDONEHOT = False
+    #WORDONEHOT_DOCLENGTH = None
+    WORDONEHOT_VOCAB = 5000
 
     #ALGORITHMS
     #logistic regression
