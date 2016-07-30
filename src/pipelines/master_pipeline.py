@@ -95,10 +95,10 @@ def get_args(
     #FEATURES
     #bag of words
     BOW_APPEND = False,
-    BOW_DIFFERENCE = True,
-    BOW_PRODUCT = True,
-    BOW_COS = True,
-    BOW_TFIDF = True,
+    BOW_DIFFERENCE = False,
+    BOW_PRODUCT = False,
+    BOW_COS = False,
+    BOW_TFIDF = False,
     BOW_VOCAB = None,
 
     #skipthoughts
@@ -117,19 +117,19 @@ def get_args(
 
     #ALGORITHMS
     #logistic regression
-    LOG_REG = True,
+    LOG_REG = False,
     LOG_PENALTY = 'l2',
     LOG_TOL = 1e-4,
     LOG_C = 1e-4,
 
     #svm
-    SVM = True,
+    SVM = False,
     SVM_C = 2000,
     SVM_KERNAL = 'linear',
     SVM_GAMMA = 'auto',
 
     #xgboost
-    XGB = True,
+    XGB = False,
     XGB_LEARNRATE = 0.1,
     XGB_MAXDEPTH = 3,
     XGB_MINCHILDWEIGHT = 1,
