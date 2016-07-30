@@ -143,6 +143,7 @@ def get_args(
     REPLACEMENT = False,
 
     SEED = None):
+
     #get features
     bow = None
     st = None
@@ -216,7 +217,7 @@ def get_args(
     if RESAMPLING: parameters['resampling'] = resampling
     if SEED: parameters['seed'] = SEED
 
-    return [directory, features, algorithms, parameters]
+    return directory, features, algorithms, parameters
 
 if __name__ == '__main__':
     #args = parse_args()
