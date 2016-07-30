@@ -24,7 +24,7 @@ def main(argv):
     if 'resampling' in parameters:
         print("resampling...",file=sys.stderr)
         data, clusters, order, corpusdict = sample(data, "novelty", **parameters['resampling'])
-        
+
     #preprocessing
     print("preprocessing...",file=sys.stderr)
     vocab, encoder_decoder, lda = preprocess.main([features, corpusdict, data])
@@ -55,16 +55,16 @@ def parse_args(given_args=None):
     parser.add_argument("--cos_similarity", "-c", "--cos-similarity", help="add cosine similarity as a feature", action="store_true")
     parser.add_argument("--tfidf_sum", "-t", "--tfidf-sum", help="add tfidf sum as a feature", action="store_true")
     parser.add_argument("--bag_of_words", "-b", "--bag-of-words", help="add bag of words vectors as a feature", action="store_true")
-    parser.add_argument("--vocab_size", "-v", type=int, default=500, help="set size of vocabulary to use with features that utilize bag of words")   
+    parser.add_argument("--vocab_size", "-v", type=int, default=500, help="set size of vocabulary to use with features that utilize bag of words")
     parser.add_argument("--skipthoughts", "-k", help="add skipthought vectors as a feature", action="store_true")
     parser.add_argument("--LDA", "-L", help="add Latent Dirichlet Allocation (LDA) vectors as a feature", action="store_true")
     parser.add_argument("--LDA_topics", "-T", type=int, default=10, help="set number of topics for Latent Dirichlet Allocation (LDA) model (default = 10)")
     parser.add_argument("--log_reg", "-l", "--log-reg", help="run logistic regression", action="store_true")
     parser.add_argument("--svm", "-s", help="run support vector machine", action="store_true")
     parser.add_argument("--resampling", "-r", help="conduct resampling to balance novel/non-novel ratio in training data", action="store_true")
-    parser.add_argument("--novel_ratio", "-n", type=float, default=1.0, help="set ratio of novel to non-novel sampling during resampling (0<=novel_ratio<=1.0, default = 1.0)")   
-    parser.add_argument("--oversampling", "-o", help="allow oversampling during resampling", action="store_true")   
-    parser.add_argument("--replacement", "-p", help="allow replacement during resampling", action="store_true")   
+    parser.add_argument("--novel_ratio", "-n", type=float, default=1.0, help="set ratio of novel to non-novel sampling during resampling (0<=novel_ratio<=1.0, default = 1.0)")
+    parser.add_argument("--oversampling", "-o", help="allow oversampling during resampling", action="store_true")
+    parser.add_argument("--replacement", "-p", help="allow replacement during resampling", action="store_true")
 
     if given_args is not None:
         args, extra_args = parser.parse_known_args(given_args)
@@ -79,7 +79,7 @@ def parse_args(given_args=None):
 
     paramTuple = namedtuple('parameters','vocab_size, lda_topics, resampling, novel_ratio, oversampling, replacement')
     parameters = paramTuple(args.vocab_size, args.LDA_topics, args.resampling, args.novel_ratio, args.oversampling, args.replacement)
-    
+
     if not (args.cos_similarity or args.tfidf_sum or args.bag_of_words or args.skipthoughts or args.LDA):
         parser.exit(status=1, message="Error: pipeline requires at least one feature\n")
 
@@ -100,13 +100,13 @@ def get_args():
     BOW_COS = True
     BOW_TFIDF = True
     BOW_VOCAB = None
-    
+
     #skipthoughts
     ST_APPEND = False
     ST_DIFFERENCE = False
     ST_PRODUCT = False
     ST_COS = False
-    
+
     #lda
     LDA_APPEND = False
     LDA_DIFFERENCE = False
@@ -114,14 +114,14 @@ def get_args():
     LDA_COS = False
     LDA_VOCAB = 1000
     LDA_TOPICS = 40
-    
+
     #ALGORITHMS
     #logistic regression
     LOG_REG = True
     LOG_PENALTY = 'l2'
     LOG_TOL = 1e-4
     LOG_C = 1e-4
-    
+
     #svm
     SVM = True
     SVM_C = 2000
@@ -141,14 +141,14 @@ def get_args():
     NOVEL_RATIO = None
     OVERSAMPLING = False
     REPLACEMENT = False
-    
+
     SEED = None
-    
+
     #get features
     bow = None
     st = None
     lda = None
-    
+
     if BOW_APPEND or BOW_DIFFERENCE or BOW_PRODUCT or BOW_COS or BOW_TFIDF:
         bow = dict()
         if BOW_APPEND: bow['append'] = BOW_APPEND
@@ -162,7 +162,7 @@ def get_args():
         if ST_APPEND: st['append'] = ST_APPEND
         if ST_DIFFERENCE: st['difference'] = ST_DIFFERENCE
         if ST_PRODUCT: st['product'] = ST_PRODUCT
-        if ST_COS: st['cos'] = ST_COS    
+        if ST_COS: st['cos'] = ST_COS
     if LDA_APPEND or LDA_DIFFERENCE or LDA_PRODUCT or LDA_COS:
         lda = dict()
         if LDA_APPEND: lda['append'] = LDA_APPEND
@@ -171,17 +171,17 @@ def get_args():
         if LDA_COS: lda['cos'] = LDA_COS
         if LDA_VOCAB: lda['vocab'] = LDA_VOCAB
         if LDA_TOPICS: lda['topics'] = LDA_TOPICS
-    
+
     features = dict()
     if bow: features['bow'] = bow
     if st: features['st'] = st
     if lda: features['lda'] = lda
-    
+
     #get algorithms
     log_reg = None
     svm = None
     xgb = None
-    
+
     if LOG_REG:
         log_reg = dict()
         if LOG_PENALTY: log_reg['log_penalty'] = LOG_PENALTY
@@ -199,24 +199,24 @@ def get_args():
         if XGB_COLSAMPLEBYTREE: xgb['svm_gamma'] = XGB_COLSAMPLEBYTREE
         if XGB_MINCHILDWEIGHT: xgb['svm_gamma'] = XGB_MINCHILDWEIGHT
 
-    algorithms = dict()    
+    algorithms = dict()
     if log_reg: algorithms['log_reg'] = log_reg
     if svm: algorithms['svm'] = svm
     if xgb: algorithms['xgb'] = xgb
-    
+
     #get parameters
     resampling = None
-    
+
     if RESAMPLING:
         resampling = dict()
         if NOVEL_RATIO: resampling['novelToNotNovelRatio'] = NOVEL_RATIO
         if OVERSAMPLING: resampling['over'] = OVERSAMPLING
         if REPLACEMENT: resampling['replacement'] = REPLACEMENT
-            
+
     parameters = dict()
     if RESAMPLING: parameters['resampling'] = resampling
     if SEED: parameters['seed'] = SEED
-    
+
     return [directory, features, algorithms, parameters]
 
 if __name__ == '__main__':
