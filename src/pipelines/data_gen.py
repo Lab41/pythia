@@ -8,24 +8,24 @@ import numpy as np
 from scipy import spatial
 from collections import defaultdict
 
-def gen_feature(new_vectors, requested_transformations, feature_vector):
+def gen_feature(new_vectors, request_parameters, feature_vector):
     """Take newly generated feature vectors, look up which
     transformations have been requested for them, and append the
     transformed feature vectors to the existing feature collection.
 
     Args:
         new_vectors (list, np.NDArray): feature vectors to be transformed
-        requested_transformations (list): should feature vectors be concatenated,
+        request_parameters (dict): should feature vectors be concatenated,
             subtracted, multiplied, or other forms of comparison made?
         feature_vector (list?): existing list of feature vectors
      """
-    if 'append' in requested_transformations:
+    if request_parameters.get('append', False):
         feature_vector.append(np.concatenate(new_vectors, axis=0))
-    if 'difference' in requested_transformations:
+    if request_parameters.get('difference', False):
         feature_vector.append(np.subtract(new_vectors[0], new_vectors[1]))
-    if 'product' in requested_transformations:
+    if request_parameters.get('product', False):
         feature_vector.append(np.multiply(new_vectors[0], new_vectors[1]))
-    if 'cos' in requested_transformations:
+    if request_parameters.get('cos', False):
         similarity = 1 - spatial.distance.cosine(new_vectors[0], new_vectors[1])
         feature_vector.append(np.array([similarity]))
     return feature
