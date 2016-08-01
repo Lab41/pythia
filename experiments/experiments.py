@@ -10,10 +10,10 @@ from sacred import Experiment
 from sacred.observers import MongoObserver
 
 from src.pipelines.master_pipeline import main as pythia_main
-from src.pipelines.master_pipeline import parse_args
+from src.pipelines.master_pipeline import get_args
 
 ex_name='pythia_experiment'
-db_name='sacred_demo'
+db_name='pythia_experiment'
 
 def set_up_xp():
     # Check that MongoDB config is set
@@ -33,16 +33,68 @@ xp = set_up_xp()
 
 @xp.config
 def config_variables():
-    pass
+
+    args = get_args(
+
+    # DIRECTORY
+    directory = 'stack_exchange_data/corpus_filtered/movies',
+
+    # FEATURES
+    # bag of words
+    BOW_APPEND = True,
+    BOW_DIFFERENCE = True,
+    BOW_PRODUCT = True,
+    BOW_COS = True,
+    BOW_TFIDF = True,
+    BOW_VOCAB = 10000,
+
+    # skipthoughts
+    ST_APPEND = False,
+    ST_DIFFERENCE = False,
+    ST_PRODUCT = False,
+    ST_COS = False,
+
+    # lda
+    LDA_APPEND = False,
+    LDA_DIFFERENCE = False,
+    LDA_PRODUCT = False,
+    LDA_COS = False,
+    LDA_VOCAB = 10000,
+    LDA_TOPICS = 50,
+
+    # ALGORITHMS
+    # logistic regression
+    LOG_REG = False,
+    LOG_PENALTY = 'l2',
+    LOG_TOL = 1e-4,
+    LOG_C = 1e-4,
+
+    # svm
+    SVM = False,
+    SVM_C = 2000,
+    SVM_KERNAL = 'linear',
+    SVM_GAMMA = 'auto',
+
+    # xgboost
+    XGB = True,
+    XGB_LEARNRATE = 0.1,
+    XGB_MAXDEPTH = 3,
+    XGB_MINCHILDWEIGHT = 1,
+    XGB_COLSAMPLEBYTREE = 1,
+
+    # PARAMETERS
+    # resampling
+    RESAMPLING = True,
+    NOVEL_RATIO = None,
+    OVERSAMPLING = False,
+    REPLACEMENT = False,
+
+    SEED = None)
 
 @xp.main
-def run_experiment():
-    features = ["--bag-of-words"]
-    algorithms = ["--log-reg"]
-    data_path = ["data/stackexchange/anime"]
-    args=parse_args(features+algorithms+data_path)
-    return pythia_main(args)
+def run_experiment(args):
 
+    return pythia_main(args)
 
 if __name__=="__main__":
     xp.run_commandline()
