@@ -183,12 +183,17 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
     for token_idx, token in enumerate(doc_indices):
         doc_onehot[token, token_idx] = 1
 
-    # TODO: add truncation and padding
+    # Zero-padding if doc is too short
+    if min_length is not None and doc_length < min_length:
+        padding_size = (vocab_size, min_length - doc_length)
+        doc_onehot = np.concatenate((doc_onehot, np.zeros(padding_size)), axis=1)
+        doc_length = doc_onehot.shape[1]
+    # Truncate if document is too long
+    if max_length is not None and doc_length > max_length:
+        doc_onehot = doc_onehot[:, :max_length]
+        doc_length = doc_onehot.shape[1]
 
-    feature = gen_feature(doc_onehot, transformations, feature)
-
-    return feature
-
+    return doc_onehot
 
 def gen_observations(all_clusters, lookup_order, documentData, features, vocab, encoder_decoder, lda_topics):
     '''
