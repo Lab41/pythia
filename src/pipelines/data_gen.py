@@ -151,6 +151,28 @@ def run_lda(lda_topics, doc, vocab):
 def wordonehot(doc, corpus, vocab, transformations, feature, min_length=None, max_length=None):
     # TODO: do we need to normalize here too?
     doc_array = tokenize.word_punct_tokens(doc)
+    corpus_array = tokenize.word_punct_tokens(corpus)
+    doc_onehot = run_onehot(doc, vocab, min_length, max_length)
+    corpus_onehot = run_onehot(corpus, vocab, min_length, max_length)
+    feature = gen_feature([doc_onehot, corpus_onehot], transformations, feature)
+    return feature
+
+def run_onehot(doc, vocab, min_length=None, max_length=None):
+    """ One-hot encode array of tokens, given a vocabulary mapping
+    them to 0-to-n integer space
+
+    Args:
+        doc (list): list of tokens; should correspond to the keys in vocab (so,
+            typically str)
+        vocab (dict): map of vocab items to integers (zero based)
+        min_length: if not None, enforce a minimum document length by zero-padding
+            the right edge of the result
+        max_length: if not None, truncate documents to max_length
+
+    Returns:
+        NDArray (vocab size, doc length), with 1 indicating presence of vocab item
+            at that position. Out-of-vocab entries do not appear in the result.
+    """
     # transform only the non-null entries in the document
     doc_indices = [doc_idx for doc_idx in
                         [ vocab.get(wd, None) for wd in doc_array ]
