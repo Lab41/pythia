@@ -1,4 +1,4 @@
-import py.test
+import pytest
 from src.pipelines import data_gen
 
 
@@ -15,4 +15,18 @@ def test_onehot():
     doc_onehot = data_gen.run_onehot(doc, vocab)
     doc_onehot_minlength = data_gen.run_onehot(doc, vocab, min_length = 10)
     doc_onehot_maxlength = data_gen.run_onehot(doc, vocab, max_length = 2)
-    print(doc_onehot)
+    doc_onehot_encoded = np.array(
+        [[ 1.,  0.,  0.,  0.,  0.],
+        [ 0.,  1.,  0.,  0.,  1.],
+        [ 0.,  0.,  1.,  0.,  0.],
+        [ 0.,  0.,  0.,  1.,  0.]], dtype=np.float32)
+
+    # encoding is correct
+    assert doc_onehot == doc_onehot_encoded
+    # minimum length correctly enforced
+    assert doc_onehot_minlength.shape == (4, 10)
+    # maximum length correctly enforced
+    assert doc_onehot_maxlength.shape == (4, 2)
+
+if __name__=="__main__":
+    test_onehot()
