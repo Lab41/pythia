@@ -175,10 +175,11 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
     """
     # transform only the non-null entries in the document
     doc_indices = [doc_idx for doc_idx in
-                        [ vocab.get(wd, None) for wd in doc_array ]
+                        [ vocab.get(wd, None) for wd in doc ]
                         if doc_idx is not None]
     vocab_size = len(vocab)
-    doc_onehot = np.zeros((vocab_size, len(doc_indices)))
+    doc_length = len(doc_indices)
+    doc_onehot = np.zeros((vocab_size, doc_length), dtype=np.float32)
     for token_idx, token in enumerate(doc_indices):
         doc_onehot[token, token_idx] = 1
 
