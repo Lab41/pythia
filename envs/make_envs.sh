@@ -100,5 +100,4 @@ set -e
 
 }
 
-#make_env "py3-pythia-tf" "Python 3.4 (Pythia, TF)" "3.4"
 make_env "py3-pythia" "Python 3.5 (Pythia/Spark-compatible)" "3.5"
