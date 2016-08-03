@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Download and parse the Stack Exchange data dump, producing folders of JSON
+files for processing by other Pythia algorithms.
+"""
+
 import os
 from urllib import request, error
 import subprocess
@@ -10,43 +16,52 @@ from shutil import copy
 import argparse
 
 def gen_url(section):
+    """URL for a given stackexchange site"""
     return 'https://ia800500.us.archive.org/22/items/stackexchange/' + section + '.stackexchange.com.7z'
 
 def get_data(filename):
-    
+    """Get URLs of StackExchange sites listed in a file on disk
+
+    Returns:
+        list of URLs"""
+
     #add titles of sections to download
     sections = set()
     with open(filename,'r') as dataFile:
         for line in dataFile: sections.add(line.strip())
-        
+
     stack_exchange_data = list()
     for section in sections:
         stack_exchange_data.append((section, gen_url(section)))
-    
+
     return stack_exchange_data
 
 def make_directory(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
-        
+
 def setup():
-    
+    """Create folders, if they don't exist, for the data dump itself (?),
+    the zip files from the archive.org release, and the processed data.
+    """
     #makes folder for all stack exchange data
     directory = 'stack_exchange_data'
     make_directory(directory)
-    
+
     #makes folder for zip files
     zip_directory = os.path.join(directory, 'zip_files')
     make_directory(zip_directory)
-    
+
     #makes folder for corpus
     corpus_directory = os.path.join(directory, 'corpus')
     make_directory(corpus_directory)
-    
+
     return directory, zip_directory, corpus_directory
 
 def section_setup(section, directory, zip_directory, corpus_directory):
-    
+    """Make folders for individual SE site (section), for files from
+    archive.org release (?), unzipped files, and processed data"""
+
     #makes folder for section
     section_directory = os.path.join(directory, section + "_files")
     make_directory(section_directory)
@@ -54,10 +69,10 @@ def section_setup(section, directory, zip_directory, corpus_directory):
     #info for section files
     file_name = section + "_stackexchange.7z"
     full_file_name = os.path.join(zip_directory, file_name)
-    
+
     corpus_section_directory = os.path.join(corpus_directory, section)
     make_directory(corpus_section_directory)
-    
+
     return full_file_name, section_directory, corpus_section_directory
 
 def load(url, file_name, folder):
@@ -262,7 +277,7 @@ if __name__ == '__main__':
     parser.add_argument("--minpost", default=3, help="when filtering, set minimum allowable posts in a single JSON file (default is 3)")
     parser.add_argument("--maxpost", default=10, help="when filtering, set maximum allowable posts in a single JSON file (default is 10)")
     parser.add_argument("--skipparse", help="flag to bypass downloading/parsing JSON files and proceed directly to JSON file filtering; can be used if corpus was previously downloaded/parsed", action="store_true")
-    
+
     args = parser.parse_args()
     main(args)
     parser.exit(status=0, message=None)
