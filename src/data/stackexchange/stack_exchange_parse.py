@@ -80,58 +80,86 @@ def load(url, file_name, folder):
     #downloads file from url
     testfile = request.URLopener()
     try: testfile.retrieve(url, file_name)
-    except error.HTTPError as e: 
+    except error.HTTPError as e:
         print ("Error: URL retrieval of " + url + " failed for reason: " + e.reason)
         quit()
 
     #un-zips file and puts contents in folder
     a = py7z_extractall.un7zip(file_name)
     a.extractall(folder)
-    
+
 def get_links(folder):
+    """Parse Links table from a SE site data release"""
     tree = etree.parse(folder +"/PostLinks.xml")
     return tree.getroot()
 
 def gen_clusters(links):
+    """Find clusters of associated posts using data about duplication and
+    relatedness from the links tables of the SE data dump.
+
+    Returns: tuple--
+        clusters (dict): mapping of cluster id to set of unique documents in cluster
+        related (dict): mapping of cluster id to set of unique documents in cluster
+            linked by "related" links
+        duplicates (dict): mapping of cluster id to set of unique documents in
+            cluster linked by "duplicate" links
+        unique_posts (set): set of all unique post ids encountered
+    """
     unused_id = 1
-    
+
+    # Code numbers for links in SE Links table
     related_link = '1'
     duplicate_link = '3'
-    
+
     clusters = dict()
     related = dict()
     duplicates = dict()
     unique_posts = set()
-    
+
     for l in links:
+        # src and destination for a given link
         post_id = l.attrib['PostId']
         related_id = l.attrib['RelatedPostId']
         new_ids = {post_id, related_id}
+        # maintain list of post ids encountered
         unique_posts = unique_posts.union(new_ids)
         post_cluster_id = None
         related_cluster_id = None
+        # add related posts to existing clusters or create new ones
         for c in clusters:
             ids = clusters[c]
+            # does src or dest occur in this cluster? if so, add here
             if post_id in ids:
                 post_cluster_id = c
             elif related_id in ids:
                 related_cluster_id = c
+        # create new cluster and augment index of next cluster, if neither
+        # src nor dest was a match
         if not (post_cluster_id or related_cluster_id):
             cluster_id = unused_id
             clusters[cluster_id] = set()
             duplicates[cluster_id] = set()
             related[cluster_id] = set()
             unused_id+=1
+        # use cluster assigned to src, if dest not a match
         elif not related_cluster_id:
             cluster_id = post_cluster_id
+        # use cluster assigned to dest, if src not a match
         elif not post_cluster_id:
             cluster_id = related_cluster_id
-        else: #both ids appeared in clusters
+        # or merge clusters, if both src and dest matched clusters
+        # if post_cluster_id and related_cluster_id are
+        # already the same, merge is harmless
+        else:
             post_cluster = clusters[post_cluster_id]
             related_cluster = clusters[related_cluster_id]
             clusters[post_cluster_id] = post_cluster.union(related_cluster)
             del clusters[related_cluster_id]
             cluster_id = post_cluster_id
+
+        # Having found the appropriate cluster id, make sure src and dest
+        # are added to it, and data on whether they are linked by relatedness
+        # or duplication
         clusters[cluster_id] = clusters[cluster_id].union(new_ids)
         if l.attrib['LinkTypeId'] == related_link:
             related[cluster_id] = related[cluster_id].union(new_ids)
@@ -148,14 +176,14 @@ def get_posts(folder):
 def clean_up(raw_text):
     return BeautifulSoup(raw_text, "lxml").get_text()
 
-def gen_corpus(posts, unique_posts):  
+def gen_corpus(posts, unique_posts):
     corpus = dict()
 
     for p in posts:
         id = p.attrib['Id']
         if id in unique_posts:
             try:
-                corpus[id] = clean_up(p.attrib['Title']) + ' ' + clean_up(p.attrib['Body'])  
+                corpus[id] = clean_up(p.attrib['Title']) + ' ' + clean_up(p.attrib['Body'])
             except:
                 pass
     return corpus
@@ -200,76 +228,84 @@ def write_json_files(clusters, related, duplicates, corpus, corpus_directory):
             next_cluster_id+=1
 
 def filter_json_files(directory, corpus_directory, minpost, maxpost):
-    
-    print("Filtering JSON files")    
+
+    print("Filtering JSON files")
     filtered_corpus_directory = os.path.join(directory, 'corpus_filtered')
     make_directory(filtered_corpus_directory)
-    
+
     filestokeep = list()
-    
+
     # Iterate over topic folders in corpus
     for foldername in os.listdir(corpus_directory):
-        
+
         fullfoldername = os.path.join(corpus_directory,foldername)
-        
+
         if os.path.isdir(fullfoldername) == True:
-                                
+
             jsonstats = []
-            
-            # Iterate over clusters in this topic       
+
+            # Iterate over clusters in this topic
             for file_name in os.listdir(fullfoldername):
                 if file_name.endswith(".json"):
-                    full_file_name = os.path.join(fullfoldername, file_name)            
+                    full_file_name = os.path.join(fullfoldername, file_name)
                     entries = 0
                     with open(full_file_name,'r') as dataFile:
                         for line in dataFile: entries += 1
                     if entries >= minpost and entries <= maxpost: filestokeep.append((full_file_name, foldername))
 
-    # Copy cluster files that meet min and max post requirements        
-    for entry in filestokeep: 
+    # Copy cluster files that meet min and max post requirements
+    for entry in filestokeep:
        copylocation = os.path.join(filtered_corpus_directory, entry[1])
        make_directory(copylocation)
        copy(entry[0], copylocation)
-    
-    print("Filtered corpus copied to: ", filtered_corpus_directory)       
+
+    print("Filtered corpus copied to: ", filtered_corpus_directory)
 
 def main(args):
-        
+    """Go through list of SE sites, create directories to store downloaded data
+    and parsed clusters. Process SE data releases into Pythia-specific format.
+
+    Arguments:
+        args (namespace): from parser, below
+    """
+
     #gets urls based on sections and creates basic directories
     stack_exchange_data = get_data(args.filename)
     directory, zip_directory, corpus_directory = setup()
-    
-    if args.skipparse == False:    
+
+    if args.skipparse == False:
         for (section, url) in stack_exchange_data:
             print("Starting " + section)
-        
-            #creates directorys for section
+
+            #creates directories for the current SE site
             file_name, folder_name, corpus_section_directory = section_setup(section, directory, zip_directory, corpus_directory)
-        
-            #downloads and unzips section file
+
+            #downloads and unzips data release for a site
             load(url, file_name, folder_name)
 
-            #gets the links from the links file
+            #gets the links data from the links table for the site
             links = get_links(folder_name)
 
-            #creates the clusters
+            #creates the clusters of related and duplicate posts for a site,
+            #based on links data
             clusters, related, duplicates, unique_posts = gen_clusters(links)
 
-            #gets the posts from the posts file
+            #gets post data from the posts table
             posts = get_posts(folder_name)
 
-            #creates the corpus with the body text for each id in the clusters
+            #extract post title and body text for each document in the site
             corpus = gen_corpus(posts, unique_posts)
-        
-            #writes the information to json files
+
+            #writes cluster information to json files
             write_json_files(clusters, related, duplicates, corpus, corpus_section_directory)
-        
+
             print("Completed " + section)
-        
-    if args.filter or args.skipparse: filter_json_files(directory, corpus_directory, int(args.minpost), int(args.maxpost))
-        
-        
-if __name__ == '__main__':    
+
+    if args.filter or args.skipparse: filter_json_files(directory,
+        corpus_directory, int(args.minpost), int(args.maxpost))
+
+
+if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description = "Parse Stack Exchange user posts into JSON files for use in Pythia project")
     parser.add_argument("filename", help="file containing list of Stack Exchange sections (ex: astronomy) to download/parse")
