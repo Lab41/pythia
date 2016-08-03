@@ -40,49 +40,46 @@ def make_directory(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-def setup():
-    """Create folders, if they don't exist, for the data dump itself (?),
-    the zip files from the archive.org release, and the processed data.
+def setup(zip_path, dest_path):
+    """Create folders, if they don't exist, for
+    the zip files from the archive.org release and the processed data.
     """
-    #makes folder for all stack exchange data
-    directory = 'stack_exchange_data'
-    make_directory(directory)
 
     #makes folder for zip files
-    zip_directory = os.path.join(directory, 'zip_files')
-    make_directory(zip_directory)
+    make_directory(zip_path)
 
-    #makes folder for corpus
-    corpus_directory = os.path.join(directory, 'corpus')
-    make_directory(corpus_directory)
+    #makes folder for processed data
+    make_directory(dest_path)
 
-    return directory, zip_directory, corpus_directory
+def section_setup(section, zip_directory, corpus_directory):
+    """Make folders for individual SE site (section)'s unzipped files and
+    processed data, and generate expected path to 7z file on disk"""
 
-def section_setup(section, directory, zip_directory, corpus_directory):
-    """Make folders for individual SE site (section), for files from
-    archive.org release (?), unzipped files, and processed data"""
-
-    #makes folder for section
-    section_directory = os.path.join(directory, section + "_files")
+    #makes folder for unzipped files for a site
+    section_directory = os.path.join(zip_directory, section)
     make_directory(section_directory)
 
-    #info for section files
-    file_name = section + "_stackexchange.7z"
+    #generate path to release zip file (saved at root zip directory)
+    file_name = section + ".7z"
     full_file_name = os.path.join(zip_directory, file_name)
 
+    # Generate folder for processed data
     corpus_section_directory = os.path.join(corpus_directory, section)
     make_directory(corpus_section_directory)
 
     return full_file_name, section_directory, corpus_section_directory
 
 def load(url, file_name, folder):
+    # Need special case for Stack Overflow (more than one 7z file)
 
-    #downloads file from url
-    testfile = request.URLopener()
-    try: testfile.retrieve(url, file_name)
-    except error.HTTPError as e:
-        print ("Error: URL retrieval of " + url + " failed for reason: " + e.reason)
-        quit()
+    if not os.path.isfile(file_name):
+        #downloads file from url
+        testfile = request.URLopener()
+        try:
+            testfile.retrieve(url, file_name)
+        except error.HTTPError as e:
+            print ("Error: URL retrieval of " + url + " failed for reason: " + e.reason)
+            quit()
 
     #un-zips file and puts contents in folder
     a = py7z_extractall.un7zip(file_name)
