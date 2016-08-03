@@ -8,8 +8,8 @@ import numpy
 from collections import OrderedDict
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-from utils import _p, ortho_weight, norm_weight, tanh
-from layers import get_layer, param_init_fflayer, fflayer, param_init_gru, gru_layer
+from .utils import _p, ortho_weight, norm_weight, tanh
+from .layers import get_layer, param_init_fflayer, fflayer, param_init_gru, gru_layer
 
 def init_params(options):
     """

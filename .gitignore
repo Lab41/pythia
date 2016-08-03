@@ -89,3 +89,9 @@ nosetests.xml
 
 # Remote sync config
 .remote-sync.json
+
+# backup files
+*.py.bak
+
+# trained models
+data/book_corpus/

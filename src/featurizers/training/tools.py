@@ -6,7 +6,7 @@ import theano
 import theano.tensor as tensor
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-import cPickle as pkl
+import pickle as pkl
 import numpy
 import nltk
 
@@ -16,8 +16,8 @@ from scipy.linalg import norm
 from gensim.models import Word2Vec as word2vec
 from sklearn.linear_model import LinearRegression
 
-from utils import load_params, init_tparams
-from model import init_params, build_encoder, build_encoder_w2v
+from .utils import load_params, init_tparams
+from .model import init_params, build_encoder, build_encoder_w2v
 
 #-----------------------------------------------------------------------------#
 # Specify model and dictionary locations here
@@ -32,31 +32,31 @@ def load_model(embed_map=None):
     Load all model components + apply vocab expansion
     """
     # Load the worddict
-    print 'Loading dictionary...'
+    print('Loading dictionary...')
     with open(path_to_dictionary, 'rb') as f:
         worddict = pkl.load(f)
 
     # Create inverted dictionary
-    print 'Creating inverted dictionary...'
+    print('Creating inverted dictionary...')
     word_idict = dict()
-    for kk, vv in worddict.iteritems():
+    for kk, vv in worddict.items():
         word_idict[vv] = kk
     word_idict[0] = '<eos>'
     word_idict[1] = 'UNK'
 
     # Load model options
-    print 'Loading model options...'
+    print('Loading model options...')
     with open('%s.pkl'%path_to_model, 'rb') as f:
         options = pkl.load(f)
 
     # Load parameters
-    print 'Loading model parameters...'
+    print('Loading model parameters...')
     params = init_params(options)
     params = load_params(path_to_model, params)
     tparams = init_tparams(params)
 
     # Extractor functions
-    print 'Compiling encoder...'
+    print('Compiling encoder...')
     trng = RandomStreams(1234)
     trng, x, x_mask, ctx, emb = build_encoder(tparams, options)
     f_enc = theano.function([x, x_mask], ctx, name='f_enc')
@@ -66,15 +66,15 @@ def load_model(embed_map=None):
 
     # Load word2vec, if applicable
     if embed_map == None:
-        print 'Loading word2vec embeddings...'
+        print('Loading word2vec embeddings...')
         embed_map = load_googlenews_vectors(path_to_word2vec)
 
     # Lookup table using vocab expansion trick
-    print 'Creating word lookup tables...'
+    print('Creating word lookup tables...')
     table = lookup_table(options, embed_map, worddict, word_idict, f_emb)
 
     # Store everything we need in a dictionary
-    print 'Packing up...'
+    print('Packing up...')
     model = {}
     model['options'] = options
     model['table'] = table
@@ -91,7 +91,7 @@ def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False)
 
     # word dictionary and init
     d = defaultdict(lambda : 0)
-    for w in model['table'].keys():
+    for w in list(model['table'].keys()):
         d[w] = 1
     features = numpy.zeros((len(X), model['options']['dim']), dtype='float32')
 
@@ -102,9 +102,9 @@ def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False)
         ds[len(s)].append(i)
 
     # Get features. This encodes by length, in order to avoid wasting computation
-    for k in ds.keys():
+    for k in list(ds.keys()):
         if verbose:
-            print k
+            print(k)
         numbatches = len(ds[k]) / batch_size + 1
         for minibatch in range(numbatches):
             caps = ds[k][minibatch::numbatches]
@@ -190,11 +190,11 @@ def train_regressor(options, embed_map, wordvecs, worddict):
     """
     # Gather all words from word2vec that appear in wordvecs
     d = defaultdict(lambda : 0)
-    for w in embed_map.vocab.keys():
+    for w in list(embed_map.vocab.keys()):
         d[w] = 1
     shared = OrderedDict()
     count = 0
-    for w in worddict.keys()[:options['n_words']-2]:
+    for w in list(worddict.keys())[:options['n_words']-2]:
         if d[w] > 0:
             shared[w] = count
             count += 1
@@ -202,7 +202,7 @@ def train_regressor(options, embed_map, wordvecs, worddict):
     # Get the vectors for all words in 'shared'
     w2v = numpy.zeros((len(shared), 300), dtype='float32')
     sg = numpy.zeros((len(shared), options['dim_word']), dtype='float32')
-    for w in shared.keys():
+    for w in list(shared.keys()):
         w2v[shared[w]] = embed_map[w]
         sg[shared[w]] = wordvecs[w]
 
