@@ -224,10 +224,9 @@ def write_json_files(clusters, related, duplicates, corpus, corpus_directory):
         if not file_empty:
             next_cluster_id+=1
 
-def filter_json_files(directory, corpus_directory, minpost, maxpost):
+def filter_json_files(filtered_corpus_directory, corpus_directory, minpost, maxpost):
 
     print("Filtering JSON files")
-    filtered_corpus_directory = os.path.join(directory, 'corpus_filtered')
     make_directory(filtered_corpus_directory)
 
     filestokeep = list()
@@ -268,27 +267,29 @@ def main(args):
 
     #gets urls based on sections and creates basic directories
     stack_exchange_data = get_data(args.filename)
-    directory, zip_directory, corpus_directory = setup()
+    zip_directory, corpus_directory = args.zip_path, args.dest_path
+    setup(zip_directory, corpus_directory)
 
     if args.skipparse == False:
         for (section, url) in stack_exchange_data:
             print("Starting " + section)
 
             #creates directories for the current SE site
-            file_name, folder_name, corpus_section_directory = section_setup(section, directory, zip_directory, corpus_directory)
+            zip_file_path, unzipped_folder, corpus_section_directory = section_setup(
+                section, zip_directory, corpus_directory)
 
             #downloads and unzips data release for a site
-            load(url, file_name, folder_name)
+            load(url, zip_file_path, unzipped_folder)
 
             #gets the links data from the links table for the site
-            links = get_links(folder_name)
+            links = get_links(unzipped_folder)
 
             #creates the clusters of related and duplicate posts for a site,
             #based on links data
             clusters, related, duplicates, unique_posts = gen_clusters(links)
 
             #gets post data from the posts table
-            posts = get_posts(folder_name)
+            posts = get_posts(unzipped_folder)
 
             #extract post title and body text for each document in the site
             corpus = gen_corpus(posts, unique_posts)
@@ -298,19 +299,33 @@ def main(args):
 
             print("Completed " + section)
 
-    if args.filter or args.skipparse: filter_json_files(directory,
-        corpus_directory, int(args.minpost), int(args.maxpost))
+    if args.filter or args.skipparse:
+        filter_json_files(os.path.normpath(dest_path) + "_filtered",
+            corpus_directory, int(args.minpost), int(args.maxpost))
 
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description = "Parse Stack Exchange user posts into JSON files for use in Pythia project")
-    parser.add_argument("filename", help="file containing list of Stack Exchange sections (ex: astronomy) to download/parse")
-    parser.add_argument("--filter", help="flag to filter JSON files after downloading/parsing Stack Exchange data, based on minpost/maxpost arguments", action="store_true")
-    parser.add_argument("--minpost", default=3, help="when filtering, set minimum allowable posts in a single JSON file (default is 3)")
-    parser.add_argument("--maxpost", default=10, help="when filtering, set maximum allowable posts in a single JSON file (default is 10)")
-    parser.add_argument("--skipparse", help="flag to bypass downloading/parsing JSON files and proceed directly to JSON file filtering; can be used if corpus was previously downloaded/parsed", action="store_true")
+    parser = argparse.ArgumentParser(description = "Parse Stack Exchange user " \
+        "posts into JSON files for use in Pythia project")
+    parser.add_argument("filename", help="file containing list of Stack " \
+        "Exchange sites (ex: astronomy) to download/parse")
+    parser.add_argument("--zip-path", help="path to folder where zip files are " \
+        "located; files will be downloaded here if they don't exist",
+        default="stack_exchange_data/zip_files")
+    parser.add_argument("--dest-path", help="path to folder where processed data will " \
+        "be stored.", default="stack_exchange_data/corpus")
+    parser.add_argument("--filter", help="flag to filter JSON files after " \
+        "downloading/parsing Stack Exchange data, based on minpost/maxpost arguments",
+        action="store_true")
+    parser.add_argument("--minpost", default=3, help="when filtering, set " \
+        "minimum allowable posts in a single JSON file (default is 3)")
+    parser.add_argument("--maxpost", default=10, help="when filtering, set " \
+        "maximum allowable posts in a single JSON file (default is 10)")
+    parser.add_argument("--skipparse", help="flag to bypass downloading/parsing " \
+        "JSON files and proceed directly to JSON file filtering; " \
+        "can be used if corpus was previously downloaded/parsed", action="store_true")
 
     args = parser.parse_args()
     main(args)
-    parser.exit(status=0, message=None)
+    #parser.exit(status=0, message=None)
