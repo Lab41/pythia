@@ -190,7 +190,7 @@ def write_json_files(clusters, related, duplicates, corpus, corpus_directory):
     for cluster_id in clusters:
         time_stamp = 0
         file_empty = True
-        file_name = str(next_cluster_id) + '.json'
+        file_name = '{:05d}.json'.format(next_cluster_id)
         full_file_name = os.path.join(corpus_directory, file_name)
         with open(full_file_name, 'w') as outfile:
             if cluster_id in duplicates:
