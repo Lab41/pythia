@@ -53,6 +53,8 @@ Icon
 
 ##Github Python Ignore
 *.py[cod]
+src/examples/.ipynb_checkpoints/
+	
 
 # C extensions
 *.so
@@ -95,3 +97,4 @@ nosetests.xml
 
 # trained models
 data/book_corpus/
+data/google_news

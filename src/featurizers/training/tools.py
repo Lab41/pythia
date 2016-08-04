@@ -22,9 +22,9 @@ from .model import init_params, build_encoder, build_encoder_w2v
 #-----------------------------------------------------------------------------#
 # Specify model and dictionary locations here
 #-----------------------------------------------------------------------------#
-path_to_model = '/u/rkiros/research/semhash/models/toy.npz'
-path_to_dictionary = '/ais/gobi3/u/rkiros/bookgen/book_dictionary_large.pkl'
-path_to_word2vec = '/ais/gobi3/u/rkiros/word2vec/GoogleNews-vectors-negative300.bin'
+path_to_model = '/Users/chrisn/mad-science/pythia/data/book_corpus/model/corpus.npz'
+path_to_dictionary = '/Users/chrisn/mad-science/pythia/data/book_corpus/model/vocab.pickle'
+path_to_word2vec =  '/Users/chrisn/mad-science/pythia/data/google_news/GoogleNews-vectors-negative300.bin.gz'
 #-----------------------------------------------------------------------------#
 
 def load_model(embed_map=None):
@@ -149,7 +149,7 @@ def preprocess(text):
         X.append(result)
     return X
 
-def load_googlenews_vectors():
+def load_googlenews_vectors(path_to_word2vec):
     """
     load the word2vec GoogleNews vectors
     """
