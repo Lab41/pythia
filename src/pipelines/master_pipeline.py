@@ -27,12 +27,12 @@ def main(argv):
 
     #preprocessing
     print("preprocessing...",file=sys.stderr)
-    vocab, encoder_decoder, lda = preprocess.main([features, corpusdict, data])
+    vocab, encoder_decoder, lda, tf_model = preprocess.main([features, corpusdict, data])
 
     #featurization
     print("generating training and testing data...",file=sys.stderr)
-    train_data, train_target = data_gen.main([clusters, order, data, features, vocab, encoder_decoder, lda])
-    test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, vocab, encoder_decoder, lda])
+    train_data, train_target = data_gen.main([clusters, order, data, features, vocab, encoder_decoder, lda, tf_model])
+    test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, vocab, encoder_decoder, lda, tf_model])
 
     #modeling
     print("running algorithms...",file=sys.stderr)
@@ -90,7 +90,7 @@ def parse_args(given_args=None):
 
 def get_args(
     #DIRECTORY
-    directory = '/data/stackexchange/anime',
+    directory = 'data/stackexchange/anime',
 
     #FEATURES
     #bag of words
@@ -115,11 +115,21 @@ def get_args(
     LDA_VOCAB = 5000,
     LDA_TOPICS = 40,
 
+    #one-hot CNN layer
+    CNN_APPEND = False,
+    CNN_DIFFERENCE = False,
+    CNN_PRODUCT = False,
+    CNN_COS = False,
+    #The vocabulary can either be character or word
+    #If words, WORDONEHOT_VOCAB will be used as the vocab length
+    CNN_VOCAB_TYPE = "character",
+    CNN_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789",
+
     # wordonehot (will not play nicely with other featurization methods b/c not
     # vector)
-    WORDONEHOT = False
+    WORDONEHOT = False,
     #WORDONEHOT_DOCLENGTH = None
-    WORDONEHOT_VOCAB = 5000
+    WORDONEHOT_VOCAB = 5000,
 
     #ALGORITHMS
     #logistic regression
@@ -154,6 +164,7 @@ def get_args(
     bow = None
     st = None
     lda = None
+    cnn = None
 
     if BOW_APPEND or BOW_DIFFERENCE or BOW_PRODUCT or BOW_COS or BOW_TFIDF:
         bow = dict()
@@ -177,11 +188,23 @@ def get_args(
         if LDA_COS: lda['cos'] = LDA_COS
         if LDA_VOCAB: lda['vocab'] = LDA_VOCAB
         if LDA_TOPICS: lda['topics'] = LDA_TOPICS
+    if CNN_APPEND or CNN_DIFFERENCE or CNN_PRODUCT or CNN_COS:
+        cnn = dict()
+        if CNN_APPEND: cnn['append'] = CNN_APPEND
+        if CNN_DIFFERENCE: cnn['difference'] = CNN_DIFFERENCE
+        if CNN_PRODUCT: cnn['product'] = CNN_PRODUCT
+        if CNN_COS: cnn['cos'] = CNN_COS
+        if CNN_VOCAB_TYPE:
+            cnn['vocab_type'] = CNN_VOCAB_TYPE
+            if CNN_VOCAB_TYPE=="word":
+                if WORDONEHOT_VOCAB: cnn['vocab_len'] = WORDONEHOT_VOCAB
+        if CNN_CHAR_VOCAB: cnn['topics'] = CNN_CHAR_VOCAB
 
     features = dict()
     if bow: features['bow'] = bow
     if st: features['st'] = st
     if lda: features['lda'] = lda
+    if cnn: features['cnn'] = cnn
 
     #get algorithms
     log_reg = None

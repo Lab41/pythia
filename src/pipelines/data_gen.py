@@ -28,7 +28,7 @@ def gen_feature(new_vectors, request_parameters, feature_vector):
     if request_parameters.get('cos', False):
         similarity = 1 - spatial.distance.cosine(new_vectors[0], new_vectors[1])
         feature_vector.append(np.array([similarity]))
-    return feature
+    return feature_vector
 
 def bow(doc, corpus, corpus_array, vocab, bow, feature):
     vectors = bag_of_words_vectors(doc, corpus, vocab)
@@ -148,6 +148,11 @@ def run_lda(lda_topics, doc, vocab):
     docvector = vectorizer.transform([doc])
     return lda_topics.transform(docvector)[0]
 
+def run_cnn(doc, corpus, tf_session):
+    doc_cnn, corpus_cnn = tf_session.transform_doc(doc, corpus)
+
+    return [doc_cnn, corpus_cnn]
+
 def wordonehot(doc, corpus, vocab, transformations, feature, min_length=None, max_length=None):
     # TODO: do we need to normalize here too?
     doc_array = tokenize.word_punct_tokens(doc)
@@ -195,7 +200,7 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
 
     return doc_onehot
 
-def gen_observations(all_clusters, lookup_order, documentData, features, vocab, encoder_decoder, lda_topics):
+def gen_observations(all_clusters, lookup_order, documentData, features, vocab, encoder_decoder, lda_topics, tf_session):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
 
@@ -254,6 +259,9 @@ def gen_observations(all_clusters, lookup_order, documentData, features, vocab, 
             if 'lda' in features:
                 feature = lda(doc, corpus, vocab, lda_topics, features['lda'], feature)
 
+            if 'cnn' in features:
+                feature = run_cnn(doc, corpus, tf_session)
+
             if 'wordonehot' in features:
                 feature = wordonehot(doc, corpus, features['wordonehot'], feature)
 
@@ -279,7 +287,7 @@ def main(argv):
     Returns:
         list: contains for each obeservation
     '''
-    all_clusters, lookup_order, document_data, features, vocab, encoder_decoder, lda = argv
-    data, labels = gen_observations(all_clusters, lookup_order, document_data, features, vocab, encoder_decoder, lda)
+    all_clusters, lookup_order, document_data, features, vocab, encoder_decoder, lda, tf_model = argv
+    data, labels = gen_observations(all_clusters, lookup_order, document_data, features, vocab, encoder_decoder, lda, tf_model)
 
     return data, labels

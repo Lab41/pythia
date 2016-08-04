@@ -1,5 +1,5 @@
 from src.utils.normalize import normalize_and_remove_stop_words
-from src.featurizers import skipthoughts
+from src.featurizers import skipthoughts, tensorflow_cnn
 from sklearn.decomposition import LatentDirichletAllocation
 from sklearn.feature_extraction.text import CountVectorizer
 
@@ -69,6 +69,12 @@ def main(argv):
     
     if 'bow' in features: vocab = gen_vocab(corpus_dict, **features['bow'])
     elif 'lda' in features: vocab = gen_vocab(corpus_dict, **features['lda'])
+    elif 'cnn' in features and 'vocab_type' in features['cnn'] and 'vocab_type' == 'word':
+        vocab = gen_vocab(corpus_dict, **features['lda'])
+        print("creating a vocab")
+        features['lda']['vocab'] = vocab
     if 'lda' in features: lda = build_lda(trainingdata, vocab, **features['lda'])
+
+    if 'cnn' in features: tf_model = tensorflow_cnn.tensorflow_cnn(trainingdata, **features['cnn'])
         
-    return vocab, encoder_decoder, lda
+    return vocab, encoder_decoder, lda, tf_model
