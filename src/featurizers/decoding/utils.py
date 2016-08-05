@@ -7,12 +7,14 @@ import numpy
 
 from collections import OrderedDict
 
+
 def zipp(params, tparams):
     """
     Push parameters to Theano shared variables
     """
     for kk, vv in params.iteritems():
         tparams[kk].set_value(vv)
+
 
 def unzip(zipped):
     """
@@ -23,6 +25,7 @@ def unzip(zipped):
         new_params[kk] = vv.get_value()
     return new_params
 
+
 def itemlist(tparams):
     """
     Get the list of parameters. 
@@ -30,11 +33,13 @@ def itemlist(tparams):
     """
     return [vv for kk, vv in tparams.iteritems()]
 
+
 def _p(pp, name):
     """
     Make prefix-appended name
     """
-    return '%s_%s'%(pp, name)
+    return '%s_%s' % (pp, name)
+
 
 def init_tparams(params):
     """
@@ -45,6 +50,7 @@ def init_tparams(params):
         tparams[kk] = theano.shared(params[kk], name=kk)
     return tparams
 
+
 def load_params(path, params):
     """
     Load parameters
@@ -52,10 +58,11 @@ def load_params(path, params):
     pp = numpy.load(path)
     for kk, vv in params.iteritems():
         if kk not in pp:
-            warnings.warn('%s is not in the archive'%kk)
+            warnings.warn('%s is not in the archive' % kk)
             continue
         params[kk] = pp[kk]
     return params
+
 
 def ortho_weight(ndim):
     """
@@ -65,7 +72,8 @@ def ortho_weight(ndim):
     u, s, v = numpy.linalg.svd(W)
     return u.astype('float32')
 
-def norm_weight(nin,nout=None, scale=0.1, ortho=True):
+
+def norm_weight(nin, nout=None, scale=0.1, ortho=True):
     """
     Uniform initalization from [-scale, scale]
     If matrix is square and ortho=True, use ortho instead
@@ -78,11 +86,13 @@ def norm_weight(nin,nout=None, scale=0.1, ortho=True):
         W = numpy.random.uniform(low=-scale, high=scale, size=(nin, nout))
     return W.astype('float32')
 
+
 def tanh(x):
     """
     Tanh activation function
     """
     return tensor.tanh(x)
+
 
 def relu(x):
     """
@@ -90,11 +100,13 @@ def relu(x):
     """
     return x * (x > 0)
 
+
 def linear(x):
     """
     Linear activation function
     """
     return x
+
 
 def concatenate(tensor_list, axis=0):
     """
@@ -123,4 +135,3 @@ def concatenate(tensor_list, axis=0):
         offset += tt.shape[axis]
 
     return out
-

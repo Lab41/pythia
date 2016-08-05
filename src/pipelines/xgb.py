@@ -3,10 +3,11 @@
 import sys
 import xgboost
 
+
 def run_model(train_data, train_labels, x_max_depth=3, x_learning_rate=0.1, x_n_estimators=100, x_silent=True, x_objective='binary:logistic', x_nthread=-1, x_gamma=0, x_min_child_weight=1, x_max_delta_step=0, x_subsample=1, x_colsample_bytree=1, x_colsample_bylevel=1, x_reg_alpha=0, x_reg_lambda=1, x_scale_pos_weight=1, x_base_score=0.5, x_seed=0, x_missing=None, **kwargs):
     '''
     Takes in a set of training text and labels to fit a XGBoost classifier model. See https://github.com/dmlc/xgboost.
-    
+
     Args:
         train_data: Training set.  Needs to be iterable
         train_labels: Training set labels
@@ -14,7 +15,7 @@ def run_model(train_data, train_labels, x_max_depth=3, x_learning_rate=0.1, x_n_
         classifier: The XGBoost classifier fit to the training data
     '''
 
-    # Set up xgboost classifier 
+    # Set up xgboost classifier
     # Parameter information available at:
     # https://xgboost.readthedocs.io/en/latest//python/python_api.html
     # https://xgboost.readthedocs.io/en/latest//parameter.html (Learning Task objectives)
@@ -26,16 +27,17 @@ def run_model(train_data, train_labels, x_max_depth=3, x_learning_rate=0.1, x_n_
     # Return XGBoost classifier
     return xclassifier
 
+
 def main(argv):
 
     train_data, train_target = argv[0], argv[1]
 
-    if len(argv)>2:
+    if len(argv) > 2:
         args_dict = argv[2]
     else:
         args_dict = {}
 
-    print("running xgboost...",file=sys.stderr)
+    print("running xgboost...", file=sys.stderr)
 
     xclassifier = run_model(train_data, train_target, **args_dict)
 
@@ -44,4 +46,5 @@ def main(argv):
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("Usage: xgb.py train_data, train_labels, args_dict\n\nCreates XGBoost classifier from the data")
-    else: main(sys.argv[1:])
+    else:
+        main(sys.argv[1:])

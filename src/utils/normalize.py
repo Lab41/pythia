@@ -7,6 +7,7 @@ import warnings
 link_re = re.compile(r'\/{2}[\d\w-]+(\.[\d\w-]+)*(?:(?:\/[^\s/]*))*')
 letter_re = re.compile(r"[^a-zA-Z]")
 
+
 def normalize_and_remove_stop_words(raw_text):
     '''
     Algorithm to convert raw text to a return a clean text string
@@ -22,7 +23,7 @@ def normalize_and_remove_stop_words(raw_text):
     links_removed = remove_links(raw_text)
     #
     # 2. Remove HTML
-    #TODO Potentially look into using package other than BeautifulSoup for this step
+    # TODO Potentially look into using package other than BeautifulSoup for this step
     # Suppress UserWarnings from BeautifulSoup due to text with tech info (ex: code, directory structure)
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', category=UserWarning)
@@ -40,8 +41,9 @@ def normalize_and_remove_stop_words(raw_text):
     #
     # 6. Join the words back into one string separated by space,
     # and return the result.
-    clean_text = ( " ".join( meaningful_words ))
+    clean_text = (" ".join(meaningful_words))
     return clean_text
+
 
 def xml_normalize(raw_text):
     """Alternative normalization: HTML/XML and URLs stripped out, lower-cased,
@@ -50,7 +52,7 @@ def xml_normalize(raw_text):
     links_removed = remove_links(raw_text)
 
     # 2. Remove HTML
-    #TODO Potentially look into using package other than BeautifulSoup for this step
+    # TODO Potentially look into using package other than BeautifulSoup for this step
     # Suppress UserWarnings from BeautifulSoup due to text with tech info (ex: code, directory structure)
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', category=UserWarning)
@@ -61,9 +63,11 @@ def xml_normalize(raw_text):
 
     return lower_case
 
+
 def remove_links(text):
     links_removed = link_re.sub('', text)
     return links_removed
+
 
 def remove_stop_words(words, stop_words=ENGLISH_STOP_WORDS):
     """Remove stop words from input"""

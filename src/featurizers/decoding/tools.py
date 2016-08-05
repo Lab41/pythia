@@ -20,6 +20,7 @@ path_to_model = '/u/rkiros/research/semhash/models/toydec.npz'
 path_to_dictionary = '/ais/gobi3/u/rkiros/flickr8k/dictionary.pkl'
 #-----------------------------------------------------------------------------#
 
+
 def load_model():
     """
     Load a trained model for decoding
@@ -39,7 +40,7 @@ def load_model():
 
     # Load model options
     print 'Loading model options...'
-    with open('%s.pkl'%path_to_model, 'rb') as f:
+    with open('%s.pkl' % path_to_model, 'rb') as f:
         options = pkl.load(f)
 
     # Load parameters
@@ -63,6 +64,7 @@ def load_model():
     dec['f_next'] = f_next
     return dec
 
+
 def run_sampler(dec, c, beam_width=1, stochastic=False, use_unk=False):
     """
     Generate text conditioned on c
@@ -77,5 +79,3 @@ def run_sampler(dec, c, beam_width=1, stochastic=False, use_unk=False):
     for c in sample:
         text.append(' '.join([dec['word_idict'][w] for w in c[:-1]]))
     return text
-
-

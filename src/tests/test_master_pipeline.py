@@ -1,4 +1,4 @@
-# ''' 
+# '''
 # tests master pipeline module
 
 # system tests checking correct arguments. tested from pythia directory.

@@ -12,24 +12,26 @@ from sacred.observers import MongoObserver
 from src.pipelines.master_pipeline import main as pythia_main
 from src.pipelines.master_pipeline import get_args
 
-ex_name='pythia_experiment'
-db_name='pythia_experiment'
+ex_name = 'pythia_experiment'
+db_name = 'pythia_experiment'
+
 
 def set_up_xp():
     # Check that MongoDB config is set
     try:
-        mongo_uri=os.environ['PYTHIA_MONGO_DB_URI']
+        mongo_uri = os.environ['PYTHIA_MONGO_DB_URI']
     except KeyError as e:
-        print("Must define location of MongoDB in PYTHIA_MONGO_DB_URI for observer output",file=sys.stderr)
+        print("Must define location of MongoDB in PYTHIA_MONGO_DB_URI for observer output", file=sys.stderr)
         raise
 
     ex = Experiment(ex_name)
     ex.observers.append(MongoObserver.create(url=mongo_uri,
-                                         db_name=db_name))
+                                             db_name=db_name))
     return ex
 
 
 xp = set_up_xp()
+
 
 @xp.config
 def config_variables():
@@ -89,43 +91,44 @@ def config_variables():
 
     SEED = None
 
+
 @xp.main
 def run_experiment(
-    directory,
-    BOW_APPEND,
-    BOW_DIFFERENCE,
-    BOW_PRODUCT,
-    BOW_COS,
-    BOW_TFIDF,
-    BOW_VOCAB,
-    ST_APPEND,
-    ST_DIFFERENCE,
-    ST_PRODUCT,
-    ST_COS,
-    LDA_APPEND,
-    LDA_DIFFERENCE,
-    LDA_PRODUCT,
-    LDA_COS,
-    LDA_VOCAB,
-    LDA_TOPICS,
-    LOG_REG,
-    LOG_PENALTY,
-    LOG_TOL,
-    LOG_C,
-    SVM,
-    SVM_C,
-    SVM_KERNAL,
-    SVM_GAMMA,
-    XGB,
-    XGB_LEARNRATE,
-    XGB_MAXDEPTH,
-    XGB_MINCHILDWEIGHT,
-    XGB_COLSAMPLEBYTREE,
-    RESAMPLING,
-    NOVEL_RATIO,
-    OVERSAMPLING,
-    REPLACEMENT,
-    SEED):
+        directory,
+        BOW_APPEND,
+        BOW_DIFFERENCE,
+        BOW_PRODUCT,
+        BOW_COS,
+        BOW_TFIDF,
+        BOW_VOCAB,
+        ST_APPEND,
+        ST_DIFFERENCE,
+        ST_PRODUCT,
+        ST_COS,
+        LDA_APPEND,
+        LDA_DIFFERENCE,
+        LDA_PRODUCT,
+        LDA_COS,
+        LDA_VOCAB,
+        LDA_TOPICS,
+        LOG_REG,
+        LOG_PENALTY,
+        LOG_TOL,
+        LOG_C,
+        SVM,
+        SVM_C,
+        SVM_KERNAL,
+        SVM_GAMMA,
+        XGB,
+        XGB_LEARNRATE,
+        XGB_MAXDEPTH,
+        XGB_MINCHILDWEIGHT,
+        XGB_COLSAMPLEBYTREE,
+        RESAMPLING,
+        NOVEL_RATIO,
+        OVERSAMPLING,
+        REPLACEMENT,
+        SEED):
 
     return pythia_main(
         get_args(
@@ -166,5 +169,5 @@ def run_experiment(
             SEED)
     )
 
-if __name__=="__main__":
+if __name__ == "__main__":
     xp.run_commandline()

@@ -24,10 +24,10 @@ def evaluate(model, k=10, seed=1234, evalcv=True, evaltest=False):
 
     print 'Computing training skipthoughts...'
     trainF = skipthoughts.encode(model, train, verbose=False, use_eos=False)
-    
+
     if evalcv:
         print 'Running cross-validation...'
-        interval = [2**t for t in range(0,9,1)]     # coarse-grained
+        interval = [2**t for t in range(0, 9, 1)]     # coarse-grained
         C = eval_kfold(trainF, train_labels, k=k, scan=interval, seed=seed)
 
     if evaltest:
@@ -83,7 +83,7 @@ def prepare_labels(labels):
     return idxlabels
 
 
-def eval_kfold(features, labels, k=10, scan=[2**t for t in range(0,9,1)], seed=1234):
+def eval_kfold(features, labels, k=10, scan=[2**t for t in range(0, 9, 1)], seed=1234):
     """
     Perform k-fold cross validation
     """
@@ -108,7 +108,7 @@ def eval_kfold(features, labels, k=10, scan=[2**t for t in range(0,9,1)], seed=1
             clf.fit(X_train, y_train)
             score = clf.score(X_test, y_test)
             scanscores.append(score)
-            print (s, score)
+            print(s, score)
 
         # Append mean score
         scores.append(np.mean(scanscores))
@@ -117,6 +117,5 @@ def eval_kfold(features, labels, k=10, scan=[2**t for t in range(0,9,1)], seed=1
     # Get the index of the best score
     s_ind = np.argmax(scores)
     s = scan[s_ind]
-    print (s_ind, s)
+    print(s_ind, s)
     return s
-

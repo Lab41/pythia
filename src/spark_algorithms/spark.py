@@ -10,42 +10,45 @@ from pyspark.mllib.regression import LabeledPoint
 
 
 def word2vecModel(text):
-  """Computes distributed vector representation of words using a skip-gram model. The training objective of skip-gram
-  is to learn word vector representations that are good at predicting its context in the same sentence.
+    """Computes distributed vector representation of words using a skip-gram model. The training objective of skip-gram
+    is to learn word vector representations that are good at predicting its context in the same sentence.
 
-  :parameter text: (REQUIRED) - the input data of text words/strings you'd like to use
-  :return: word2vec model
+    :parameter text: (REQUIRED) - the input data of text words/strings you'd like to use
+    :return: word2vec model
 
-  Use it as:
-  .. code-block::python
+    Use it as:
+    .. code-block::python
 
-      model = word2vecModel(text)
-      synonyms = model.findSynonyms('random_word', 40)
-  """
-  word2vec = Word2Vec()
-  return word2vec.fit(text)
+        model = word2vecModel(text)
+        synonyms = model.findSynonyms('random_word', 40)
+    """
+    word2vec = Word2Vec()
+    return word2vec.fit(text)
+
 
 def SVM_module(training):
-  """This function returns a SVM model from your training data.
+    """This function returns a SVM model from your training data.
 
-  :param training: (REQUIRED) - the training data
-  :return: SVM model
+    :param training: (REQUIRED) - the training data
+    :return: SVM model
 
-  Use it as (Be sure to call split_data() to get the training data):
+    Use it as (Be sure to call split_data() to get the training data):
 
-  >>> model = SVM_module(trainingData)
-  """
-  # Train a SVM model
-  return SVMWithSGD.train(training, iterations=300)
+    >>> model = SVM_module(trainingData)
+    """
+    # Train a SVM model
+    return SVMWithSGD.train(training, iterations=300)
+
 
 def labelize(x):
-  """
-  This function expects a list of tuples in the format [(label, [features])]
+    """
+    This function expects a list of tuples in the format [(label, [features])]
 
-  :param x: list of tuples
-  :return: LabeledPoint object of tuples
-  """
-  return LabeledPoint(x[0], x[1])
+    :param x: list of tuples
+    :return: LabeledPoint object of tuples
+    """
+    return LabeledPoint(x[0], x[1])
+
 
 def split_data(series_features, training_percent=0.9, testing_percent=0.1, seed=0):
     """This function splits the data into training and testing data and returns both as variables.
@@ -59,6 +62,7 @@ def split_data(series_features, training_percent=0.9, testing_percent=0.1, seed=
     training, testing = series_features.randomSplit([training_percent, testing_percent], seed)
     return training, testing
 
+
 def naive_bayes_module(training):
     """This function returns a naive bayes model from your training data.
     Parameter:
@@ -66,6 +70,7 @@ def naive_bayes_module(training):
     """
     # Train a Naive Bayes model
     return NaiveBayes.train(training)
+
 
 def predict_and_label(model, testing):
     """This function returns a RDD of all predictions and their corresponding labels based
@@ -76,6 +81,7 @@ def predict_and_label(model, testing):
     """
     # Give me the prediction and their corresponding label
     return testing.map(lambda p: (model.predict(p.features), p.label))
+
 
 def get_accuracy(prediction_and_label, testing):
     """This function returns the accuracy of the model.

@@ -27,6 +27,7 @@ path_to_dictionary = '/ais/gobi3/u/rkiros/bookgen/book_dictionary_large.pkl'
 path_to_word2vec = '/ais/gobi3/u/rkiros/word2vec/GoogleNews-vectors-negative300.bin'
 #-----------------------------------------------------------------------------#
 
+
 def load_model(embed_map=None):
     """
     Load all model components + apply vocab expansion
@@ -46,7 +47,7 @@ def load_model(embed_map=None):
 
     # Load model options
     print 'Loading model options...'
-    with open('%s.pkl'%path_to_model, 'rb') as f:
+    with open('%s.pkl' % path_to_model, 'rb') as f:
         options = pkl.load(f)
 
     # Load parameters
@@ -82,6 +83,7 @@ def load_model(embed_map=None):
 
     return model
 
+
 def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False):
     """
     Encode sentences in the list X. Each entry will return a vector
@@ -90,7 +92,7 @@ def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False)
     X = preprocess(X)
 
     # word dictionary and init
-    d = defaultdict(lambda : 0)
+    d = defaultdict(lambda: 0)
     for w in model['table'].keys():
         d[w] = 1
     features = numpy.zeros((len(X), model['options']['dim']), dtype='float32')
@@ -98,7 +100,7 @@ def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False)
     # length dictionary
     ds = defaultdict(list)
     captions = [s.split() for s in X]
-    for i,s in enumerate(captions):
+    for i, s in enumerate(captions):
         ds[len(s)].append(i)
 
     # Get features. This encodes by length, in order to avoid wasting computation
@@ -110,29 +112,30 @@ def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False)
             caps = ds[k][minibatch::numbatches]
 
             if use_eos:
-                embedding = numpy.zeros((k+1, len(caps), model['options']['dim_word']), dtype='float32')
+                embedding = numpy.zeros((k + 1, len(caps), model['options']['dim_word']), dtype='float32')
             else:
                 embedding = numpy.zeros((k, len(caps), model['options']['dim_word']), dtype='float32')
             for ind, c in enumerate(caps):
                 caption = captions[c]
                 for j in range(len(caption)):
                     if d[caption[j]] > 0:
-                        embedding[j,ind] = model['table'][caption[j]]
+                        embedding[j, ind] = model['table'][caption[j]]
                     else:
-                        embedding[j,ind] = model['table']['UNK']
+                        embedding[j, ind] = model['table']['UNK']
                 if use_eos:
-                    embedding[-1,ind] = model['table']['<eos>']
+                    embedding[-1, ind] = model['table']['<eos>']
             if use_eos:
-                ff = model['f_w2v'](embedding, numpy.ones((len(caption)+1,len(caps)), dtype='float32'))
+                ff = model['f_w2v'](embedding, numpy.ones((len(caption) + 1, len(caps)), dtype='float32'))
             else:
-                ff = model['f_w2v'](embedding, numpy.ones((len(caption),len(caps)), dtype='float32'))
+                ff = model['f_w2v'](embedding, numpy.ones((len(caption), len(caps)), dtype='float32'))
             if use_norm:
                 for j in range(len(ff)):
                     ff[j] /= norm(ff[j])
             for ind, c in enumerate(caps):
                 features[c] = ff[ind]
-    
+
     return features
+
 
 def preprocess(text):
     """
@@ -149,12 +152,14 @@ def preprocess(text):
         X.append(result)
     return X
 
+
 def load_googlenews_vectors():
     """
     load the word2vec GoogleNews vectors
     """
     embed_map = word2vec.load_word2vec_format(path_to_word2vec, binary=True)
     return embed_map
+
 
 def lookup_table(options, embed_map, worddict, word_idict, f_emb, use_norm=False):
     """
@@ -171,6 +176,7 @@ def lookup_table(options, embed_map, worddict, word_idict, f_emb, use_norm=False
             table[w] /= norm(table[w])
     return table
 
+
 def get_embeddings(options, word_idict, f_emb, use_norm=False):
     """
     Extract the RNN embeddings from the model
@@ -178,23 +184,24 @@ def get_embeddings(options, word_idict, f_emb, use_norm=False):
     d = OrderedDict()
     for i in range(options['n_words']):
         caption = [i]
-        ff = f_emb(numpy.array(caption).reshape(1,1)).flatten()
+        ff = f_emb(numpy.array(caption).reshape(1, 1)).flatten()
         if use_norm:
             ff /= norm(ff)
         d[word_idict[i]] = ff
     return d
+
 
 def train_regressor(options, embed_map, wordvecs, worddict):
     """
     Return regressor to map word2vec to RNN word space
     """
     # Gather all words from word2vec that appear in wordvecs
-    d = defaultdict(lambda : 0)
+    d = defaultdict(lambda: 0)
     for w in embed_map.vocab.keys():
         d[w] = 1
     shared = OrderedDict()
     count = 0
-    for w in worddict.keys()[:options['n_words']-2]:
+    for w in worddict.keys()[:options['n_words'] - 2]:
         if d[w] > 0:
             shared[w] = count
             count += 1
@@ -210,6 +217,7 @@ def train_regressor(options, embed_map, wordvecs, worddict):
     clf.fit(w2v, sg)
     return clf
 
+
 def apply_regressor(clf, embed_map, use_norm=False):
     """
     Map words from word2vec into RNN word space
@@ -221,6 +229,3 @@ def apply_regressor(clf, embed_map, use_norm=False):
             if use_norm:
                 wordvecs[w] /= norm(wordvecs[w])
     return wordvecs
-
-
-

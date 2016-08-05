@@ -21,11 +21,11 @@ def evaluate(model, seed=1234, evaltest=False):
     print 'Preparing data...'
     train, dev, test, scores = load_data()
     train[0], train[1], scores[0] = shuffle(train[0], train[1], scores[0], random_state=seed)
-    
+
     print 'Computing training skipthoughts...'
     trainA = skipthoughts.encode(model, train[0], verbose=False, use_eos=True)
     trainB = skipthoughts.encode(model, train[1], verbose=False, use_eos=True)
-    
+
     print 'Computing development skipthoughts...'
     devA = skipthoughts.encode(model, dev[0], verbose=False, use_eos=True)
     devB = skipthoughts.encode(model, dev[1], verbose=False, use_eos=True)
@@ -53,7 +53,7 @@ def evaluate(model, seed=1234, evaltest=False):
         testF = np.c_[np.abs(testA - testB), testA * testB]
 
         print 'Evaluating...'
-        r = np.arange(1,6)
+        r = np.arange(1, 6)
         yhat = np.dot(bestlrmodel.predict_proba(testF, verbose=2), r)
         pr = pearsonr(yhat, scores[2])[0]
         sr = spearmanr(yhat, scores[2])[0]
@@ -82,8 +82,8 @@ def train_model(lrmodel, X, Y, devX, devY, devscores):
     """
     done = False
     best = -1.0
-    r = np.arange(1,6)
-    
+    r = np.arange(1, 6)
+
     while not done:
         # Every 100 epochs, check Pearson on development set
         lrmodel.fit(X, Y, verbose=2, shuffle=False, validation_data=(devX, devY))
@@ -100,7 +100,7 @@ def train_model(lrmodel, X, Y, devX, devY, devscores):
     score = pearsonr(yhat, devscores)[0]
     print 'Dev Pearson: ' + str(score)
     return bestlrmodel
-    
+
 
 def encode_labels(labels, nclass=5):
     """
@@ -109,10 +109,10 @@ def encode_labels(labels, nclass=5):
     Y = np.zeros((len(labels), nclass)).astype('float32')
     for j, y in enumerate(labels):
         for i in range(nclass):
-            if i+1 == np.floor(y) + 1:
-                Y[j,i] = y - np.floor(y)
-            if i+1 == np.floor(y):
-                Y[j,i] = np.floor(y) - y + 1
+            if i + 1 == np.floor(y) + 1:
+                Y[j, i] = y - np.floor(y)
+            if i + 1 == np.floor(y):
+                Y[j, i] = np.floor(y) - y + 1
     return Y
 
 
@@ -120,8 +120,8 @@ def load_data(loc='./data/'):
     """
     Load the SICK semantic-relatedness dataset
     """
-    trainA, trainB, devA, devB, testA, testB = [],[],[],[],[],[]
-    trainS, devS, testS = [],[],[]
+    trainA, trainB, devA, devB, testA, testB = [], [], [], [], [], []
+    trainS, devS, testS = [], [], []
 
     with open(loc + 'SICK_train.txt', 'rb') as f:
         for line in f:
@@ -147,5 +147,3 @@ def load_data(loc='./data/'):
     testS = [float(s) for s in testS[1:]]
 
     return [trainA[1:], trainB[1:]], [devA[1:], devB[1:]], [testA[1:], testB[1:]], [trainS, devS, testS]
-
-

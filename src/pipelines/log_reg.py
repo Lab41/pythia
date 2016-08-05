@@ -3,6 +3,7 @@
 import sys
 from sklearn import linear_model
 
+
 def run_model(train_data, train_labels, log_penalty='l2', log_dual=False, log_tol=1e-4, log_C=1e-4,
               log_fit_intercept=True, log_intercept_scaling=1, log_class_weight=None, log_random_state=None,
               log_solver='liblinear', log_max_iter=100, log_multi_class='ovr', log_verbose=0, log_warm_start=False,
@@ -20,7 +21,7 @@ def run_model(train_data, train_labels, log_penalty='l2', log_dual=False, log_to
         pred_labels: The predicted labels as determined by logistic regression
     '''
 
-    #use Logistic Regression to train a model
+    # use Logistic Regression to train a model
     logreg = linear_model.LogisticRegression(penalty=log_penalty, dual=log_dual, tol=log_tol, C=log_C,
                                              fit_intercept=log_fit_intercept,
                                              intercept_scaling=log_intercept_scaling, class_weight=log_class_weight,
@@ -33,16 +34,17 @@ def run_model(train_data, train_labels, log_penalty='l2', log_dual=False, log_to
 
     return logreg
 
+
 def main(argv):
 
     train_data, train_target = argv[0], argv[1]
 
-    if len(argv)>2:
+    if len(argv) > 2:
         args_dict = argv[2]
     else:
         args_dict = {}
 
-    print("running logistic regression...",file=sys.stderr)
+    print("running logistic regression...", file=sys.stderr)
 
     logreg = run_model(train_data, train_target, **args_dict)
 
@@ -51,4 +53,5 @@ def main(argv):
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("Usage: log_reg.py train_data, train_labels, args_dict\n\nCreates logistic regression classifier from the data")
-    else: main(sys.argv[1:])
+    else:
+        main(sys.argv[1:])

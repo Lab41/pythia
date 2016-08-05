@@ -28,6 +28,8 @@ def zipp(params, tparams):
         tparams[kk].set_value(vv)
 
 # pull parameters from Theano shared variables
+
+
 def unzip(zipped):
     new_params = OrderedDict()
     for kk, vv in zipped.iteritems():
@@ -35,14 +37,20 @@ def unzip(zipped):
     return new_params
 
 # get the list of parameters: Note that tparams must be OrderedDict
+
+
 def itemlist(tparams):
     return [vv for kk, vv in tparams.iteritems()]
 
 # make prefix-appended name
+
+
 def _p(pp, name):
-    return '%s_%s'%(pp, name)
+    return '%s_%s' % (pp, name)
 
 # all parameters
+
+
 def init_params(options):
     """
     Initalize all model parameters here
@@ -56,6 +64,8 @@ def init_params(options):
     return params
 
 # initialize Theano shared variables according to the initial parameters
+
+
 def init_tparams(params):
     tparams = OrderedDict()
     for kk, pp in params.iteritems():
@@ -63,16 +73,19 @@ def init_tparams(params):
     return tparams
 
 # load parameters
+
+
 def load_params(path, params):
     pp = numpy.load(path)
     for kk, vv in params.iteritems():
         if kk not in pp:
-            raise Warning('%s is not in the archive'%kk)
+            raise Warning('%s is not in the archive' % kk)
         params[kk] = pp[kk]
     return params
 
 # layers: 'name': ('parameter initializer', 'feedforward')
 layers = {'ff': ('param_init_fflayer', 'fflayer')}
+
 
 def get_layer(name):
     """
@@ -82,41 +95,50 @@ def get_layer(name):
     fns = layers[name]
     return (eval(fns[0]), eval(fns[1]))
 
-def norm_weight(nin,nout=None):
+
+def norm_weight(nin, nout=None):
     """
     Weight initialization
     """
     if nout == None:
         nout = nin
     else:
-        r = numpy.sqrt( 2. / nin)
+        r = numpy.sqrt(2. / nin)
         W = numpy.random.rand(nin, nout) * 2 * r - r
     return W.astype('float32')
+
 
 def linear(x):
     return x
 
 # feedforward layer: affine transformation + point-wise nonlinearity
+
+
 def param_init_fflayer(options, params, prefix='ff', nin=None, nout=None):
     if nin == None:
         nin = options['dim_proj']
     if nout == None:
         nout = options['dim_proj']
-    params[_p(prefix,'W')] = norm_weight(nin, nout)
-    params[_p(prefix,'b')] = numpy.zeros((nout,)).astype('float32')
+    params[_p(prefix, 'W')] = norm_weight(nin, nout)
+    params[_p(prefix, 'b')] = numpy.zeros((nout,)).astype('float32')
 
     return params
 
+
 def fflayer(tparams, state_below, options, prefix='rconv', activ='lambda x: tensor.tanh(x)', **kwargs):
-    return eval(activ)(tensor.dot(state_below, tparams[_p(prefix,'W')])+tparams[_p(prefix,'b')])
+    return eval(activ)(tensor.dot(state_below, tparams[_p(prefix, 'W')]) + tparams[_p(prefix, 'b')])
 
 # L2norm, row-wise
+
+
 def l2norm(X):
     norm = tensor.sqrt(tensor.pow(X, 2).sum(1))
     X /= norm[:, None]
     return X
 
 # build a training model
+
+
 def build_model(tparams, options):
     """
     Construct computation graph for the whole model
@@ -156,6 +178,8 @@ def build_model(tparams, options):
     return [im, s, cim, cs], cost
 
 # build an encoder
+
+
 def build_encoder(tparams, options):
     """
     Construct encoder
@@ -176,8 +200,10 @@ def build_encoder(tparams, options):
 
 # optimizers
 # name(hyperp, tparams, grads, inputs (list), cost) = f_grad_shared, f_update
+
+
 def adam(lr, tparams, grads, inp, cost):
-    gshared = [theano.shared(p.get_value() * numpy.float32(0.), name='%s_grad'%k) for k, p in tparams.iteritems()]
+    gshared = [theano.shared(p.get_value() * numpy.float32(0.), name='%s_grad' % k) for k, p in tparams.iteritems()]
     gsup = [(gs, g) for gs, g in zip(gshared, grads)]
 
     f_grad_shared = theano.function(inp, cost, updates=gsup)
@@ -211,7 +237,9 @@ def adam(lr, tparams, grads, inp, cost):
 
     return f_grad_shared, f_update
 
-# things to avoid doing 
+# things to avoid doing
+
+
 def validate_options(options):
 
     if options['dim'] > options['dim_im']:
@@ -223,9 +251,11 @@ def validate_options(options):
     return options
 
 # Load a saved model and evaluate the results
+
+
 def evaluate(X, saveto, evaluate=False, out=False):
     print "Loading model..."
-    with open('%s.pkl'%saveto, 'rb') as f:
+    with open('%s.pkl' % saveto, 'rb') as f:
         model_options = pkl.load(f)
 
     params = init_params(model_options)
@@ -248,18 +278,20 @@ def evaluate(X, saveto, evaluate=False, out=False):
         return lim, ls
 
 # trainer
-def trainer(train, dev, # training and development tuples
-            dim=1000, # embedding dimensionality
-            dim_im=4096, # image dimensionality
-            dim_s=4800, # sentence dimensionality
-            margin=0.2, # margin for pairwise ranking
-            ncon=50, # number of contrastive terms
+
+
+def trainer(train, dev,  # training and development tuples
+            dim=1000,  # embedding dimensionality
+            dim_im=4096,  # image dimensionality
+            dim_s=4800,  # sentence dimensionality
+            margin=0.2,  # margin for pairwise ranking
+            ncon=50,  # number of contrastive terms
             max_epochs=15,
-            lrate=0.01, # not needed with Adam
+            lrate=0.01,  # not needed with Adam
             dispFreq=10,
             optimizer='adam',
-            batch_size = 100,
-            valid_batch_size = 100,
+            batch_size=100,
+            valid_batch_size=100,
             saveto='/ais/gobi3/u/rkiros/ssg/models/cocorank1000_combine.npz',
             validFreq=500,
             saveFreq=500,
@@ -289,7 +321,7 @@ def trainer(train, dev, # training and development tuples
     # reload options
     if reload_ and os.path.exists(saveto):
         print "Reloading options"
-        with open('%s.pkl'%saveto, 'rb') as f:
+        with open('%s.pkl' % saveto, 'rb') as f:
             model_options = pkl.load(f)
 
     print 'Building model'
@@ -326,7 +358,7 @@ def trainer(train, dev, # training and development tuples
     numbatches = len(inds) / batch_size
     curr = 0
     counter = 0
-    target=None
+    target = None
     history_errs = []
 
     # Main loop
@@ -339,13 +371,13 @@ def trainer(train, dev, # training and development tuples
 
             uidx += 1
             conprng_im = RandomState(seed + uidx + 1)
-            conprng_s = RandomState(2*seed + uidx + 1)
+            conprng_s = RandomState(2 * seed + uidx + 1)
 
             im = train[1][inds[minibatch::numbatches]]
             s = train[2][inds[minibatch::numbatches]]
 
-            cinds_im = conprng_im.random_integers(low=0, high=len(train[0])-1, size=ncon * len(im))
-            cinds_s = conprng_s.random_integers(low=0, high=len(train[0])-1, size=ncon * len(s))
+            cinds_im = conprng_im.random_integers(low=0, high=len(train[0]) - 1, size=ncon * len(im))
+            cinds_s = conprng_s.random_integers(low=0, high=len(train[0]) - 1, size=ncon * len(s))
             cim = train[1][cinds_im]
             cs = train[2][cinds_s]
 
@@ -374,7 +406,7 @@ def trainer(train, dev, # training and development tuples
                     print 'Saving...',
                     params = unzip(tparams)
                     numpy.savez(saveto, history_errs=history_errs, **params)
-                    pkl.dump(model_options, open('%s.pkl'%saveto, 'wb'))
+                    pkl.dump(model_options, open('%s.pkl' % saveto, 'wb'))
                     print 'Done'
 
 
@@ -405,7 +437,7 @@ def i2t(images, captions, npts=None):
 
         # Score
         rank = 1e20
-        for i in range(5*index, 5*index + 5, 1):
+        for i in range(5 * index, 5 * index + 5, 1):
             tmp = numpy.where(inds == i)[0][0]
             if tmp < rank:
                 rank = tmp
@@ -440,7 +472,7 @@ def t2i(images, captions, npts=None):
     for index in range(npts):
 
         # Get query captions
-        queries = captions[5*index : 5*index + 5]
+        queries = captions[5 * index: 5 * index + 5]
 
         # Compute scores
         d = numpy.dot(queries, ims.T)
@@ -455,5 +487,3 @@ def t2i(images, captions, npts=None):
     r10 = 100.0 * len(numpy.where(ranks < 10)[0]) / len(ranks)
     medr = numpy.floor(numpy.median(ranks)) + 1
     return (r1, r5, r10, medr)
-
-

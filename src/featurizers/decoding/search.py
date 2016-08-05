@@ -4,6 +4,7 @@ Code for sequence generation
 import numpy
 import copy
 
+
 def gen_sample(tparams, f_init, f_next, ctx, options, trng=None, k=1, maxlen=30,
                stochastic=True, argmax=False, use_unk=False):
     """
@@ -38,11 +39,11 @@ def gen_sample(tparams, f_init, f_next, ctx, options, trng=None, k=1, maxlen=30,
             else:
                 nw = next_w[0]
             sample.append(nw)
-            sample_score += next_p[0,nw]
+            sample_score += next_p[0, nw]
             if nw == 0:
                 break
         else:
-            cand_scores = hyp_scores[:,None] - numpy.log(next_p)
+            cand_scores = hyp_scores[:, None] - numpy.log(next_p)
             cand_flat = cand_scores.flatten()
 
             if not use_unk:
@@ -50,7 +51,7 @@ def gen_sample(tparams, f_init, f_next, ctx, options, trng=None, k=1, maxlen=30,
                 for xx in range(len(cand_flat) / voc_size):
                     cand_flat[voc_size * xx + 1] = 1e20
 
-            ranks_flat = cand_flat.argsort()[:(k-dead_k)]
+            ranks_flat = cand_flat.argsort()[:(k - dead_k)]
 
             voc_size = next_p.shape[1]
             trans_indices = ranks_flat / voc_size
@@ -58,11 +59,11 @@ def gen_sample(tparams, f_init, f_next, ctx, options, trng=None, k=1, maxlen=30,
             costs = cand_flat[ranks_flat]
 
             new_hyp_samples = []
-            new_hyp_scores = numpy.zeros(k-dead_k).astype('float32')
+            new_hyp_scores = numpy.zeros(k - dead_k).astype('float32')
             new_hyp_states = []
 
             for idx, [ti, wi] in enumerate(zip(trans_indices, word_indices)):
-                new_hyp_samples.append(hyp_samples[ti]+[wi])
+                new_hyp_samples.append(hyp_samples[ti] + [wi])
                 new_hyp_scores[idx] = copy.copy(costs[idx])
                 new_hyp_states.append(copy.copy(next_state[ti]))
 
@@ -101,5 +102,3 @@ def gen_sample(tparams, f_init, f_next, ctx, options, trng=None, k=1, maxlen=30,
                 sample_score.append(hyp_scores[idx])
 
     return sample, sample_score
-
-
