@@ -5,6 +5,7 @@ import cPickle as pkl
 import numpy
 from collections import OrderedDict
 
+
 def build_dictionary(text):
     """
     Build a dictionary
@@ -23,9 +24,10 @@ def build_dictionary(text):
 
     worddict = OrderedDict()
     for idx, sidx in enumerate(sorted_idx):
-        worddict[words[sidx]] = idx+2 # 0: <eos>, 1: <unk>
+        worddict[words[sidx]] = idx + 2  # 0: <eos>, 1: <unk>
 
     return worddict, wordcount
+
 
 def load_dictionary(loc='/ais/gobi3/u/rkiros/bookgen/book_dictionary_large.pkl'):
     """
@@ -35,6 +37,7 @@ def load_dictionary(loc='/ais/gobi3/u/rkiros/bookgen/book_dictionary_large.pkl')
         worddict = pkl.load(f)
     return worddict
 
+
 def save_dictionary(worddict, wordcount, loc):
     """
     Save a dictionary to the specified location 
@@ -42,5 +45,3 @@ def save_dictionary(worddict, wordcount, loc):
     with open(loc, 'wb') as f:
         pkl.dump(worddict, f)
         pkl.dump(wordcount, f)
-
-

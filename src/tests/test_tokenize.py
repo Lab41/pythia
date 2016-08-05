@@ -8,6 +8,7 @@ def test_punkt():
     assert tokenize.punkt_sentences("S1. S2. S3! S4!!!") == ["S1.", "S2.", "S3!", "S4!!", "!"]
     assert tokenize.punkt_sentences("S1.      S4!!!") == ["S1.", "S4!!", "!"]
 
+
 def test_word_punct():
     """Test regex-based word and punctuation tokenization"""
 

@@ -23,7 +23,7 @@ def eval_nested_kfold(model, name, loc='./data/', k=10, seed=1234, use_nb=False)
     # Load the dataset and extract features
     z, features = dataset_handler.load_data(model, name, loc=loc, seed=seed)
 
-    scan = [2**t for t in range(0,9,1)]
+    scan = [2**t for t in range(0, 9, 1)]
     npts = len(z['text'])
     kf = KFold(npts, n_folds=k, random_state=seed)
     scores = []
@@ -42,10 +42,10 @@ def eval_nested_kfold(model, name, loc='./data/', k=10, seed=1234, use_nb=False)
         for s in scan:
 
             # Inner KFold
-            innerkf = KFold(len(X_train), n_folds=k, random_state=seed+1)
+            innerkf = KFold(len(X_train), n_folds=k, random_state=seed + 1)
             innerscores = []
             for innertrain, innertest in innerkf:
-        
+
                 # Split data
                 X_innertrain = X_train[innertrain]
                 y_innertrain = y_train[innertrain]
@@ -66,7 +66,7 @@ def eval_nested_kfold(model, name, loc='./data/', k=10, seed=1234, use_nb=False)
                 clf.fit(X_innertrain, y_innertrain)
                 acc = clf.score(X_innertest, y_innertest)
                 innerscores.append(acc)
-                print (s, acc)
+                print(s, acc)
 
             # Append mean score
             scanscores.append(np.mean(innerscores))
@@ -76,13 +76,13 @@ def eval_nested_kfold(model, name, loc='./data/', k=10, seed=1234, use_nb=False)
         s = scan[s_ind]
         print scanscores
         print s
- 
+
         # NB (if applicable)
         if use_nb:
             NBtrain, NBtest = compute_nb(Xraw, y_train, Xraw_test)
             X_train = hstack((X_train, NBtrain))
             X_test = hstack((X_test, NBtest))
-       
+
         # Train classifier
         clf = LogisticRegression(C=s)
         clf.fit(X_train, y_train)
@@ -102,12 +102,9 @@ def compute_nb(X, y, Z):
     labels = [int(t) for t in y]
     ptrain = [X[i] for i in range(len(labels)) if labels[i] == 0]
     ntrain = [X[i] for i in range(len(labels)) if labels[i] == 1]
-    poscounts = nbsvm.build_dict(ptrain, [1,2])
-    negcounts = nbsvm.build_dict(ntrain, [1,2])
+    poscounts = nbsvm.build_dict(ptrain, [1, 2])
+    negcounts = nbsvm.build_dict(ntrain, [1, 2])
     dic, r = nbsvm.compute_ratio(poscounts, negcounts)
-    trainX = nbsvm.process_text(X, dic, r, [1,2])
-    devX = nbsvm.process_text(Z, dic, r, [1,2])
+    trainX = nbsvm.process_text(X, dic, r, [1, 2])
+    devX = nbsvm.process_text(Z, dic, r, [1, 2])
     return trainX, devX
-
-
-

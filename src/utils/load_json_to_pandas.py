@@ -2,11 +2,13 @@ import pandas as pd
 import json
 import os
 
+
 def load_json_file(file_path, data_dict):
     with open('stack_exchange_data/corpus/apple/406.json') as f:
         for line in f:
             data_dict.append(json.loads(line))
     return data_dict
+
 
 def load_json_as_pandas(file_path):
     '''
@@ -21,12 +23,12 @@ def load_json_as_pandas(file_path):
     '''
 
     full_data_dict = []
-    #Check to see if a single json file is being passed in, and if so process only it
+    # Check to see if a single json file is being passed in, and if so process only it
     if file_path.endswith('.json'):
         with open(file_path) as f:
-                for line in f:
-                    full_data_dict.append(json.loads(line))
-    #Otherwise assume the user passed in a folder path, open each file in the folder and process
+            for line in f:
+                full_data_dict.append(json.loads(line))
+    # Otherwise assume the user passed in a folder path, open each file in the folder and process
     else:
         try:
             for filename in os.listdir(file_path):
@@ -42,5 +44,3 @@ def load_json_as_pandas(file_path):
     full_data_df = pd.DataFrame(full_data_dict)
 
     return full_data_df
-
-

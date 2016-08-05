@@ -1,10 +1,12 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 import sys
 import os
 import py7zlib
 
+
 class un7zip(object):
+
     @classmethod
     def is_7zfile(cls, filepath):
         '''
@@ -13,7 +15,7 @@ class un7zip(object):
         is7z = False
         fp = None
         try:
-            print("opening "+filepath)
+            print("opening " + filepath)
             fp = open(filepath, 'rb')
             archive = py7zlib.Archive7z(fp)
             n = len(archive.getnames())
@@ -23,9 +25,11 @@ class un7zip(object):
             if fp:
                 fp.close()
         return is7z
+
     def __init__(self, filepath):
         fp = open(filepath, 'rb')
         self.archive = py7zlib.Archive7z(fp)
+
     def extractall(self, path):
         for name in self.archive.getnames():
             outfilename = os.path.join(path, name)
@@ -36,6 +40,6 @@ class un7zip(object):
             outfile.write(self.archive.getmember(name).read())
             outfile.close()
 
-if __name__=="__main__":
+if __name__ == "__main__":
     a = un7zip(sys.argv[1])
     a.extractall(".")

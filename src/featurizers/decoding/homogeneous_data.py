@@ -7,6 +7,7 @@ sys.path.append('/u/rkiros/research/skipthoughts/')
 import skipthoughts
 #------------------------------------------------------------------------------
 
+
 class HomogeneousData():
 
     def __init__(self, data, batch_size=128, maxlen=None):
@@ -51,7 +52,7 @@ class HomogeneousData():
     def next(self):
         count = 0
         while True:
-            self.len_idx = numpy.mod(self.len_idx+1, len(self.len_unique))
+            self.len_idx = numpy.mod(self.len_idx + 1, len(self.len_unique))
             if self.len_curr_counts[self.len_unique[self.len_idx]] > 0:
                 break
             count += 1
@@ -65,7 +66,7 @@ class HomogeneousData():
         curr_batch_size = numpy.minimum(self.batch_size, self.len_curr_counts[self.len_unique[self.len_idx]])
         curr_pos = self.len_indices_pos[self.len_unique[self.len_idx]]
         # get the indices for the current batch
-        curr_indices = self.len_indices[self.len_unique[self.len_idx]][curr_pos:curr_pos+curr_batch_size]
+        curr_indices = self.len_indices[self.len_unique[self.len_idx]][curr_pos:curr_pos + curr_batch_size]
         self.len_indices_pos[self.len_unique[self.len_idx]] += curr_batch_size
         self.len_curr_counts[self.len_unique[self.len_idx]] -= curr_batch_size
 
@@ -76,6 +77,7 @@ class HomogeneousData():
 
     def __iter__(self):
         return self
+
 
 def prepare_data(caps, features, worddict, model, maxlen=None, n_words=10000):
     """
@@ -110,16 +112,15 @@ def prepare_data(caps, features, worddict, model, maxlen=None, n_words=10000):
 
     y = numpy.zeros((len(feat_list), len(feat_list[0]))).astype('float32')
     for idx, ff in enumerate(feat_list):
-        y[idx,:] = ff
+        y[idx, :] = ff
 
     n_samples = len(seqs)
-    maxlen = numpy.max(lengths)+1
+    maxlen = numpy.max(lengths) + 1
 
     x = numpy.zeros((maxlen, n_samples)).astype('int64')
     x_mask = numpy.zeros((maxlen, n_samples)).astype('float32')
     for idx, s in enumerate(seqs):
-        x[:lengths[idx],idx] = s
-        x_mask[:lengths[idx]+1,idx] = 1.
+        x[:lengths[idx], idx] = s
+        x_mask[:lengths[idx] + 1, idx] = 1.
 
     return x, x_mask, y
-

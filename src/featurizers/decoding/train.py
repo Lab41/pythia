@@ -26,10 +26,12 @@ from vocab import load_dictionary
 from search import gen_sample
 
 # main trainer
+
+
 def trainer(X, C, stmodel,
-            dimctx=4800, #vector dimensionality
-            dim_word=620, # word vector dimensionality
-            dim=1600, # the number of GRU units
+            dimctx=4800,  # vector dimensionality
+            dim_word=620,  # word vector dimensionality
+            dim=1600,  # the number of GRU units
             encoder='gru',
             decoder='gru',
             doutput=False,
@@ -40,7 +42,7 @@ def trainer(X, C, stmodel,
             n_words=40000,
             maxlen_w=100,
             optimizer='adam',
-            batch_size = 16,
+            batch_size=16,
             saveto='/u/rkiros/research/semhash/models/toy.npz',
             dictionary='/ais/gobi3/u/rkiros/bookgen/book_dictionary_large.pkl',
             embeddings=None,
@@ -76,7 +78,7 @@ def trainer(X, C, stmodel,
     # reload options
     if reload_ and os.path.exists(saveto):
         print 'reloading...' + saveto
-        with open('%s.pkl'%saveto, 'rb') as f:
+        with open('%s.pkl' % saveto, 'rb') as f:
             models_options = pkl.load(f)
 
     # load dictionary
@@ -91,10 +93,10 @@ def trainer(X, C, stmodel,
         dim_word = len(embed_map.values()[0])
         model_options['dim_word'] = dim_word
         preemb = norm_weight(n_words, dim_word)
-        pz = defaultdict(lambda : 0)
+        pz = defaultdict(lambda: 0)
         for w in embed_map.keys():
             pz[w] = 1
-        for w in worddict.keys()[:n_words-2]:
+        for w in worddict.keys()[:n_words - 2]:
             if pz[w] > 0:
                 preemb[worddict[w]] = embed_map[w]
     else:
@@ -143,7 +145,7 @@ def trainer(X, C, stmodel,
     print 'Building f_grad...',
     grads = tensor.grad(cost, wrt=itemlist(tparams))
     f_grad_norm = theano.function(inps, [(g**2).sum() for g in grads], profile=False)
-    f_weight_norm = theano.function([], [(t**2).sum() for k,t in tparams.iteritems()], profile=False)
+    f_weight_norm = theano.function([], [(t**2).sum() for k, t in tparams.iteritems()], profile=False)
 
     if grad_clip > 0.:
         g2 = 0.
@@ -164,7 +166,7 @@ def trainer(X, C, stmodel,
     print 'Optimization'
 
     # Each sentence in the minibatch have same length (for encoder)
-    train_iter = homogeneous_data.HomogeneousData([X,C], batch_size=batch_size, maxlen=maxlen_w)
+    train_iter = homogeneous_data.HomogeneousData([X, C], batch_size=batch_size, maxlen=maxlen_w)
 
     uidx = 0
     lrate = 0.01
@@ -201,7 +203,7 @@ def trainer(X, C, stmodel,
 
                 params = unzip(tparams)
                 numpy.savez(saveto, history_errs=[], **params)
-                pkl.dump(model_options, open('%s.pkl'%saveto, 'wb'))
+                pkl.dump(model_options, open('%s.pkl' % saveto, 'wb'))
                 print 'Done'
 
             if numpy.mod(uidx, sampleFreq) == 0:
@@ -211,8 +213,8 @@ def trainer(X, C, stmodel,
                 for jj in xrange(numpy.minimum(10, len(ctx_s))):
                     sample, score = gen_sample(tparams, f_init, f_next, ctx_s[jj].reshape(1, model_options['dimctx']), model_options,
                                                trng=trng, k=1, maxlen=100, stochastic=False, use_unk=False)
-                    print 'Truth ',jj,': ',
-                    for vv in x_s[:,jj]:
+                    print 'Truth ', jj, ': ',
+                    for vv in x_s[:, jj]:
                         if vv == 0:
                             break
                         if vv in word_idict:
@@ -221,7 +223,7 @@ def trainer(X, C, stmodel,
                             print 'UNK',
                     print
                     for kk, ss in enumerate([sample[0]]):
-                        print 'Sample (', kk,') ', jj, ': ',
+                        print 'Sample (', kk, ') ', jj, ': ',
                         for vv in ss:
                             if vv == 0:
                                 break
@@ -231,9 +233,7 @@ def trainer(X, C, stmodel,
                                 print 'UNK',
                     print
 
-        print 'Seen %d samples'%n_samples
+        print 'Seen %d samples' % n_samples
 
 if __name__ == '__main__':
     pass
-
-

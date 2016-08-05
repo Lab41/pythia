@@ -24,11 +24,13 @@ def get_data(scores, features):
             feature.append(score.ldavector)
         feature = np.concatenate(feature, axis=0)
         data.append(feature)
-        if score.novelty: labels.append(1)
-        else: labels.append(0)
-
+        if score.novelty:
+            labels.append(1)
+        else:
+            labels.append(0)
 
     return data, labels
+
 
 def main(argv):
 
@@ -38,5 +40,6 @@ def main(argv):
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print ("Usage: features_and_labels.py scores features\n\ngenerates features and labels for scores given the defined features")
-    else: main(sys.argv[1:])
+        print("Usage: features_and_labels.py scores features\n\ngenerates features and labels for scores given the defined features")
+    else:
+        main(sys.argv[1:])

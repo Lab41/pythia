@@ -1,6 +1,7 @@
 import numpy
 import copy
 
+
 class HomogeneousData():
 
     def __init__(self, data, batch_size=128, maxlen=None):
@@ -46,7 +47,7 @@ class HomogeneousData():
     def next(self):
         count = 0
         while True:
-            self.len_idx = numpy.mod(self.len_idx+1, len(self.len_unique))
+            self.len_idx = numpy.mod(self.len_idx + 1, len(self.len_unique))
             if self.len_curr_counts[self.len_unique[self.len_idx]] > 0:
                 break
             count += 1
@@ -60,7 +61,7 @@ class HomogeneousData():
         curr_batch_size = numpy.minimum(self.batch_size, self.len_curr_counts[self.len_unique[self.len_idx]])
         curr_pos = self.len_indices_pos[self.len_unique[self.len_idx]]
         # get the indices for the current batch
-        curr_indices = self.len_indices[self.len_unique[self.len_idx]][curr_pos:curr_pos+curr_batch_size]
+        curr_indices = self.len_indices[self.len_unique[self.len_idx]][curr_pos:curr_pos + curr_batch_size]
         self.len_indices_pos[self.len_unique[self.len_idx]] += curr_batch_size
         self.len_curr_counts[self.len_unique[self.len_idx]] -= curr_batch_size
 
@@ -73,6 +74,7 @@ class HomogeneousData():
 
     def __iter__(self):
         return self
+
 
 def prepare_data(seqs_x, seqs_y, seqs_z, worddict, maxlen=None, n_words=20000):
     """
@@ -131,15 +133,16 @@ def prepare_data(seqs_x, seqs_y, seqs_z, worddict, maxlen=None, n_words=20000):
     x_mask = numpy.zeros((maxlen_x, n_samples)).astype('float32')
     y_mask = numpy.zeros((maxlen_y, n_samples)).astype('float32')
     z_mask = numpy.zeros((maxlen_z, n_samples)).astype('float32')
-    for idx, [s_x, s_y, s_z] in enumerate(zip(seqs_x,seqs_y,seqs_z)):
-        x[:lengths_x[idx],idx] = s_x
-        x_mask[:lengths_x[idx]+1,idx] = 1.
-        y[:lengths_y[idx],idx] = s_y
-        y_mask[:lengths_y[idx]+1,idx] = 1.
-        z[:lengths_z[idx],idx] = s_z
-        z_mask[:lengths_z[idx]+1,idx] = 1.
+    for idx, [s_x, s_y, s_z] in enumerate(zip(seqs_x, seqs_y, seqs_z)):
+        x[:lengths_x[idx], idx] = s_x
+        x_mask[:lengths_x[idx] + 1, idx] = 1.
+        y[:lengths_y[idx], idx] = s_y
+        y_mask[:lengths_y[idx] + 1, idx] = 1.
+        z[:lengths_z[idx], idx] = s_z
+        z_mask[:lengths_z[idx] + 1, idx] = 1.
 
     return x, x_mask, y, y_mask, z, z_mask
+
 
 def grouper(text):
     """
@@ -150,5 +153,3 @@ def grouper(text):
     backward = text[:-2]
     X = (source, forward, backward)
     return X
-
-

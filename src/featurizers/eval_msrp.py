@@ -58,8 +58,8 @@ def load_data(loc='./data/'):
     trainloc = loc + 'msr_paraphrase_train.txt'
     testloc = loc + 'msr_paraphrase_test.txt'
 
-    trainA, trainB, testA, testB = [],[],[],[]
-    trainS, devS, testS = [],[],[]
+    trainA, trainB, testA, testB = [], [], [], []
+    trainS, devS, testS = [], [], []
 
     f = open(trainloc, 'rb')
     for line in f:
@@ -97,7 +97,7 @@ def feats(A, B):
     """
     tA = [t.split() for t in A]
     tB = [t.split() for t in B]
-    
+
     nA = [[w for w in t if is_number(w)] for t in tA]
     nB = [[w for w in t if is_number(w)] for t in tB]
 
@@ -106,29 +106,29 @@ def feats(A, B):
     # n1
     for i in range(len(A)):
         if set(nA[i]) == set(nB[i]):
-            features[i,0] = 1.
+            features[i, 0] = 1.
 
     # n2
     for i in range(len(A)):
         if set(nA[i]) == set(nB[i]) and len(nA[i]) > 0:
-            features[i,1] = 1.
+            features[i, 1] = 1.
 
     # n3
     for i in range(len(A)):
-        if set(nA[i]) <= set(nB[i]) or set(nB[i]) <= set(nA[i]): 
-            features[i,2] = 1.
+        if set(nA[i]) <= set(nB[i]) or set(nB[i]) <= set(nA[i]):
+            features[i, 2] = 1.
 
     # n4
     for i in range(len(A)):
-        features[i,3] = 1.0 * len(set(tA[i]) & set(tB[i])) / len(set(tA[i]))
+        features[i, 3] = 1.0 * len(set(tA[i]) & set(tB[i])) / len(set(tA[i]))
 
     # n5
     for i in range(len(A)):
-        features[i,4] = 1.0 * len(set(tA[i]) & set(tB[i])) / len(set(tB[i]))
+        features[i, 4] = 1.0 * len(set(tA[i]) & set(tB[i])) / len(set(tB[i]))
 
     # n6
     for i in range(len(A)):
-        features[i,5] = 0.5 * ((1.0*len(tA[i]) / len(tB[i])) + (1.0*len(tB[i]) / len(tA[i])))
+        features[i, 5] = 0.5 * ((1.0 * len(tA[i]) / len(tB[i])) + (1.0 * len(tB[i]) / len(tA[i])))
 
     return features
 
@@ -144,7 +144,7 @@ def eval_kfold(A, B, train, labels, shuffle=True, k=10, seed=1234, use_feats=Fal
     else:
         features = np.c_[np.abs(A - B), A * B]
 
-    scan = [2**t for t in range(0,9,1)]
+    scan = [2**t for t in range(0, 9, 1)]
     npts = len(features)
     kf = KFold(npts, n_folds=k, shuffle=shuffle, random_state=seed)
     scores = []
@@ -167,7 +167,7 @@ def eval_kfold(A, B, train, labels, shuffle=True, k=10, seed=1234, use_feats=Fal
             yhat = clf.predict(X_test)
             fscore = f1(y_test, yhat)
             scanscores.append(fscore)
-            print (s, fscore)
+            print(s, fscore)
 
         # Append mean score
         scores.append(np.mean(scanscores))
@@ -179,5 +179,3 @@ def eval_kfold(A, B, train, labels, shuffle=True, k=10, seed=1234, use_feats=Fal
     print scores
     print s
     return s
-
-

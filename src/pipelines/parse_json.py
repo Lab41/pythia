@@ -12,8 +12,8 @@ import nltk
 from nltk.tokenize import word_tokenize
 import numpy
 
-def parse_json(folder, seed=1, **kwargs):
 
+def parse_json(folder, seed=1, **kwargs):
     '''
     Purpose - Parses a folder full of JSON files containing document data.
     Input - a directory full of files with JSON data
@@ -41,17 +41,17 @@ def parse_json(folder, seed=1, **kwargs):
     j = 0
 
     random.seed(seed)
-    for file_name in os.listdir (folder):
+    for file_name in os.listdir(folder):
         if file_name.endswith(".json"):
             # Read JSON file line by line and retain stats about number of clusters and order of objects
             full_file_name = os.path.join(folder, file_name)
 
-            with open(full_file_name,'r') as dataFile:
+            with open(full_file_name, 'r') as dataFile:
                 if random.random() > 0.2:
                     for line in dataFile:
                         parsedData = json.loads(fix_escapes(line))
                         clusters.add(parsedData["cluster_id"])
-                        order[parsedData["cluster_id"]].add((parsedData["order"],i))
+                        order[parsedData["cluster_id"]].add((parsedData["order"], i))
                         wordcount = count_vocab(parsedData["body_text"], wordcount)
                         data.append(parsedData)
                         i += 1
@@ -59,7 +59,7 @@ def parse_json(folder, seed=1, **kwargs):
                     for line in dataFile:
                         parsedData = json.loads(fix_escapes(line))
                         test_clusters.add(parsedData["cluster_id"])
-                        test_order[parsedData["cluster_id"]].add((parsedData["order"],j))
+                        test_order[parsedData["cluster_id"]].add((parsedData["order"], j))
                         test_data.append(parsedData)
                         j += 1
     return clusters, order, data, test_clusters, test_order, test_data, wordcount
@@ -75,11 +75,12 @@ def fix_escapes(line):
     # Remove embedded special left/right leaning quote characters in body_text segment of json object
     if line.find('\\\xe2\x80\x9d'):
         spot = line.find("body_text")
-        line = line[:spot+13] + line[spot+13:].replace('\\\xe2\x80\x9d','\\"')
+        line = line[:spot + 13] + line[spot + 13:].replace('\\\xe2\x80\x9d', '\\"')
     if line.find('\\\xe2\x80\x9c'):
         spot = line.find("body_text")
-        line = line[:spot+13] + line[spot+13:].replace('\\\xe2\x80\x9c','\\"')
+        line = line[:spot + 13] + line[spot + 13:].replace('\\\xe2\x80\x9c', '\\"')
     return line
+
 
 def count_vocab(text, wordcount):
     '''
@@ -90,9 +91,11 @@ def count_vocab(text, wordcount):
 
     # Tokenize text and add words to corpus dictionary
     wordlist = word_tokenize(text)
-    for word in wordlist: wordcount[word] += 1
+    for word in wordlist:
+        wordcount[word] += 1
 
     return wordcount
+
 
 def order_vocab(tokencount):
     '''
@@ -108,15 +111,17 @@ def order_vocab(tokencount):
     sorted_idx = numpy.argsort(freqs)[::-1]
 
     wordorder = OrderedDict()
-    for idx, sidx in enumerate(sorted_idx): wordorder[words[sidx]] = idx+2
+    for idx, sidx in enumerate(sorted_idx):
+        wordorder[words[sidx]] = idx + 2
     return wordorder
+
 
 def main(argv):
 
-    print("parsing json files...",file=sys.stderr)
-    
+    print("parsing json files...", file=sys.stderr)
+
     folder, parameters = argv
-    
+
     # Parse JSON file that was supplied in command line argument
     clusters, order, data, test_clusters, test_order, test_data, wordcount = parse_json(folder, **parameters)
 
@@ -125,7 +130,7 @@ def main(argv):
 
     # Create a corpus dictionary of named tuples with count and unique ids
     corpusdict = OrderedDict()
-    corpusTuple = namedtuple('corpusTuple','count, id')
+    corpusTuple = namedtuple('corpusTuple', 'count, id')
     for word in wordorder:
         corpusdict[word] = corpusTuple(wordcount[word], wordorder[word])
 

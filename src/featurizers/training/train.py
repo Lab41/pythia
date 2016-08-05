@@ -24,9 +24,11 @@ from model import init_params, build_model
 from vocab import load_dictionary
 
 # main trainer
-def trainer(X, 
-            dim_word=620, # word vector dimensionality
-            dim=2400, # the number of GRU units
+
+
+def trainer(X,
+            dim_word=620,  # word vector dimensionality
+            dim=2400,  # the number of GRU units
             encoder='gru',
             decoder='gru',
             max_epochs=5,
@@ -36,7 +38,7 @@ def trainer(X,
             n_words=20000,
             maxlen_w=30,
             optimizer='adam',
-            batch_size = 64,
+            batch_size=64,
             saveto='/u/rkiros/research/semhash/models/toy.npz',
             dictionary='/ais/gobi3/u/rkiros/bookgen/book_dictionary_large.pkl',
             saveFreq=1000,
@@ -47,7 +49,7 @@ def trainer(X,
     model_options['dim_word'] = dim_word
     model_options['dim'] = dim
     model_options['encoder'] = encoder
-    model_options['decoder'] = decoder 
+    model_options['decoder'] = decoder
     model_options['max_epochs'] = max_epochs
     model_options['dispFreq'] = dispFreq
     model_options['decay_c'] = decay_c
@@ -66,7 +68,7 @@ def trainer(X,
     # reload options
     if reload_ and os.path.exists(saveto):
         print 'reloading...' + saveto
-        with open('%s.pkl'%saveto, 'rb') as f:
+        with open('%s.pkl' % saveto, 'rb') as f:
             models_options = pkl.load(f)
 
     # load dictionary
@@ -89,9 +91,9 @@ def trainer(X,
     tparams = init_tparams(params)
 
     trng, x, x_mask, y, y_mask, z, z_mask, \
-          opt_ret, \
-          cost = \
-          build_model(tparams, model_options)
+        opt_ret, \
+        cost = \
+        build_model(tparams, model_options)
     inps = [x, x_mask, y, y_mask, z, z_mask]
 
     # before any regularizer
@@ -117,7 +119,7 @@ def trainer(X,
     print 'Building f_grad...',
     grads = tensor.grad(cost, wrt=itemlist(tparams))
     f_grad_norm = theano.function(inps, [(g**2).sum() for g in grads], profile=False)
-    f_weight_norm = theano.function([], [(t**2).sum() for k,t in tparams.iteritems()], profile=False)
+    f_weight_norm = theano.function([], [(t**2).sum() for k, t in tparams.iteritems()], profile=False)
 
     if grad_clip > 0.:
         g2 = 0.
@@ -176,12 +178,10 @@ def trainer(X,
 
                 params = unzip(tparams)
                 numpy.savez(saveto, history_errs=[], **params)
-                pkl.dump(model_options, open('%s.pkl'%saveto, 'wb'))
+                pkl.dump(model_options, open('%s.pkl' % saveto, 'wb'))
                 print 'Done'
 
-        print 'Seen %d samples'%n_samples
+        print 'Seen %d samples' % n_samples
 
 if __name__ == '__main__':
     pass
-
-
