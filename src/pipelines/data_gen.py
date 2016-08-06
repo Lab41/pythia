@@ -28,7 +28,7 @@ def gen_feature(new_vectors, request_parameters, feature_vector):
     if request_parameters.get('cos', False):
         similarity = 1 - spatial.distance.cosine(new_vectors[0], new_vectors[1])
         feature_vector.append(np.array([similarity]))
-    return feature
+    return feature_vector
 
 def bow(doc, corpus, corpus_array, vocab, bow, feature):
     vectors = bag_of_words_vectors(doc, corpus, vocab)
@@ -255,7 +255,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, vocab, 
                 feature = lda(doc, corpus, vocab, lda_topics, features['lda'], feature)
 
             if 'wordonehot' in features:
-                feature = wordonehot(doc, corpus, features['wordonehot'], feature)
+                feature = wordonehot(doc, corpus, vocab, features['wordonehot'], feature)
 
             # Save feature and label
             feature = np.concatenate(feature, axis=0)

@@ -117,9 +117,9 @@ def get_args(
 
     # wordonehot (will not play nicely with other featurization methods b/c not
     # vector)
-    WORDONEHOT = False
+    WORDONEHOT = False,
     #WORDONEHOT_DOCLENGTH = None
-    WORDONEHOT_VOCAB = 5000
+    WORDONEHOT_VOCAB = 5000,
 
     #ALGORITHMS
     #logistic regression
@@ -154,6 +154,7 @@ def get_args(
     bow = None
     st = None
     lda = None
+    wordonehot = None
 
     if BOW_APPEND or BOW_DIFFERENCE or BOW_PRODUCT or BOW_COS or BOW_TFIDF:
         bow = dict()
@@ -177,11 +178,20 @@ def get_args(
         if LDA_COS: lda['cos'] = LDA_COS
         if LDA_VOCAB: lda['vocab'] = LDA_VOCAB
         if LDA_TOPICS: lda['topics'] = LDA_TOPICS
+    if WORDONEHOT:
+        wordonehot = dict()
+        if WORDONEHOT_VOCAB:
+            wordonehot['vocab'] = WORDONEHOT_VOCAB
 
     features = dict()
-    if bow: features['bow'] = bow
-    if st: features['st'] = st
-    if lda: features['lda'] = lda
+    if bow:
+        features['bow'] = bow
+    if st:
+        features['st'] = st
+    if lda:
+        features['lda'] = lda
+    if wordonehot:
+        features['wordonehot'] = wordonehot
 
     #get algorithms
     log_reg = None
