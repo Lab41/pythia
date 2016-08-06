@@ -52,12 +52,8 @@ set -e
         source activate "$env_name"
     fi
 
-    # install tensorflow (CPU) and tflearn (py3.4 only)
-    if [ "$python_version" = "3.4" ]; then
-        pip install \
-        https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.8.0-cp34-cp34m-linux_x86_64.whl
-        #pip install tflearn
-    fi
+    # install tensorflow
+    conda install -y -c conda-forge tensorflow
 
     # Download some NLTK data (punkt tokenizer)
     python -m nltk.downloader punkt
@@ -104,5 +100,4 @@ set -e
 
 }
 
-#make_env "py3-pythia-tf" "Python 3.4 (Pythia, TF)" "3.4"
 make_env "py3-pythia" "Python 3.5 (Pythia/Spark-compatible)" "3.5"

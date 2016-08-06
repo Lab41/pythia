@@ -1,6 +1,8 @@
 from bs4 import BeautifulSoup
 from sklearn.feature_extraction.stop_words import ENGLISH_STOP_WORDS
 import re
+import warnings
+
 
 link_re = re.compile(r'\/{2}[\d\w-]+(\.[\d\w-]+)*(?:(?:\/[^\s/]*))*')
 letter_re = re.compile(r"[^a-zA-Z]")
@@ -21,7 +23,11 @@ def normalize_and_remove_stop_words(raw_text):
     #
     # 2. Remove HTML
     #TODO Potentially look into using package other than BeautifulSoup for this step
-    review_text = BeautifulSoup(links_removed, "lxml").get_text()
+    # Suppress UserWarnings from BeautifulSoup due to text with tech info (ex: code, directory structure)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=UserWarning)
+        review_text = BeautifulSoup(links_removed, "lxml").get_text()
+
     #
     # 3. Remove non-letters
     letters_only = letter_re.sub(" ", review_text)
@@ -44,7 +50,11 @@ def xml_normalize(raw_text):
     links_removed = remove_links(raw_text)
 
     # 2. Remove HTML
-    review_text = BeautifulSoup(links_removed, "lxml").get_text()
+    #TODO Potentially look into using package other than BeautifulSoup for this step
+    # Suppress UserWarnings from BeautifulSoup due to text with tech info (ex: code, directory structure)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=UserWarning)
+        review_text = BeautifulSoup(links_removed, "lxml").get_text()
 
     # 3. Convert to lower-case
     lower_case = review_text.lower()
