@@ -27,12 +27,12 @@ def main(argv):
         
     #preprocessing
     print("preprocessing...",file=sys.stderr)
-    vocab, encoder_decoder, lda = preprocess.main([features, corpusdict, data])
+    vocab, encoder_decoder, lda = preprocess.main([features, parameters, corpusdict, data])
 
     #featurization
     print("generating training and testing data...",file=sys.stderr)
-    train_data, train_target = data_gen.main([clusters, order, data, features, vocab, encoder_decoder, lda])
-    test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, vocab, encoder_decoder, lda])
+    train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, encoder_decoder, lda])
+    test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, encoder_decoder, lda])
 
     #modeling
     print("running algorithms...",file=sys.stderr)
@@ -90,16 +90,15 @@ def parse_args(given_args=None):
 
 def get_args(
     #DIRECTORY
-    directory = '/data/stackexchange/anime',
+    directory = 'data/stackexchange/anime',
 
     #FEATURES
     #bag of words
-    BOW_APPEND = False,
-    BOW_DIFFERENCE = True,
+    BOW_APPEND = True,
+    BOW_DIFFERENCE = False,
     BOW_PRODUCT = True,
-    BOW_COS = True,
-    BOW_TFIDF = True,
-    BOW_VOCAB = None,
+    BOW_COS = False,
+    BOW_TFIDF = False,
     
     #skipthoughts
     ST_APPEND = False,
@@ -112,18 +111,17 @@ def get_args(
     LDA_DIFFERENCE = False,
     LDA_PRODUCT = False,
     LDA_COS = False,
-    LDA_VOCAB = 1000,
     LDA_TOPICS = 40,
     
     #ALGORITHMS
     #logistic regression
-    LOG_REG = True,
+    LOG_REG = False,
     LOG_PENALTY = 'l2',
     LOG_TOL = 1e-4,
     LOG_C = 1e-4,
     
     #svm
-    SVM = True,
+    SVM = False,
     SVM_C = 2000,
     SVM_KERNAL = 'linear',
     SVM_GAMMA = 'auto',
@@ -142,6 +140,10 @@ def get_args(
     OVERSAMPLING = False,
     REPLACEMENT = False,
     
+    #vocabulary
+    VOCAB_SIZE = 1000,
+    STEM = False,
+    
     SEED = None):
     
     #get features
@@ -156,7 +158,6 @@ def get_args(
         if BOW_PRODUCT: bow['product'] = BOW_PRODUCT
         if BOW_COS: bow['cos'] = BOW_COS
         if BOW_TFIDF: bow['tfidf'] = BOW_TFIDF
-        if BOW_VOCAB: bow['vocab'] = BOW_VOCAB
     if ST_APPEND or ST_DIFFERENCE or ST_PRODUCT or ST_COS:
         st = dict()
         if ST_APPEND: st['append'] = ST_APPEND
@@ -169,7 +170,6 @@ def get_args(
         if LDA_DIFFERENCE: lda['difference'] = LDA_DIFFERENCE
         if LDA_PRODUCT: lda['product'] = LDA_PRODUCT
         if LDA_COS: lda['cos'] = LDA_COS
-        if LDA_VOCAB: lda['vocab'] = LDA_VOCAB
         if LDA_TOPICS: lda['topics'] = LDA_TOPICS
     
     features = dict()
@@ -215,6 +215,8 @@ def get_args(
             
     parameters = dict()
     if RESAMPLING: parameters['resampling'] = resampling
+    if VOCAB_SIZE: parameters['vocab'] = VOCAB_SIZE
+    if STEM: parameters['stem'] = STEM
     if SEED: parameters['seed'] = SEED
     
     return [directory, features, algorithms, parameters]
@@ -222,6 +224,6 @@ def get_args(
 if __name__ == '__main__':
     #args = parse_args()
     args = get_args()
-    print("Algorithm details and Results:",file=sys.stderr)
+    print("Algorithm details and Results:", file=sys.stderr)
     print(main(args), file=sys.stdout)
     sys.exit(0)

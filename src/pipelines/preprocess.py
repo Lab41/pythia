@@ -3,7 +3,7 @@ from src.featurizers import skipthoughts
 from sklearn.decomposition import LatentDirichletAllocation
 from sklearn.feature_extraction.text import CountVectorizer
 
-def gen_vocab(corpus_dict, vocab=1000, **kwargs):
+def gen_vocab(corpus_dict, vocab=1000, stem=False, **kwargs):
     '''
     Generates a dictionary of words to be used as the vocabulary in features that utilize bag of words.
     
@@ -18,7 +18,7 @@ def gen_vocab(corpus_dict, vocab=1000, **kwargs):
     vocabdict = dict()
     for word in corpus_dict:
         if len(vocabdict) < vocab:
-            cleantext = normalize_and_remove_stop_words(word)
+            cleantext = normalize_and_remove_stop_words(word, stem)
             if cleantext != '':
                 if not cleantext in vocabdict:
                     vocabdict[cleantext] = index
@@ -60,15 +60,14 @@ def main(argv):
         multiple: dictionary of the corpus vocabulary, skipthoughts encoder_decoder, trained LDA model
     '''
  
-    features, corpus_dict, trainingdata = argv
+    features, parameters, corpus_dict, trainingdata = argv
     encoder_decoder = None
     vocab= None
     lda = None
     
     if 'st' in features: encoder_decoder = skipthoughts.load_model()
     
-    if 'bow' in features: vocab = gen_vocab(corpus_dict, **features['bow'])
-    elif 'lda' in features: vocab = gen_vocab(corpus_dict, **features['lda'])
+    if 'bow' in features or 'lda' in features: vocab = gen_vocab(corpus_dict, **parameters)
     if 'lda' in features: lda = build_lda(trainingdata, vocab, **features['lda'])
         
     return vocab, encoder_decoder, lda
