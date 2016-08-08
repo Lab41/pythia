@@ -200,7 +200,7 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
 
     return doc_onehot
 
-def gen_observations(all_clusters, lookup_order, documentData, features, vocab, encoder_decoder, lda_topics, tf_session):
+def gen_observations(all_clusters, lookup_order, documentData, features, parameters, vocab, encoder_decoder, lda_topics, tf_session):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
 
@@ -230,7 +230,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, vocab, 
         first_doc = documentData[sortedEntries[0]]["body_text"]
 
         # Set corpus to first doc in this cluster and prepare to update corpus with new document vocabulary
-        corpus = normalize.normalize_and_remove_stop_words(first_doc)
+        corpus = normalize.normalize_and_remove_stop_words(first_doc, **parameters)
 
         # Create a document array for TFIDF
         corpus_array = [corpus]
@@ -244,7 +244,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, vocab, 
             raw_doc = documentData[index]["body_text"]
 
             #normalize and remove stop words from doc
-            doc = normalize.normalize_and_remove_stop_words(raw_doc)
+            doc = normalize.normalize_and_remove_stop_words(raw_doc, **parameters)
 
             corpus_array.append(doc)
 
@@ -287,7 +287,7 @@ def main(argv):
     Returns:
         list: contains for each obeservation
     '''
-    all_clusters, lookup_order, document_data, features, vocab, encoder_decoder, lda, tf_model = argv
-    data, labels = gen_observations(all_clusters, lookup_order, document_data, features, vocab, encoder_decoder, lda, tf_model)
+    all_clusters, lookup_order, document_data, features, parameters, vocab, encoder_decoder, lda, tf_model = argv
+    data, labels = gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, encoder_decoder, lda, tf_model)
 
     return data, labels

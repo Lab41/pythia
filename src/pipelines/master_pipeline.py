@@ -24,15 +24,15 @@ def main(argv):
     if 'resampling' in parameters:
         print("resampling...",file=sys.stderr)
         data, clusters, order, corpusdict = sample(data, "novelty", **parameters['resampling'])
-
+        
     #preprocessing
     print("preprocessing...",file=sys.stderr)
-    vocab, encoder_decoder, lda, tf_model = preprocess.main([features, corpusdict, data])
+    vocab, encoder_decoder, lda, tf_model = preprocess.main([features, parameters, corpusdict, data])
 
     #featurization
     print("generating training and testing data...",file=sys.stderr)
-    train_data, train_target = data_gen.main([clusters, order, data, features, vocab, encoder_decoder, lda, tf_model])
-    test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, vocab, encoder_decoder, lda, tf_model])
+    train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, encoder_decoder, lda, tf_model])
+    test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, encoder_decoder, lda, tf_model])
 
     #modeling
     print("running algorithms...",file=sys.stderr)
@@ -79,7 +79,7 @@ def parse_args(given_args=None):
 
     paramTuple = namedtuple('parameters','vocab_size, lda_topics, resampling, novel_ratio, oversampling, replacement')
     parameters = paramTuple(args.vocab_size, args.LDA_topics, args.resampling, args.novel_ratio, args.oversampling, args.replacement)
-
+    
     if not (args.cos_similarity or args.tfidf_sum or args.bag_of_words or args.skipthoughts or args.LDA):
         parser.exit(status=1, message="Error: pipeline requires at least one feature\n")
 
@@ -94,25 +94,23 @@ def get_args(
 
     #FEATURES
     #bag of words
-    BOW_APPEND = False,
-    BOW_DIFFERENCE = False,
-    BOW_PRODUCT = False,
-    BOW_COS = False,
-    BOW_TFIDF = False,
-    BOW_VOCAB = None,
-
+    BOW_APPEND = True,
+    BOW_DIFFERENCE = True,
+    BOW_PRODUCT = True,
+    BOW_COS = True,
+    BOW_TFIDF = True,
+    
     #skipthoughts
     ST_APPEND = False,
     ST_DIFFERENCE = False,
     ST_PRODUCT = False,
     ST_COS = False,
-
+    
     #lda
     LDA_APPEND = False,
     LDA_DIFFERENCE = False,
     LDA_PRODUCT = False,
     LDA_COS = False,
-    LDA_VOCAB = 5000,
     LDA_TOPICS = 40,
 
     #one-hot CNN layer
@@ -145,7 +143,7 @@ def get_args(
     SVM_GAMMA = 'auto',
 
     #xgboost
-    XGB = False,
+    XGB = True,
     XGB_LEARNRATE = 0.1,
     XGB_MAXDEPTH = 3,
     XGB_MINCHILDWEIGHT = 1,
@@ -157,9 +155,13 @@ def get_args(
     NOVEL_RATIO = None,
     OVERSAMPLING = False,
     REPLACEMENT = False,
-
+    
+    #vocabulary
+    VOCAB_SIZE = 1000,
+    STEM = False,
+    
     SEED = None):
-
+    
     #get features
     bow = None
     st = None
@@ -173,7 +175,6 @@ def get_args(
         if BOW_PRODUCT: bow['product'] = BOW_PRODUCT
         if BOW_COS: bow['cos'] = BOW_COS
         if BOW_TFIDF: bow['tfidf'] = BOW_TFIDF
-        if BOW_VOCAB: bow['vocab'] = BOW_VOCAB
     if ST_APPEND or ST_DIFFERENCE or ST_PRODUCT or ST_COS:
         st = dict()
         if ST_APPEND: st['append'] = ST_APPEND
@@ -186,7 +187,6 @@ def get_args(
         if LDA_DIFFERENCE: lda['difference'] = LDA_DIFFERENCE
         if LDA_PRODUCT: lda['product'] = LDA_PRODUCT
         if LDA_COS: lda['cos'] = LDA_COS
-        if LDA_VOCAB: lda['vocab'] = LDA_VOCAB
         if LDA_TOPICS: lda['topics'] = LDA_TOPICS
     if CNN_APPEND or CNN_DIFFERENCE or CNN_PRODUCT or CNN_COS:
         cnn = dict()
@@ -228,22 +228,24 @@ def get_args(
         if XGB_COLSAMPLEBYTREE: xgb['svm_gamma'] = XGB_COLSAMPLEBYTREE
         if XGB_MINCHILDWEIGHT: xgb['svm_gamma'] = XGB_MINCHILDWEIGHT
 
-    algorithms = dict()
+    algorithms = dict()    
     if log_reg: algorithms['log_reg'] = log_reg
     if svm: algorithms['svm'] = svm
     if xgb: algorithms['xgb'] = xgb
-
+    
     #get parameters
     resampling = None
-
+    
     if RESAMPLING:
         resampling = dict()
         if NOVEL_RATIO: resampling['novelToNotNovelRatio'] = NOVEL_RATIO
         if OVERSAMPLING: resampling['over'] = OVERSAMPLING
         if REPLACEMENT: resampling['replacement'] = REPLACEMENT
-
+            
     parameters = dict()
     if RESAMPLING: parameters['resampling'] = resampling
+    if VOCAB_SIZE: parameters['vocab'] = VOCAB_SIZE
+    if STEM: parameters['stem'] = STEM
     if SEED: parameters['seed'] = SEED
 
     return directory, features, algorithms, parameters
@@ -251,6 +253,6 @@ def get_args(
 if __name__ == '__main__':
     #args = parse_args()
     args = get_args()
-    print("Algorithm details and Results:",file=sys.stderr)
+    print("Algorithm details and Results:", file=sys.stderr)
     print(main(args), file=sys.stdout)
     sys.exit(0)
