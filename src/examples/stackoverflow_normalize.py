@@ -3,20 +3,18 @@
 
 # ## Hard-coding data paths
 # 
-# Mostly this notebook should just run. It however requires the user to fill in the cell below.
-# 
-
-# sample_location should be the path to a directory which contains your data. Each file should contain json-parsable lines. The directory can have subdirectories. The code will recursively find the files.
 
 parsed_data_location = '/Users/chrisn/testing'
 sample_location = '/Users/chrisn/mad-science/pythia/data/stackexchange'
 file_extension = ".json"
+num_pools = 8
 
 # Import auxillary modules
 import os
 import json
 import csv
 import sys
+from multiprocessing import Pool
 
 # Import pythia modules
 sys.path.append('/Users/chrisn/mad-science/pythia/')
@@ -39,30 +37,36 @@ from src.utils import normalize, tokenize
 
 
 # Instead of trying to parse in memory, can instead parse line by line and write to disk
-observed_paths = set() # used for logging purposes
+
+def parse(path):
+    for line in open(path):
+        temp_dict = json.loads(line)
+        post_id = temp_dict['post_id']
+        text = temp_dict['body_text']
+        sentences = tokenize.punkt_sentences(text)
+        normal = [normalize.xml_normalize(sentence) for sentence in sentences]
+        tokens = [' '.join(tokenize.word_punct_tokens(sentence)) for sentence in normal]
+        root, doc = os.path.split(path)
+        base_doc = doc.split('.')[0]
+        output_filename = "{}_{}.csv".format(base_doc, post_id)
+        rel_path = os.path.relpath(root,sample_location)
+        output_path = os.path.join(parsed_data_location, rel_path, output_filename)
+        os.makedirs(os.path.dirname(output_path), exist_ok = True)
+        with open(output_path, 'w') as token_file:
+            writer = csv.DictWriter(token_file, fieldnames)
+            writer.writeheader()
+            output_dict = temp_dict
+            for token in tokens:
+                output_dict['body_text'] = token
+                writer.writerow(output_dict)
+
 fieldnames = ["body_text", "post_id","cluster_id", "order", "novelty"]
-for root,dirs,files in os.walk(sample_location):
-    for doc in files:
-        if doc.endswith(file_extension):
-            for line in open(os.path.join(sample_location,root,doc)):
-                temp_dict = json.loads(line)
-                post_id = temp_dict['post_id']
-                text = temp_dict['body_text']
-                sentences = tokenize.punkt_sentences(text)
-                normal = [normalize.xml_normalize(sentence) for sentence in sentences]
-                tokens = [' '.join(tokenize.word_punct_tokens(sentence)) for sentence in normal]
-                base_doc = doc.split('.')[0]
-                output_filename = "{}_{}.csv".format(base_doc,post_id)
-                rel_path = os.path.relpath(root,sample_location)
-                output_path = os.path.join(parsed_data_location,rel_path,output_filename)
-                os.makedirs(os.path.dirname(output_path), exist_ok = True)
-                with open(output_path,'w') as token_file:
-                    #print(parsed_data_location,rel_path,output_filename)
-                    writer = csv.DictWriter(token_file,fieldnames)
-                    writer.writeheader()
-                    output_dict = temp_dict
-                    for token in tokens:
-                        output_dict['body_text'] = token
-                        writer.writerow(output_dict)
+pool = Pool(num_pools)
+
+pool.map(parse,(os.path.join(sample_location, root, doc)
+                for root,dirs, files in os.walk(sample_location)
+                for doc in files
+                if doc.endswith(file_extension)))
+
 
 
