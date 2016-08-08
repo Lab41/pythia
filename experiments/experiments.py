@@ -60,6 +60,9 @@ def config_variables():
     LDA_VOCAB = 10000
     LDA_TOPICS = 50
 
+    # word one-hot
+    WORDONEHOT = False
+
     # ALGORITHMS
     # logistic regression
     LOG_REG = False
