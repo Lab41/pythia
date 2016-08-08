@@ -40,8 +40,6 @@ class DMN_basic:
         self.train_input, self.train_q, self.train_answer, self.train_input_mask = self._process_input(train_raw)
         self.test_input, self.test_q, self.test_answer, self.test_input_mask = self._process_input(test_raw)
         self.vocab_size = len(self.vocab)
-        print(type(self.train_input), len(self.train_input), len(self.train_input[1]), len(self.train_input[1][0]))
-        print(self.train_answer)
 
         self.input_var = T.matrix('input_var')
         self.q_var = T.matrix('question_var')
