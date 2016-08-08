@@ -300,7 +300,7 @@ def main(args):
             print("Completed " + section)
 
     if args.filter or args.skipparse:
-        filter_json_files(os.path.normpath(dest_path) + "_filtered",
+        filter_json_files(os.path.normpath(corpus_directory) + "_filtered",
             corpus_directory, int(args.minpost), int(args.maxpost))
 
 
