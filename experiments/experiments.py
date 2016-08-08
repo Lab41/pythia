@@ -35,7 +35,7 @@ xp = set_up_xp()
 def config_variables():
 
     # DIRECTORY
-    directory = '/stack_exchange_data/corpus_filtered/movies'
+    directory = 'stack_exchange_data/corpus_filtered/movies'
 
     # FEATURES
     # bag of words
@@ -70,9 +70,9 @@ def config_variables():
 
     # wordonehot (will not play nicely with other featurization methods b/c not
     # vector)
-    WORDONEHOT = False,
+    WORDONEHOT = False
     #WORDONEHOT_DOCLENGTH = None
-    WORDONEHOT_VOCAB = 5000,
+    WORDONEHOT_VOCAB = 5000
 
     # ALGORITHMS
     # logistic regression

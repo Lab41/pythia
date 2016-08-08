@@ -99,13 +99,13 @@ def get_args(
     BOW_PRODUCT = True,
     BOW_COS = True,
     BOW_TFIDF = True,
-    
+
     #skipthoughts
     ST_APPEND = False,
     ST_DIFFERENCE = False,
     ST_PRODUCT = False,
     ST_COS = False,
-    
+
     #lda
     LDA_APPEND = False,
     LDA_DIFFERENCE = False,
@@ -143,7 +143,7 @@ def get_args(
     SVM_GAMMA = 'auto',
 
     #xgboost
-    XGB = True,
+    XGB = False,
     XGB_LEARNRATE = 0.1,
     XGB_MAXDEPTH = 3,
     XGB_MINCHILDWEIGHT = 1,
@@ -155,17 +155,18 @@ def get_args(
     NOVEL_RATIO = None,
     OVERSAMPLING = False,
     REPLACEMENT = False,
-    
+
     #vocabulary
     VOCAB_SIZE = 1000,
     STEM = False,
-    
+
     SEED = None):
     
     #get features
     bow = None
     st = None
     lda = None
+    wordonehot = None
     cnn = None
 
     if BOW_APPEND or BOW_DIFFERENCE or BOW_PRODUCT or BOW_COS or BOW_TFIDF:
@@ -188,6 +189,10 @@ def get_args(
         if LDA_PRODUCT: lda['product'] = LDA_PRODUCT
         if LDA_COS: lda['cos'] = LDA_COS
         if LDA_TOPICS: lda['topics'] = LDA_TOPICS
+    if WORDONEHOT:
+        wordonehot = dict()
+        if WORDONEHOT_VOCAB:
+            wordonehot['vocab'] = WORDONEHOT_VOCAB
     if CNN_APPEND or CNN_DIFFERENCE or CNN_PRODUCT or CNN_COS:
         cnn = dict()
         if CNN_APPEND: cnn['append'] = CNN_APPEND
@@ -201,10 +206,16 @@ def get_args(
         if CNN_CHAR_VOCAB: cnn['topics'] = CNN_CHAR_VOCAB
 
     features = dict()
-    if bow: features['bow'] = bow
-    if st: features['st'] = st
-    if lda: features['lda'] = lda
-    if cnn: features['cnn'] = cnn
+    if bow:
+        features['bow'] = bow
+    if st:
+        features['st'] = st
+    if lda:
+        features['lda'] = lda
+    if wordonehot:
+        features['wordonehot'] = wordonehot
+    if cnn:
+        features['cnn'] = cnn
 
     #get algorithms
     log_reg = None
@@ -228,7 +239,7 @@ def get_args(
         if XGB_COLSAMPLEBYTREE: xgb['svm_gamma'] = XGB_COLSAMPLEBYTREE
         if XGB_MINCHILDWEIGHT: xgb['svm_gamma'] = XGB_MINCHILDWEIGHT
 
-    algorithms = dict()    
+    algorithms = dict()
     if log_reg: algorithms['log_reg'] = log_reg
     if svm: algorithms['svm'] = svm
     if xgb: algorithms['xgb'] = xgb

@@ -263,7 +263,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
                 feature = run_cnn(doc, corpus, tf_session)
 
             if 'wordonehot' in features:
-                feature = wordonehot(doc, corpus, features['wordonehot'], feature)
+                feature = wordonehot(doc, corpus, vocab, features['wordonehot'], feature)
 
             # Save feature and label
             feature = np.concatenate(feature, axis=0)

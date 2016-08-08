@@ -6,11 +6,11 @@ from sklearn.feature_extraction.text import CountVectorizer
 def gen_vocab(corpus_dict, vocab=1000, stem=False, **kwargs):
     '''
     Generates a dictionary of words to be used as the vocabulary in features that utilize bag of words.
-    
+
     Args:
         corpus_dict (OrderedDict): An ordered list of the most frequently occurring tokens in the corpus
-        vocab_size (int): the number of words to be used in the vocabulary 
-        
+        vocab_size (int): the number of words to be used in the vocabulary
+
     Returns:
         dict: a dictionary of size vocab_size that contains the most frequent normalized and non-stop words in the corpus
     '''
@@ -29,22 +29,22 @@ def gen_vocab(corpus_dict, vocab=1000, stem=False, **kwargs):
 def build_lda(trainingdata, vocabdict, topics=40, **kwargs):
     '''
     Fits a LDA topic model based on the corpus vocabulary.
-    
+
     Args:
-        trainingdata (list): A list containing the corpus as parsed JSON text 
+        trainingdata (list): A list containing the corpus as parsed JSON text
         vocabdict (dict): A dictionary containing the vocabulary to be used in the LDA model
         topics (int): the number of topics to be used in the LDA model
-        
+
     Returns:
         LatentDirichletAllocation: A LDA model fit to the training data and corpus vocabulary
     '''
-   
+
     vectorizer = CountVectorizer(analyzer = "word", vocabulary = vocabdict)
     trainingdocs = []
-    
+
     for entry in trainingdata: trainingdocs.append(entry['body_text'])
     trainingvectors = vectorizer.transform(trainingdocs)
-    
+
     lda = LatentDirichletAllocation(n_topics=topics, random_state=0)
     lda.fit(trainingvectors)
     return lda
@@ -52,10 +52,10 @@ def build_lda(trainingdata, vocabdict, topics=40, **kwargs):
 def main(argv):
     '''
     Controls the preprocessing of the corpus, including building vocabulary and model creation.
-    
+
     Args:
         argv (list): contains a list of the command line features, a dictionary of all tokens in the corpus, an array of parsed JSON documents, a list of the command line parameters
-    
+
     Returns:
         multiple: dictionary of the corpus vocabulary, skipthoughts encoder_decoder, trained LDA model
     '''
