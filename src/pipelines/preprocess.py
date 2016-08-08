@@ -59,22 +59,23 @@ def main(argv):
     Returns:
         multiple: dictionary of the corpus vocabulary, skipthoughts encoder_decoder, trained LDA model
     '''
- 
+
     features, parameters, corpus_dict, trainingdata = argv
     encoder_decoder = None
     vocab= None
     lda = None
     tf_model = None
-    
+
     if 'st' in features: encoder_decoder = skipthoughts.load_model()
-    
+
     if 'bow' in features or 'lda' in features: vocab = gen_vocab(corpus_dict, **parameters)
     elif 'cnn' in features and 'vocab_type' in features['cnn'] and 'vocab_type' == 'word':
         vocab = gen_vocab(corpus_dict, **features['lda'])
         print("creating a vocab")
         features['lda']['vocab'] = vocab
+
     if 'lda' in features: lda = build_lda(trainingdata, vocab, **features['lda'])
 
     if 'cnn' in features: tf_model = tensorflow_cnn.tensorflow_cnn(trainingdata, **features['cnn'])
-        
+
     return vocab, encoder_decoder, lda, tf_model

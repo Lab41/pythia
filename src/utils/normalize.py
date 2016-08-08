@@ -39,6 +39,7 @@ def normalize_and_remove_stop_words(raw_text, stem=False, **kwargs):
     # 5. Remove stop words
     meaningful_words = remove_stop_words(words)
 
+
     #6. stem if necessary
     if stem: meaningful_words = porter_stem(meaningful_words)
     #

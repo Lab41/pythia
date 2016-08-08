@@ -24,7 +24,7 @@ def main(argv):
     if 'resampling' in parameters:
         print("resampling...",file=sys.stderr)
         data, clusters, order, corpusdict = sample(data, "novelty", **parameters['resampling'])
-        
+
     #preprocessing
     print("preprocessing...",file=sys.stderr)
     vocab, encoder_decoder, lda, tf_model = preprocess.main([features, parameters, corpusdict, data])
@@ -33,6 +33,7 @@ def main(argv):
     print("generating training and testing data...",file=sys.stderr)
     train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, encoder_decoder, lda, tf_model])
     test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, encoder_decoder, lda, tf_model])
+
 
     #modeling
     print("running algorithms...",file=sys.stderr)
@@ -79,7 +80,7 @@ def parse_args(given_args=None):
 
     paramTuple = namedtuple('parameters','vocab_size, lda_topics, resampling, novel_ratio, oversampling, replacement')
     parameters = paramTuple(args.vocab_size, args.LDA_topics, args.resampling, args.novel_ratio, args.oversampling, args.replacement)
-    
+
     if not (args.cos_similarity or args.tfidf_sum or args.bag_of_words or args.skipthoughts or args.LDA):
         parser.exit(status=1, message="Error: pipeline requires at least one feature\n")
 
@@ -95,10 +96,10 @@ def get_args(
     #FEATURES
     #bag of words
     BOW_APPEND = True,
-    BOW_DIFFERENCE = True,
+    BOW_DIFFERENCE = False,
     BOW_PRODUCT = True,
-    BOW_COS = True,
-    BOW_TFIDF = True,
+    BOW_COS = False,
+    BOW_TFIDF = False,
 
     #skipthoughts
     ST_APPEND = False,
@@ -156,12 +157,13 @@ def get_args(
     OVERSAMPLING = False,
     REPLACEMENT = False,
 
+
     #vocabulary
     VOCAB_SIZE = 1000,
     STEM = False,
 
     SEED = None):
-    
+
     #get features
     bow = None
     st = None
@@ -243,16 +245,16 @@ def get_args(
     if log_reg: algorithms['log_reg'] = log_reg
     if svm: algorithms['svm'] = svm
     if xgb: algorithms['xgb'] = xgb
-    
+
     #get parameters
     resampling = None
-    
+
     if RESAMPLING:
         resampling = dict()
         if NOVEL_RATIO: resampling['novelToNotNovelRatio'] = NOVEL_RATIO
         if OVERSAMPLING: resampling['over'] = OVERSAMPLING
         if REPLACEMENT: resampling['replacement'] = REPLACEMENT
-            
+
     parameters = dict()
     if RESAMPLING: parameters['resampling'] = resampling
     if VOCAB_SIZE: parameters['vocab'] = VOCAB_SIZE
