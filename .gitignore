@@ -98,3 +98,6 @@ nosetests.xml
 # trained models
 data/book_corpus/
 data/google_news
+
+
+src/examples/my_config.py
