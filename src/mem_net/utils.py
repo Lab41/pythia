@@ -91,15 +91,20 @@ def create_vector(word, word2vec, word_vector_size, silent=False):
 def process_word(word, word2vec, vocab, ivocab, word_vector_size, to_return="word2vec", silent=False):
     if not word in word2vec:
         create_vector(word, word2vec, word_vector_size, silent)
-    if not word in vocab: 
+    if not word in vocab:
         next_index = len(vocab)
         vocab[word] = next_index
         ivocab[next_index] = word
-    
+
     if to_return == "word2vec":
         return word2vec[word]
     elif to_return == "index":
         return vocab[word]
+    elif to_return == "bool":
+        if word==True:
+            return 1
+        else:
+            return 0
     elif to_return == "onehot":
         raise Exception("to_return = 'onehot' is not implemented yet")
 

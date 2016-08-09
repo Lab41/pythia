@@ -224,6 +224,10 @@ def do_epoch(dmn, mode, epoch, batch_size, log_every, skipped=0):
                     y_true.append(x)
 
                 for x in prediction.argmax(axis=1):
+                    #some predictions are not 0,1 for the first couple of guesses
+                    #TODO figure out why...but until then this catches the issue
+                    if x not in [0,1]:
+                        x = np.random.randint(0,2)
                     y_pred.append(x)
 
                 # TODO: save the state sometimes

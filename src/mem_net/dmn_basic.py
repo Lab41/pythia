@@ -311,7 +311,7 @@ class DMN_basic:
                                             vocab = self.vocab, 
                                             ivocab = self.ivocab, 
                                             word_vector_size = self.word_vector_size, 
-                                            to_return = "index"))
+                                            to_return = "bool"))
 
             # NOTE: here we assume the answer is one word!
             if self.input_mask_mode == 'word':
