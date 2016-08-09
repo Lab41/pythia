@@ -148,7 +148,6 @@ def run_lda(lda_topics, doc, vocab):
     docvector = vectorizer.transform([doc])
     return lda_topics.transform(docvector)[0]
 
-<<<<<<< HEAD
 def run_cnn(doc, corpus, tf_session):
     doc_cnn, corpus_cnn = tf_session.transform_doc(doc, corpus)
 
