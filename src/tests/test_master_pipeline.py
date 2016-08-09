@@ -1,11 +1,11 @@
-# ''' 
-# tests master pipeline module
+'''
+tests master pipeline module
 
-# system tests checking correct arguments. tested from pythia directory.
-# '''
+system tests checking correct arguments. tested from pythia directory.
+'''
 
-# import pytest
-# from src.pipelines import master_pipeline
+import pytest
+from src.pipelines import master_pipeline
 # import subprocess
 # import os
 
@@ -28,3 +28,12 @@
 #     '''tests that pipeline has an exit code of zero (runs all the way through) when the right args are provided'''
 #     result = subprocess.run(['src/pipelines/master_pipeline.py', "data/stackexchange/anime", "-c", "-s"])
 #     assert result.returncode == 0
+
+# Test that argument list for master_pipeline is same as in experiments.py
+def test_variable_list():
+    import experiments.experiments
+    pipeline_argcount = master_pipeline.get_args.__code__.co_argcount
+    pipeline_args = master_pipeline.get_args.__code__.co_varnames[:pipeline_argcount]
+    experiment_argcount = experiments.experiments.get_args.__code__.co_argcount
+    experiment_args = experiments.experiments.run_experiment.__code__.co_varnames[:experiment_argcount]
+    assert pipeline_args == experiment_args
