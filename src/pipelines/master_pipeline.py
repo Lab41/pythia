@@ -140,7 +140,7 @@ def get_args(
     #svm
     SVM = False,
     SVM_C = 2000,
-    SVM_KERNAL = 'linear',
+    SVM_KERNEL = 'linear',
     SVM_GAMMA = 'auto',
 
     #xgboost
