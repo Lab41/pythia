@@ -5,10 +5,10 @@ MAINTAINER Pythia
 # From: https://github.com/ContinuumIO/docker-images/tree/master/anaconda
 #
 # Except where noted below, docker-anaconda is released under the following terms:
-# 
+#
 # (c) 2012 Continuum Analytics, Inc. / http://continuum.io
 # All Rights Reserved
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #     * Redistributions of source code must retain the above copyright
@@ -19,7 +19,7 @@ MAINTAINER Pythia
 #     * Neither the name of Continuum Analytics, Inc. nor the
 #       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -31,7 +31,7 @@ MAINTAINER Pythia
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-RUN apt-get update --fix-missing && apt-get install -y wget bzip2 ca-certificates \
+RUN apt-get update -q --fix-missing && apt-get install -q -y wget bzip2 ca-certificates \
     libglib2.0-0 libxext6 libsm6 libxrender1 \
     git mercurial subversion
 
@@ -40,7 +40,7 @@ RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh && \
     /bin/bash /Anaconda2-4.0.0-Linux-x86_64.sh -b -p /opt/conda && \
     rm /Anaconda2-4.0.0-Linux-x86_64.sh
 
-RUN apt-get install -y curl grep sed dpkg && \
+RUN apt-get install -q -y curl grep sed dpkg && \
     TINI_VERSION=0.9.0 && \
     curl -L "https://github.com/krallin/tini/releases/download/v${TINI_VERSION}/tini_${TINI_VERSION}.deb" > tini.deb && \
     dpkg -i tini.deb && \
@@ -54,14 +54,14 @@ ENV PATH /opt/conda/bin:$PATH
 ENV LANG C.UTF-8
 
 # Set up build tools
-RUN apt-get update && apt-get install -y --no-install-recommends --force-yes \
+RUN apt-get update -q && apt-get install -q -y --no-install-recommends --force-yes \
 	build-essential && \
     rm -rf /var/lib/apt/lists/*
 
-# Download Pythia project and create environments
-RUN git clone https://github.com/Lab41/pythia.git
+# Add Pythia repo to image and create environments
+ADD . /pythia
 ENV PYTHONPATH=/pythia:$PYTHONPATH
-WORKDIR pythia
+WORKDIR /pythia
 RUN envs/make_envs.sh
 
 # Activate the new conda environment whenever a bash shell is created
@@ -69,5 +69,5 @@ RUN echo "source activate py3-pythia" >> /root/.bashrc
 
 # run tests
 RUN /bin/bash -c 'export THEANO_FLAGS=device=cpu; export PYTHIA_MONGO_DB_URI=localhost:27017; source activate py3-pythia; pip install pytest-cov; py.test -v --cov=src --cov-report term-missing'
-    
+
 ENTRYPOINT [ "tini", "--" ]
