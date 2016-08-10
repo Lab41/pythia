@@ -25,7 +25,7 @@ from .vocab import load_dictionary
 
 import logging
 time_format = '%Y%m%d %H:%M:%S%Z'
-log_format = '%(asctime)s : %(levelname)s : %(message)s'
+log_format = '%(asctime)s : %(message)s'
 logging.basicConfig(level=logging.INFO, format=log_format, datefmt=time_format)
 
 # main trainer
@@ -159,7 +159,7 @@ def trainer(X,
 
             x, x_mask, y, y_mask, z, z_mask = homogeneous_data.prepare_data(x, y, z, worddict, maxlen=maxlen_w, n_words=n_words)
 
-            if x == None:
+            if x is None:
                 logging.info(('Minibatch with zero sample under length {}'.format(maxlen_w)))
                 uidx -= 1
                 continue
