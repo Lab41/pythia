@@ -155,7 +155,9 @@ def w2v(doc, corpus, w2v_model, w2v, feature):
          doc (str): the text of the document (before any preprocessing)
          corpus (list): the text of the corpus
          w2v_model (gensim.Word2Vec): Trained Word2Vec model
-         w2v (dict): Dictionary of Word2Vec parameters
+          w2v (dict): Dictionary of Word2Vec parameters as set in master_pipeline. The dictionary
+           will include keys for the model building parameters min_count, window, size, workers and pretrained.
+           The dict may also have optional boolean keys for the feature operations append, difference, product and cos.
          feature (list): List of features extracted from text
 
      Returns:
@@ -170,12 +172,14 @@ def w2v(doc, corpus, w2v_model, w2v, feature):
 
 def run_w2v(w2v_model, doc, w2v):
     '''
-      Calculates Word2Vec vectors for a document
+      Calculates Word2Vec vectors for a document using the first and last sentences of the document
 
       Args:
           w2v_model (gensim.Word2Vec): Trained Word2Vec model
           doc (str): the text of the document
-          size (int): Dimensionality of word vectors
+          w2v (dict): Dictionary of Word2Vec parameters as set in master_pipeline. The dictionary
+           will include keys for the model building parameters min_count, window, size, workers and pretrained.
+           The dict may also have optional boolean keys for the feature operations append, difference, product and cos.
 
       Returns:
           documentvector (list): List of Word2Vec vectors averaged across sentences

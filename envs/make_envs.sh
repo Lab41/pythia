@@ -51,19 +51,23 @@ set -e
     touch $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
     touch $CONDA_PREFIX/etc/conda/deactivate.d/env_vars.sh
 
+    # Search PYTHIA_CONFIG's JSON format for the PYTHONPATH property and return PYTHONPATH's value
     pathval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHONPATH'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
     if [ "$pathval" != "" ]; then
         echo "export PYTHONPATH=$pathval" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
         echo "unset PYTHONPATH" >> $CONDA_PREFIX/etc/conda/deactivate.d/env_vars.sh
     fi
 
+    # Search PYTHIA_CONFIG's JSON format for the PYTHIA_MONGO_DB_URI property and return PYTHIA_MONGO_DB_URI's value
     dbval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MONGO_DB_URI'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
+    # Due to the colon (:) delimiter, go back to PYTHIA_MONGO_DB_URI's value in PYTHIA_CONFIG's JSON and extract the port from the next string
     dbport=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MONGO_DB_URI'\042/){print $(i+2)}}}' | cut -d'"' -f1 ) )
     if [ "$dbval" != "" ]; then
         echo "export PYTHIA_MONGO_DB_URI=$dbval:$dbport" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
         echo "unset PYTHIA_MONGO_DB_URI" >> $CONDA_PREFIX/etc/conda/deactivate.d/env_vars.sh
     fi
 
+    # Search PYTHIA_CONFIG's JSON format for the PYTHIA_MODELS_PATH property and return PYTHIA_MODELS_PATH's value
     modelval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MODELS_PATH'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
     if [ "$modelval" != "" ]; then
         echo "export PYTHIA_MODELS_PATH=$modelval" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh

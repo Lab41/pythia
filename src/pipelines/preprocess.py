@@ -77,7 +77,7 @@ def build_w2v(trainingdata, min_count=5, window=5, size=100, workers=3, pretrain
     logging.getLogger("gensim").setLevel(logging.WARNING)
 
     # Use Google's pretrained Word2Vec model
-    if pretrained is True:
+    if pretrained:
         # Look at environment variable 'PYTHIA_MODELS_PATH' for user-defined model location
         # If environment variable is not defined, use current working directory
         if os.environ.get('PYTHIA_MODELS_PATH') is not None:
