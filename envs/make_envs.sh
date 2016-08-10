@@ -19,7 +19,6 @@ else
     PYTHIA_CONFIG="$(cat $PYTHIA_CONFIG)"
 fi
 
-
 make_env () {
     env_name="$1"
     display_name="$2"
@@ -45,6 +44,32 @@ set -e
 
     # basics
     source activate "$env_name"
+
+    # map three environment variables from JSON file of configuration variables when Pythia conda environment is activated
+    mkdir -p $CONDA_PREFIX/etc/conda/activate.d
+    mkdir -p $CONDA_PREFIX/etc/conda/deactivate.d
+    touch $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
+    touch $CONDA_PREFIX/etc/conda/deactivate.d/env_vars.sh
+
+    pathval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHONPATH'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
+    if [ "$pathval" != "" ]; then
+        echo "export PYTHONPATH=$pathval" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
+        echo "unset PYTHONPATH" >> $CONDA_PREFIX/etc/conda/deactivate.d/env_vars.sh
+    fi
+
+    dbval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MONGO_DB_URI'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
+    dbport=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MONGO_DB_URI'\042/){print $(i+2)}}}' | cut -d'"' -f1 ) )
+    if [ "$dbval" != "" ]; then
+        echo "export PYTHIA_MONGO_DB_URI=$dbval:$dbport" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
+        echo "unset PYTHIA_MONGO_DB_URI" >> $CONDA_PREFIX/etc/conda/deactivate.d/env_vars.sh
+    fi
+
+    modelval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MODELS_PATH'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
+    if [ "$modelval" != "" ]; then
+        echo "export PYTHIA_MODELS_PATH=$modelval" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
+        echo "unset PYTHIA_MODELS_PATH" >> $CONDA_PREFIX/etc/conda/deactivate.d/env_vars.sh
+    fi
+
     conda install -y python="$python_version" scikit-learn \
         beautifulsoup4==4.4.1 lxml==3.6.1 jupyter==1.0.0 pandas==0.18.1 nltk==3.2.1 \
         seaborn==0.7.1 gensim==0.12.4 pip==8.1.1 pymongo==3.0.3
