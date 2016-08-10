@@ -1,4 +1,4 @@
-from src.featurizers import skipthoughts as sk
+from src.featurizers.skipthoughts import skipthoughts as sk
 from src.utils import normalize, tokenize
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
@@ -6,7 +6,6 @@ from sklearn.preprocessing import OneHotEncoder
 
 import numpy as np
 from scipy import spatial
-from collections import defaultdict
 
 def gen_feature(new_vectors, request_parameters, feature_vector):
     """Take newly generated feature vectors, look up which
@@ -148,6 +147,72 @@ def run_lda(lda_topics, doc, vocab):
     docvector = vectorizer.transform([doc])
     return lda_topics.transform(docvector)[0]
 
+def w2v(doc, corpus, w2v_model, w2v, feature):
+    '''
+     Calculates Word2Vec features for a document and corpus
+
+     Args:
+         doc (str): the text of the document (before any preprocessing)
+         corpus (list): the text of the corpus
+         w2v_model (gensim.Word2Vec): Trained Word2Vec model
+         w2v (dict): Dictionary of Word2Vec parameters
+         feature (list): List of features extracted from text
+
+     Returns:
+         feature: List of features extracted from text
+     '''
+
+    docw2v = run_w2v(w2v_model, doc, w2v)
+    corpusw2v = run_w2v(w2v_model, corpus, w2v)
+    vectors = [docw2v, corpusw2v]
+    feature = gen_feature(vectors, w2v, feature)
+    return feature
+
+def run_w2v(w2v_model, doc, w2v):
+    '''
+      Calculates Word2Vec vectors for a document
+
+      Args:
+          w2v_model (gensim.Word2Vec): Trained Word2Vec model
+          doc (str): the text of the document
+          size (int): Dimensionality of word vectors
+
+      Returns:
+          documentvector (list): List of Word2Vec vectors averaged across sentences
+      '''
+
+    # Get first and last sentences of document, break down sentences into words and remove stop words
+    sentences = get_first_and_last_sentence(doc)
+    normalizedsentences = []
+
+    for sentence in sentences:
+        words = normalize.remove_stop_words(tokenize.word_punct_tokens(sentence))
+        normalizedsentences.append(words)
+
+    wordvectorarray = []
+    sentencevectorarray = []
+
+    # Look up word vectors in trained Word2Vec model and build array of word vectors and sentence vectors
+    for phrase in normalizedsentences:
+        for word in phrase:
+            wordvector = None
+            try:
+                wordvector = w2v_model[word]
+            except:
+                pass
+            if wordvector is not None: wordvectorarray.append(wordvector)
+
+        # Only calculate mean and append to sentence vector array if one or more word vectors were found
+        if len(wordvectorarray) > 0:
+            sentencevectorarray.append(np.mean(wordvectorarray, axis=0))
+
+    # Only calculate mean if one or more sentences were added to sentence vector array, otherwise return array of zeroes
+    if len(sentencevectorarray) > 0:
+        documentvector =  np.mean(sentencevectorarray, axis=0)
+    else:
+        documentvector = np.zeros(w2v['size'])
+    return documentvector
+
 def run_cnn(doc, corpus, tf_session):
     doc_cnn, corpus_cnn = tf_session.transform_doc(doc, corpus)
 
@@ -200,7 +265,7 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
 
     return doc_onehot
 
-def gen_observations(all_clusters, lookup_order, documentData, features, parameters, vocab, encoder_decoder, lda_topics, tf_session):
+def gen_observations(all_clusters, lookup_order, documentData, features, parameters, vocab, encoder_decoder, lda_model, tf_session, w2v_model):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
 
@@ -234,6 +299,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
 
         # Create a document array for TFIDF
         corpus_array = [corpus]
+        corpus_array = [corpus]
 
         # Store a list of sentences in the cluster at each iteration
         sentences = []
@@ -257,7 +323,10 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
                 feature = st(raw_doc, sentences, encoder_decoder, features['st'], feature)
 
             if 'lda' in features:
-                feature = lda(doc, corpus, vocab, lda_topics, features['lda'], feature)
+                feature = lda(doc, corpus, vocab, lda_model, features['lda'], feature)
+
+            if 'w2v' in features:
+                feature = w2v(raw_doc, corpus, w2v_model, features['w2v'], feature)
 
             if 'cnn' in features:
                 feature = run_cnn(doc, corpus, tf_session)
@@ -287,7 +356,7 @@ def main(argv):
     Returns:
         list: contains for each obeservation
     '''
-    all_clusters, lookup_order, document_data, features, parameters, vocab, encoder_decoder, lda, tf_model = argv
-    data, labels = gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, encoder_decoder, lda, tf_model)
+    all_clusters, lookup_order, document_data, features, parameters, vocab, encoder_decoder, lda_model, tf_session, w2v_model = argv
+    data, labels = gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, encoder_decoder, lda_model, tf_session, w2v_model)
 
     return data, labels

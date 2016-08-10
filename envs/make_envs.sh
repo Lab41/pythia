@@ -59,7 +59,7 @@ set -e
     python -m nltk.downloader punkt
 
     # Install XGBoost classifier
-    pip install xgboost
+    pip install xgboost==0.4a30
 
     # install theano and keras
     pip install nose-parameterized Theano keras
