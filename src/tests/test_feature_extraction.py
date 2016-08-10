@@ -1,5 +1,7 @@
 import pytest
+import numpy as np
 from src.pipelines import data_gen
+
 
 
 def test_onehot():
