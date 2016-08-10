@@ -1,7 +1,6 @@
 machine:
   services:
     - docker
-    - mongo
 test:
   override:
     - docker build -t pythia .:
