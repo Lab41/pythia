@@ -24,7 +24,7 @@ def test_onehot():
         [ 0.,  0.,  0.,  1.,  0.]], dtype=np.float32)
 
     # encoding is correct
-    assert doc_onehot == doc_onehot_encoded
+    assert (doc_onehot == doc_onehot_encoded).all()
     # minimum length correctly enforced
     assert doc_onehot_minlength.shape == (4, 10)
     # maximum length correctly enforced
