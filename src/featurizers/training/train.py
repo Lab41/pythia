@@ -23,6 +23,11 @@ from .optim import adam
 from .model import init_params, build_model
 from .vocab import load_dictionary
 
+import logging
+time_format = '%Y%m%d %H:%M:%S%Z'
+log_format = '%(asctime)s : %(levelname)s : %(message)s'
+logging.basicConfig(level=logging.INFO, format=)
+
 # main trainer
 def trainer(X, 
             dim_word=620, # word vector dimensionality
