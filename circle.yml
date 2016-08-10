@@ -2,8 +2,6 @@ machine:
   services:
     - docker
     - mongodb
-  environment:
-    PYTHIA_MONGO_DB_URI: "localhost:27017"
 test:
   override:
     - docker build -t pythia .
