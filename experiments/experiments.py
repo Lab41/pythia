@@ -2,9 +2,6 @@
 
 import sys
 import os
-import pprint
-import subprocess
-import json
 
 from sacred import Experiment
 from sacred.observers import MongoObserver
@@ -57,6 +54,17 @@ def config_variables():
     LDA_PRODUCT = False
     LDA_COS = False
     LDA_TOPICS = 50
+
+    #word2vec
+    W2V_APPEND = False
+    W2V_DIFFERENCE = False
+    W2V_PRODUCT = False
+    W2V_COS = False
+    W2V_PRETRAINED = False
+    W2V_MIN_COUNT = 5
+    W2V_WINDOW = 5
+    W2V_SIZE = 100
+    W2V_WORKERS = 3
 
     #one-hot CNN layer
     CNN_APPEND = False
@@ -123,6 +131,15 @@ def run_experiment(directory,
             LDA_PRODUCT,
             LDA_COS,
             LDA_TOPICS,
+            W2V_APPEND,
+            W2V_DIFFERENCE,
+            W2V_PRODUCT,
+            W2V_COS,
+            W2V_PRETRAINED,
+            W2V_MIN_COUNT,
+            W2V_WINDOW,
+            W2V_SIZE,
+            W2V_WORKERS,
             CNN_APPEND,
             CNN_DIFFERENCE,
             CNN_PRODUCT,
@@ -168,6 +185,15 @@ def run_experiment(directory,
             LDA_PRODUCT,
             LDA_COS,
             LDA_TOPICS,
+            W2V_APPEND,
+            W2V_DIFFERENCE,
+            W2V_PRODUCT,
+            W2V_COS,
+            W2V_PRETRAINED,
+            W2V_MIN_COUNT,
+            W2V_WINDOW,
+            W2V_SIZE,
+            W2V_WORKERS,
             CNN_APPEND,
             CNN_DIFFERENCE,
             CNN_PRODUCT,
