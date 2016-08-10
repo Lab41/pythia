@@ -299,7 +299,6 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
 
         # Create a document array for TFIDF
         corpus_array = [corpus]
-        corpus_array = [corpus]
 
         # Store a list of sentences in the cluster at each iteration
         sentences = []
