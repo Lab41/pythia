@@ -68,6 +68,6 @@ RUN envs/make_envs.sh
 RUN echo "source activate py3-pythia" >> /root/.bashrc
 
 # run tests
-RUN /bin/bash -c 'export THEANO_FLAGS=device=cpu ; source activate py3-pythia; pip install pytest-cov; py.test -v --cov=src --cov-report term-missing'
+RUN /bin/bash -c 'export THEANO_FLAGS=device=cpu; export PYTHIA_MONGO_DB_URI=localhost:27017; source activate py3-pythia; pip install pytest-cov; py.test -v --cov=src --cov-report term-missing'
     
 ENTRYPOINT [ "tini", "--" ]
