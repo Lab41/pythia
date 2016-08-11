@@ -24,7 +24,7 @@ from .model import init_params, build_encoder, build_encoder_w2v
 #-----------------------------------------------------------------------------#
 path_to_model = '/Users/chrisn/mad-science/pythia/data/book_corpus/model/corpus.npz'
 path_to_dictionary = '/Users/chrisn/mad-science/pythia/data/book_corpus/model/vocab.pickle'
-path_to_word2vec =  '/Users/chrisn/mad-science/pythia/data/google_news/GoogleNews-vectors-negative300.bin.gz'
+path_to_word2vec =  '/Users/chrisn/mad-science/pythia/data/stackexchange/model/word2vecAnime.bin'
 #-----------------------------------------------------------------------------#
 
 def load_model(embed_map=None):
@@ -200,7 +200,8 @@ def train_regressor(options, embed_map, wordvecs, worddict):
             count += 1
 
     # Get the vectors for all words in 'shared'
-    w2v = numpy.zeros((len(shared), 300), dtype='float32')
+    wordvec_size = embed_map.vector_size
+    w2v = numpy.zeros((len(shared), wordvec_size), dtype='float32')
     sg = numpy.zeros((len(shared), options['dim_word']), dtype='float32')
     for w in list(shared.keys()):
         w2v[shared[w]] = embed_map[w]
