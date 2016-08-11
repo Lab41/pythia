@@ -244,6 +244,10 @@ def get_args(
     if cnn:
         features['cnn'] = cnn
 
+    if len(features) == 0:
+        print("Error: At least one feature (ex: Bag of Words, LDA, etc.) must be requested per run.", file=sys.stderr)
+        quit()
+
     #get algorithms
     log_reg = None
     svm = None
@@ -271,8 +275,11 @@ def get_args(
     if svm: algorithms['svm'] = svm
     if xgb: algorithms['xgb'] = xgb
 
-    # Enforce limitation of one algorithm
-    if len(algorithms) > 1:
+    # Enforce requirement and limitation of one algorithm per run
+    if len(algorithms) == 0:
+        print("Error: An algorithm (LOG_REG, SVM, XGB) must be requested per run.", file=sys.stderr)
+        quit()
+    elif len(algorithms) > 1:
         print("Error: Only one algorithm (LOG_REG, SVM, XGB) can be requested per run.", file=sys.stderr)
         quit()
 
