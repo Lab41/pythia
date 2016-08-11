@@ -18,7 +18,7 @@ floatX = theano.config.floatX
 
 class DMN_basic:
     
-    def __init__(self, train_raw, test_raw, word2vec, word_vector_size, 
+    def __init__(self, train_raw, test_raw, word2vec, word_vector_size,
                 dim, mode, answer_module, input_mask_mode, memory_hops, l2, 
                 normalize_attention, **kwargs):
 
@@ -45,6 +45,7 @@ class DMN_basic:
         self.q_var = T.matrix('question_var')
         self.answer_var = T.iscalar('answer_var')
         self.input_mask_var = T.ivector('input_mask_var')
+        print(len(self.train_answer), sum(self.train_answer), len(self.test_answer), sum(self.test_answer))
         
             
         print("==> building input module")
@@ -289,6 +290,24 @@ class DMN_basic:
             inp = [w for w in inp if len(w) > 0]
             q = x["Q"].lower().split(' ')
             q = [w for w in q if len(w) > 0]
+            # Sentence punctuation delimiters
+            punkt = ['.','?','!']
+
+            problem=False
+            # NOTE: here we assume the answer is one word!
+            if self.input_mask_mode == 'word':
+                input_masks.append(np.array([index for index, w in enumerate(inp)], dtype=np.int32)) # Get the input_masks for the data
+            elif self.input_mask_mode == 'sentence':
+                sent_mask = np.array([index for index, w in enumerate(inp) if w in punkt], dtype=np.int32)
+                input_masks.append(sent_mask)
+                if(len(sent_mask)<1):
+                    #Pass over the data if there is only one sentence as this will cause an error later
+                    problem=True
+            else:
+                raise Exception("invalid input_mask_mode")
+            if problem:
+                print("Passing over data: ", x["C"])
+                continue
 
             # Process the words from the input, answers, and questions to see what needs a new vector in word2vec.
             inp_vector = [utils.process_word(word = w,
@@ -313,13 +332,7 @@ class DMN_basic:
                                             word_vector_size = self.word_vector_size, 
                                             to_return = "bool"))
 
-            # NOTE: here we assume the answer is one word!
-            if self.input_mask_mode == 'word':
-                input_masks.append(np.array([index for index, w in enumerate(inp)], dtype=np.int32)) # Get the input_masks for the data
-            elif self.input_mask_mode == 'sentence':
-                input_masks.append(np.array([index for index, w in enumerate(inp) if w == '.'], dtype=np.int32))
-            else:
-                raise Exception("invalid input_mask_mode")
+
         
         return inputs, questions, answers, input_masks
 

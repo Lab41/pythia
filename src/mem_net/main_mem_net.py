@@ -55,23 +55,28 @@ def parse_args(given_args=None):
         (".d" + str(args.dropout)) if args.dropout>0 else "",
         args.input_train.split("/")[-1])
 
-def run_mem_net(directory, seed=1, word_vector_size=50, network='dmn_basic', batch_size=10, epochs=50,
-                shuffle=False, log_every=4, save_every=10, network_name_pre = '', memory_hops=5, dim=40,
+def run_mem_net(clusters, order, data, test_clusters, test_order, test_data, corpusdict, seed=1, word_vector_size=50,
+                network='dmn_basic', batch_size=10, epochs=5, vector_type="word2vec",
+                shuffle=False, log_every=10, save_every=1, network_name_pre = '', memory_hops=5, dim=40,
                 normalize_attention=False, batch_norm=False,dropout=0.0,
-                answer_module = 'feedforward', input_mask_mode = 'word', l2 = 0, load_state="", **kwargs):
+                answer_module = 'feedforward', input_mask_mode = 'sentence', l2 = 0, load_state="", **kwargs):
+
+    # Initialize word2vec with utils.load_glove
+    word2vec = utils.load_glove(word_vector_size)
+    #word2vec = {}
+    args_dict = kwargs
+    args_dict['word2vec'] = word2vec
 
     # Go and get the data from the directory folder; see utils class.
-    train_raw, test_raw = utils.get_raw_data(directory, seed)
-    print(len(train_raw), len(test_raw))
-    # Initialize word2vec with utils.load_glove
-    #word2vec = utils.load_glove(word_vector_size)
-    word2vec = {}
+    #train_raw, test_raw = utils.get_raw_data(directory, seed, word2vec, word_vector_size)
 
-    args_dict = kwargs
+    #Get the data from the information passed in by the main pythia project
+    #This way the same splits and resampling can be used
+    train_raw = utils.analyze_clusters(clusters, order, data)
+    test_raw = utils.analyze_clusters(test_clusters, test_order, test_data)
 
     args_dict['train_raw'] = train_raw
     args_dict['test_raw'] = test_raw
-    args_dict['word2vec'] = word2vec
     #args to use when the cnn is working
     args_dict['char_vocab'] = list("abcdefghijklmnopqrstuvwxyz0123456789")
     args_dict['vocab_len'] = len(args_dict['char_vocab'])
@@ -89,15 +94,14 @@ def run_mem_net(directory, seed=1, word_vector_size=50, network='dmn_basic', bat
     args_dict['normalize_attention'] = normalize_attention
 
 
-    network_name = network_name_pre + '%s.mh%d.n%d.bs%d%s%s%s.%s' % (
+    network_name = network_name_pre + '%s.mh%d.n%d.bs%d%s%s%s' % (
         network,
         memory_hops,
         dim,
         batch_size,
         ".na" if normalize_attention else "",
         ".bn" if batch_norm else "",
-        (".d" + str(dropout)) if dropout>0 else "",
-        directory.split("/")[-1])
+        (".d" + str(dropout)) if dropout>0 else "")
 
 
     # init class
@@ -247,7 +251,7 @@ def do_epoch(dmn, mode, epoch, batch_size, log_every, skipped=0):
         print("confusion matrix:")
         print(metrics.confusion_matrix(y_true, y_pred))
 
-        perform_results = performance_metrics.get_perform_metrics(y_pred, y_true)
+        perform_results = performance_metrics.get_perform_metrics(y_true, y_pred)
         print(perform_results)
 
         accuracy = sum([1 if t == p else 0 for t, p in zip(y_true, y_pred)])

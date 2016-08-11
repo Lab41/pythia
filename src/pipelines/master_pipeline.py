@@ -49,7 +49,7 @@ def main(argv):
         xgb_model = xgb.main([train_data, train_target, algorithms['xgb']])
         predicted_labels, perform_results = predict.main([xgb_model, test_data, test_target])
     if 'mem_net' in algorithms:
-        mem_net_model, model_name = main_mem_net.run_mem_net(directory, **algorithms['mem_net'])
+        mem_net_model, model_name = main_mem_net.run_mem_net(clusters, order, data, test_clusters, test_order, test_data, corpusdict, **algorithms['mem_net'])
         predicted_labels, perform_results = main_mem_net.test_mem_network(mem_net_model, model_name, **algorithms['mem_net'])
 
 
