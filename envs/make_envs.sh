@@ -10,12 +10,14 @@ set -e
 
 PYTHIA_CONFIG="$1"
 if [ "$PYTHIA_CONFIG" = "" ]; then
+    jsonfile=0
     printf "Did not pass in JSON file of configuration variables.\n"
     printf "Continuing with PYTHONPATH pass-through...\n"
     printf "Alternative usage: \n"
     printf "\tmake_envs.sh config.json\n\n"
     PYTHIA_CONFIG='{ "PYTHONPATH" : "'"$PYTHONPATH"'" }'
 else
+    jsonfile=1
     PYTHIA_CONFIG="$(cat $PYTHIA_CONFIG)"
 fi
 
@@ -45,33 +47,41 @@ set -e
     # basics
     source activate "$env_name"
 
-    # map three environment variables from JSON file of configuration variables when Pythia conda environment is activated
-    mkdir -p $CONDA_PREFIX/etc/conda/activate.d
-    mkdir -p $CONDA_PREFIX/etc/conda/deactivate.d
-    touch $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
-    touch $CONDA_PREFIX/etc/conda/deactivate.d/env_vars.sh
+    # If a JSON config file was provided, map Pythia env variables whenever Pythia conda env is activated
+    if [ $jsonfile != 0 ]; then
+        # Look for Pythia's Anaconda environment path in system environment variables, depending on conda version
+        envloc=0
+        if [ ! -z "$CONDA_PREFIX" ]; then
+            envloc=$CONDA_PREFIX
+        else
+            if [ ! -z "$CONDA_ENV_PATH" ]; then
+                envloc=$CONDA_ENV_PATH
+            fi
+        fi
 
-    # Search PYTHIA_CONFIG's JSON format for the PYTHONPATH property and return PYTHONPATH's value
-    pathval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHONPATH'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
-    if [ "$pathval" != "" ]; then
-        echo "export PYTHONPATH=$pathval" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
-        echo "unset PYTHONPATH" >> $CONDA_PREFIX/etc/conda/deactivate.d/env_vars.sh
-    fi
+        # If Anaconda's env path was found, map Pythia env variables from JSON config file to Pythia conda env
+        if [ $envloc != 0 ]; then
+            mkdir -p $envloc/etc/conda/activate.d
+            mkdir -p $envloc/etc/conda/deactivate.d
+            touch $envloc/etc/conda/activate.d/env_vars.sh
+            touch $envloc/etc/conda/deactivate.d/env_vars.sh
 
-    # Search PYTHIA_CONFIG's JSON format for the PYTHIA_MONGO_DB_URI property and return PYTHIA_MONGO_DB_URI's value
-    dbval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MONGO_DB_URI'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
-    # Due to the colon (:) delimiter, go back to PYTHIA_MONGO_DB_URI's value in PYTHIA_CONFIG's JSON and extract the port from the next string
-    dbport=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MONGO_DB_URI'\042/){print $(i+2)}}}' | cut -d'"' -f1 ) )
-    if [ "$dbval" != "" ]; then
-        echo "export PYTHIA_MONGO_DB_URI=$dbval:$dbport" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
-        echo "unset PYTHIA_MONGO_DB_URI" >> $CONDA_PREFIX/etc/conda/deactivate.d/env_vars.sh
-    fi
+            # Search PYTHIA_CONFIG's JSON format for the PYTHIA_MONGO_DB_URI property and return PYTHIA_MONGO_DB_URI's value
+            dbval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MONGO_DB_URI'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
+            # Due to the colon (:) delimiter, go back to PYTHIA_MONGO_DB_URI's value in PYTHIA_CONFIG's JSON and extract the port from the next string
+            dbport=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MONGO_DB_URI'\042/){print $(i+2)}}}' | cut -d'"' -f1 ) )
+            if [ "$dbval" != "" ]; then
+                echo "export PYTHIA_MONGO_DB_URI=$dbval:$dbport" >> $envloc/etc/conda/activate.d/env_vars.sh
+                echo "unset PYTHIA_MONGO_DB_URI" >> $envloc/etc/conda/deactivate.d/env_vars.sh
+            fi
 
-    # Search PYTHIA_CONFIG's JSON format for the PYTHIA_MODELS_PATH property and return PYTHIA_MODELS_PATH's value
-    modelval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MODELS_PATH'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
-    if [ "$modelval" != "" ]; then
-        echo "export PYTHIA_MODELS_PATH=$modelval" >> $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
-        echo "unset PYTHIA_MODELS_PATH" >> $CONDA_PREFIX/etc/conda/deactivate.d/env_vars.sh
+            # Search PYTHIA_CONFIG's JSON format for the PYTHIA_MODELS_PATH property and return PYTHIA_MODELS_PATH's value
+            modelval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MODELS_PATH'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
+            if [ "$modelval" != "" ]; then
+                echo "export PYTHIA_MODELS_PATH=$modelval" >> $envloc/etc/conda/activate.d/env_vars.sh
+                echo "unset PYTHIA_MODELS_PATH" >> $envloc/etc/conda/deactivate.d/env_vars.sh
+            fi
+        fi
     fi
 
     conda install -q -y python="$python_version" scikit-learn \
