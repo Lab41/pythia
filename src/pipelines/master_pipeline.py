@@ -261,7 +261,7 @@ def get_args(
     if SVM:
         svm = dict()
         if SVM_C: svm['svm_C'] = SVM_C
-        if SVM_KERNAL: svm['svm_kernal'] = SVM_KERNAL
+        if SVM_KERNEL: svm['svm_kernel'] = SVM_KERNEL
         if SVM_GAMMA: svm['svm_gamma'] = SVM_GAMMA
     if XGB:
         xgb = dict()
