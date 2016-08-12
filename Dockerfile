@@ -58,6 +58,8 @@ RUN apt-get update -q && apt-get install -q -y --no-install-recommends --force-y
 	build-essential && \
     rm -rf /var/lib/apt/lists/*
 
+ENTRYPOINT [ "tini", "--" ]
+
 # Add Pythia repo to image and create environments
 ADD . /pythia
 ENV PYTHONPATH=/pythia:$PYTHONPATH
@@ -70,4 +72,3 @@ RUN echo "source activate py3-pythia" >> /root/.bashrc
 # run tests
 RUN /bin/bash -c 'export THEANO_FLAGS=device=cpu; export PYTHIA_MONGO_DB_URI=localhost:27017; source activate py3-pythia; pip install pytest-cov; py.test -v --cov=src --cov-report term-missing'
 
-ENTRYPOINT [ "tini", "--" ]
