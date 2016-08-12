@@ -110,7 +110,7 @@ def config_variables():
     REPLACEMENT = False
 
     #vocabulary
-    VOCAB_SIZE = 1000
+    VOCAB_SIZE = 10000
     STEM = False
 
     SEED = None
