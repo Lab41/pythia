@@ -32,7 +32,7 @@ xp = set_up_xp()
 def config_variables():
 
     # DIRECTORY
-    directory = 'stack_exchange_data/corpus_filtered/movies'
+    directory = 'data/stackexchange/anime'
 
     # FEATURES
     # bag of words
