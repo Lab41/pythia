@@ -28,14 +28,15 @@ def main(argv):
 
     #preprocessing
     print("preprocessing...",file=sys.stderr)
-    vocab, encoder_decoder, lda = preprocess.main([features, corpusdict, data])
+    vocab, encoder_decoder, lda, tf_model = preprocess.main([features, parameters, corpusdict, data])
 
     #featurization
-    #this portion doesn't run if memory networks are used
     if len(features)>1:
         print("generating training and testing data...",file=sys.stderr)
-        train_data, train_target = data_gen.main([clusters, order, data, features, vocab, encoder_decoder, lda])
-        test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, vocab, encoder_decoder, lda])
+        train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, encoder_decoder, lda, tf_model])
+        test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, encoder_decoder, lda, tf_model])
+    #this portion doesn't run if memory networks are used
+
 
     #modeling
     print("running algorithms...",file=sys.stderr)
@@ -52,7 +53,6 @@ def main(argv):
         mem_net_model, model_name = main_mem_net.run_mem_net(clusters, order, data, test_clusters, test_order, test_data, corpusdict, **algorithms['mem_net'])
         predicted_labels, perform_results = main_mem_net.test_mem_network(mem_net_model, model_name, **algorithms['mem_net'])
 
-
     #results
     return perform_results
 
@@ -62,16 +62,16 @@ def parse_args(given_args=None):
     parser.add_argument("--cos_similarity", "-c", "--cos-similarity", help="add cosine similarity as a feature", action="store_true")
     parser.add_argument("--tfidf_sum", "-t", "--tfidf-sum", help="add tfidf sum as a feature", action="store_true")
     parser.add_argument("--bag_of_words", "-b", "--bag-of-words", help="add bag of words vectors as a feature", action="store_true")
-    parser.add_argument("--vocab_size", "-v", type=int, default=500, help="set size of vocabulary to use with features that utilize bag of words")   
+    parser.add_argument("--vocab_size", "-v", type=int, default=500, help="set size of vocabulary to use with features that utilize bag of words")
     parser.add_argument("--skipthoughts", "-k", help="add skipthought vectors as a feature", action="store_true")
     parser.add_argument("--LDA", "-L", help="add Latent Dirichlet Allocation (LDA) vectors as a feature", action="store_true")
     parser.add_argument("--LDA_topics", "-T", type=int, default=10, help="set number of topics for Latent Dirichlet Allocation (LDA) model (default = 10)")
     parser.add_argument("--log_reg", "-l", "--log-reg", help="run logistic regression", action="store_true")
     parser.add_argument("--svm", "-s", help="run support vector machine", action="store_true")
     parser.add_argument("--resampling", "-r", help="conduct resampling to balance novel/non-novel ratio in training data", action="store_true")
-    parser.add_argument("--novel_ratio", "-n", type=float, default=1.0, help="set ratio of novel to non-novel sampling during resampling (0<=novel_ratio<=1.0, default = 1.0)")   
-    parser.add_argument("--oversampling", "-o", help="allow oversampling during resampling", action="store_true")   
-    parser.add_argument("--replacement", "-p", help="allow replacement during resampling", action="store_true")   
+    parser.add_argument("--novel_ratio", "-n", type=float, default=1.0, help="set ratio of novel to non-novel sampling during resampling (0<=novel_ratio<=1.0, default = 1.0)")
+    parser.add_argument("--oversampling", "-o", help="allow oversampling during resampling", action="store_true")
+    parser.add_argument("--replacement", "-p", help="allow replacement during resampling", action="store_true")
 
     if given_args is not None:
         args, extra_args = parser.parse_known_args(given_args)
@@ -97,7 +97,7 @@ def parse_args(given_args=None):
 
 def get_args(
     #DIRECTORY
-    directory = '/data/stackexchange/anime',
+    directory = 'data/stackexchange/anime',
 
     #FEATURES
     #bag of words
@@ -107,38 +107,51 @@ def get_args(
     BOW_PRODUCT = True,
     BOW_COS = True,
     BOW_TFIDF = True,
-    BOW_VOCAB = None,
 
-    
     #skipthoughts
     ST_APPEND = False,
     ST_DIFFERENCE = False,
     ST_PRODUCT = False,
     ST_COS = False,
-    
+
     #lda
     LDA_APPEND = False,
     LDA_DIFFERENCE = False,
     LDA_PRODUCT = False,
     LDA_COS = False,
-    LDA_VOCAB = 1000,
     LDA_TOPICS = 40,
-    
+
+    #one-hot CNN layer
+    CNN_APPEND = False,
+    CNN_DIFFERENCE = False,
+    CNN_PRODUCT = False,
+    CNN_COS = False,
+    #The vocabulary can either be character or word
+    #If words, WORDONEHOT_VOCAB will be used as the vocab length
+    CNN_VOCAB_TYPE = "character",
+    CNN_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789",
+
+    # wordonehot (will not play nicely with other featurization methods b/c not
+    # vector)
+    WORDONEHOT = False,
+    #WORDONEHOT_DOCLENGTH = None
+    WORDONEHOT_VOCAB = 5000,
+
     #ALGORITHMS
     #logistic regression
-    LOG_REG = True,
+    LOG_REG = False,
     LOG_PENALTY = 'l2',
     LOG_TOL = 1e-4,
     LOG_C = 1e-4,
-    
+
     #svm
-    SVM = True,
+    SVM = False,
     SVM_C = 2000,
     SVM_KERNAL = 'linear',
     SVM_GAMMA = 'auto',
 
     #xgboost
-    XGB = True,
+    XGB = False,
     XGB_LEARNRATE = 0.1,
     XGB_MAXDEPTH = 3,
     XGB_MINCHILDWEIGHT = 1,
@@ -158,14 +171,20 @@ def get_args(
     NOVEL_RATIO = None,
     OVERSAMPLING = False,
     REPLACEMENT = False,
-    
+
+    #vocabulary
+    VOCAB_SIZE = 1000,
+    STEM = False,
+
     SEED = None):
     
     #get features
     bow = None
     st = None
     lda = None
-    
+    wordonehot = None
+    cnn = None
+
     if BOW_APPEND or BOW_DIFFERENCE or BOW_PRODUCT or BOW_COS or BOW_TFIDF:
         bow = dict()
         if BOW_APPEND: bow['append'] = BOW_APPEND
@@ -173,31 +192,52 @@ def get_args(
         if BOW_PRODUCT: bow['product'] = BOW_PRODUCT
         if BOW_COS: bow['cos'] = BOW_COS
         if BOW_TFIDF: bow['tfidf'] = BOW_TFIDF
-        if BOW_VOCAB: bow['vocab'] = BOW_VOCAB
     if ST_APPEND or ST_DIFFERENCE or ST_PRODUCT or ST_COS:
         st = dict()
         if ST_APPEND: st['append'] = ST_APPEND
         if ST_DIFFERENCE: st['difference'] = ST_DIFFERENCE
         if ST_PRODUCT: st['product'] = ST_PRODUCT
-        if ST_COS: st['cos'] = ST_COS    
+        if ST_COS: st['cos'] = ST_COS
     if LDA_APPEND or LDA_DIFFERENCE or LDA_PRODUCT or LDA_COS:
         lda = dict()
         if LDA_APPEND: lda['append'] = LDA_APPEND
         if LDA_DIFFERENCE: lda['difference'] = LDA_DIFFERENCE
         if LDA_PRODUCT: lda['product'] = LDA_PRODUCT
         if LDA_COS: lda['cos'] = LDA_COS
-        if LDA_VOCAB: lda['vocab'] = LDA_VOCAB
         if LDA_TOPICS: lda['topics'] = LDA_TOPICS
-    
+    if WORDONEHOT:
+        wordonehot = dict()
+        if WORDONEHOT_VOCAB:
+            wordonehot['vocab'] = WORDONEHOT_VOCAB
+    if CNN_APPEND or CNN_DIFFERENCE or CNN_PRODUCT or CNN_COS:
+        cnn = dict()
+        if CNN_APPEND: cnn['append'] = CNN_APPEND
+        if CNN_DIFFERENCE: cnn['difference'] = CNN_DIFFERENCE
+        if CNN_PRODUCT: cnn['product'] = CNN_PRODUCT
+        if CNN_COS: cnn['cos'] = CNN_COS
+        if CNN_VOCAB_TYPE:
+            cnn['vocab_type'] = CNN_VOCAB_TYPE
+            if CNN_VOCAB_TYPE=="word":
+                if WORDONEHOT_VOCAB: cnn['vocab_len'] = WORDONEHOT_VOCAB
+        if CNN_CHAR_VOCAB: cnn['topics'] = CNN_CHAR_VOCAB
+
     features = dict()
-    if bow: features['bow'] = bow
-    if st: features['st'] = st
-    if lda: features['lda'] = lda
-    
+    if bow:
+        features['bow'] = bow
+    if st:
+        features['st'] = st
+    if lda:
+        features['lda'] = lda
+    if wordonehot:
+        features['wordonehot'] = wordonehot
+    if cnn:
+        features['cnn'] = cnn
+
     #get algorithms
     log_reg = None
     svm = None
     xgb = None
+
     mem_net = None
     
     if LOG_REG:
@@ -224,7 +264,6 @@ def get_args(
         if MEM_BATCH: mem_net['batch_size'] = MEM_BATCH
         if MEM_EPOCHS: mem_net['epochs'] = MEM_EPOCHS
 
-
     algorithms = dict()    
     if log_reg: algorithms['log_reg'] = log_reg
     if svm: algorithms['svm'] = svm
@@ -242,13 +281,15 @@ def get_args(
             
     parameters = dict()
     if RESAMPLING: parameters['resampling'] = resampling
+    if VOCAB_SIZE: parameters['vocab'] = VOCAB_SIZE
+    if STEM: parameters['stem'] = STEM
     if SEED: parameters['seed'] = SEED
-    
-    return [directory, features, algorithms, parameters]
+
+    return directory, features, algorithms, parameters
 
 if __name__ == '__main__':
     #args = parse_args()
     args = get_args()
-    print("Algorithm details and Results:",file=sys.stderr)
+    print("Algorithm details and Results:", file=sys.stderr)
     print(main(args), file=sys.stdout)
     sys.exit(0)

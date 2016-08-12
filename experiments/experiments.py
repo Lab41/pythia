@@ -35,7 +35,7 @@ xp = set_up_xp()
 def config_variables():
 
     # DIRECTORY
-    directory = '/stack_exchange_data/corpus_filtered/movies'
+    directory = 'stack_exchange_data/corpus_filtered/movies'
 
     # FEATURES
     # bag of words
@@ -44,7 +44,6 @@ def config_variables():
     BOW_PRODUCT = False
     BOW_COS = False
     BOW_TFIDF = False
-    BOW_VOCAB = 10000
 
     # skipthoughts
     ST_APPEND = False
@@ -57,7 +56,6 @@ def config_variables():
     LDA_DIFFERENCE = False
     LDA_PRODUCT = False
     LDA_COS = False
-    LDA_VOCAB = 10000
     LDA_TOPICS = 50
     
     #Mem_nets
@@ -66,6 +64,22 @@ def config_variables():
     MEM_TYPE = 'dmn_basic'
     MEM_BATCH = 1
     MEM_EPOCHS = 5 
+
+    #one-hot CNN layer
+    CNN_APPEND = False
+    CNN_DIFFERENCE = False
+    CNN_PRODUCT = False
+    CNN_COS = False
+    #The vocabulary can either be character or word
+    #If words, WORDONEHOT_VOCAB will be used as the vocab length
+    CNN_VOCAB_TYPE = "character"
+    CNN_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+    # wordonehot (will not play nicely with other featurization methods b/c not
+    # vector)
+    WORDONEHOT = False
+    #WORDONEHOT_DOCLENGTH = None
+    WORDONEHOT_VOCAB = 5000
 
     # ALGORITHMS
     # logistic regression
@@ -94,6 +108,10 @@ def config_variables():
     OVERSAMPLING = False
     REPLACEMENT = False
 
+    #vocabulary
+    VOCAB_SIZE = 1000
+    STEM = False
+
     SEED = None
 
 @xp.main
@@ -104,7 +122,6 @@ def run_experiment(
     BOW_PRODUCT,
     BOW_COS,
     BOW_TFIDF,
-    BOW_VOCAB,
     ST_APPEND,
     ST_DIFFERENCE,
     ST_PRODUCT,
@@ -113,8 +130,15 @@ def run_experiment(
     LDA_DIFFERENCE,
     LDA_PRODUCT,
     LDA_COS,
-    LDA_VOCAB,
     LDA_TOPICS,
+    CNN_APPEND,
+    CNN_DIFFERENCE,
+    CNN_PRODUCT,
+    CNN_COS,
+    CNN_VOCAB_TYPE,
+    CNN_CHAR_VOCAB,
+    WORDONEHOT,
+    WORDONEHOT_VOCAB,
     LOG_REG,
     LOG_PENALTY,
     LOG_TOL,
@@ -137,6 +161,8 @@ def run_experiment(
     NOVEL_RATIO,
     OVERSAMPLING,
     REPLACEMENT,
+    VOCAB_SIZE,
+    STEM,
     SEED):
 
     return pythia_main(
@@ -147,7 +173,6 @@ def run_experiment(
             BOW_PRODUCT,
             BOW_COS,
             BOW_TFIDF,
-            BOW_VOCAB,
             ST_APPEND,
             ST_DIFFERENCE,
             ST_PRODUCT,
@@ -156,8 +181,15 @@ def run_experiment(
             LDA_DIFFERENCE,
             LDA_PRODUCT,
             LDA_COS,
-            LDA_VOCAB,
             LDA_TOPICS,
+            CNN_APPEND,
+            CNN_DIFFERENCE,
+            CNN_PRODUCT,
+            CNN_COS,
+            CNN_VOCAB_TYPE,
+            CNN_CHAR_VOCAB,
+            WORDONEHOT,
+            WORDONEHOT_VOCAB,
             LOG_REG,
             LOG_PENALTY,
             LOG_TOL,
@@ -180,6 +212,8 @@ def run_experiment(
             NOVEL_RATIO,
             OVERSAMPLING,
             REPLACEMENT,
+            VOCAB_SIZE,
+            STEM,
             SEED)
     )
 
