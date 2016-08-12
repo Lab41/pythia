@@ -1,3 +1,7 @@
+# Origination
+
+This segment of the Pythia code originates from [ryankiros](https://github.com/ryankiros/skip-thoughts). It has been modified to wrap into the broader Pythia code base.  All original code and documentation was released under the Apache License included below. 
+
 # skip-thoughts
 
 Sent2Vec encoder and training code from the paper [Skip-Thought Vectors](http://arxiv.org/abs/1506.06726).
