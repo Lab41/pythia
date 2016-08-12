@@ -35,6 +35,10 @@ class DMN_basic:
         self.memory_hops = memory_hops
         self.l2 = l2
         self.normalize_attention = normalize_attention
+
+        self.to_return = "word2vec" #TODO pass these in once updates are wrapped in
+        self.encoder_decoder = None
+        self.vocab_dict = {}
         
     # Process the input into its different parts and calculate the input mask
         self.train_input, self.train_q, self.train_answer, self.train_input_mask = self._process_input(train_raw)
@@ -309,20 +313,28 @@ class DMN_basic:
                 print("Passing over data: ", x["C"])
                 continue
 
-            # Process the words from the input, answers, and questions to see what needs a new vector in word2vec.
-            inp_vector = [utils.process_word(word = w,
-                                        word2vec = self.word2vec, 
-                                        vocab = self.vocab, 
-                                        ivocab = self.ivocab, 
-                                        word_vector_size = self.word_vector_size, 
-                                        to_return = "word2vec", silent=True) for w in inp]
+            #Process the documents
+            inp_vector = utils.process_sent(inp, word2vec=self.word2vec, vocab=self.vocab, ivocab=self.ivocab,
+                                            word_vector_size=self.word_vector_size, to_return=self.to_return, silent=True,
+                                            encoder_decoder=self.encoder_decoder, vocab_dict=self.vocab_dict)
 
-            q_vector = [utils.process_word(word = w,
-		    			word2vec = self.word2vec,
-					vocab = self.vocab,
-					ivocab = self.ivocab,
-					word_vector_size = self.word_vector_size,
-					to_return = "word2vec", silent=True) for w in q]
+            q_vector = utils.process_sent(q, word2vec=self.word2vec, vocab=self.vocab, ivocab=self.ivocab,
+                                            word_vector_size=self.word_vector_size, to_return=self.to_return, silent=True,
+                                            encoder_decoder=self.encoder_decoder, vocab_dict=self.vocab_dict)
+            # Process the words from the input, answers, and questions to see what needs a new vector in word2vec.
+            # inp_vector = [utils.process_word(word = w,
+            #                             word2vec = self.word2vec,
+            #                             vocab = self.vocab,
+            #                             ivocab = self.ivocab,
+            #                             word_vector_size = self.word_vector_size,
+            #                             to_return = "word2vec", silent=True) for w in inp]
+            #
+            # q_vector = [utils.process_word(word = w,
+		    	# 		word2vec = self.word2vec,
+				# 	vocab = self.vocab,
+				# 	ivocab = self.ivocab,
+				# 	word_vector_size = self.word_vector_size,
+				# 	to_return = "word2vec", silent=True) for w in q]
             inputs.append(np.vstack(inp_vector).astype(floatX))
             questions.append(np.vstack(q_vector).astype(floatX))
             answers.append(utils.process_word(word = x["A"],

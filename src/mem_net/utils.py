@@ -8,6 +8,7 @@ import random
 from src.utils.normalize import normalize_and_remove_stop_words, xml_normalize
 from src.utils.tokenize import word_punct_tokens, punkt_sentences
 from src.pipelines import data_gen
+from src.featurizers import skipthoughts as sk
 
 import theano
 floatX = theano.config.floatX
@@ -112,6 +113,7 @@ def analyze_clusters(all_clusters, lookup_order, documentData):
 
     return tasks
 
+#TODO this part isn't really working right now....but it might in the future. Clean or delete
 def analyze_clusters2(all_clusters, lookup_order, documentData, vector_type, word2vec, word_vector_size, param, in_dict={}):
     #This is mostly cut and paste from data_gen but with some differences
     #TODO in the future fold this into data_gen more....but would need somewhat extensive changes there
@@ -264,6 +266,19 @@ def process_word(word, word2vec, vocab, ivocab, word_vector_size, to_return="wor
         raise Exception("to_return = 'onehot' is not implemented yet")
 
 
+def process_sent(doc, word2vec, vocab, ivocab, word_vector_size, to_return="word2vec", silent=False, encoder_decoder=None, vocab_dict={}):
+    document_vector = []
+
+    if to_return=="word2vec":
+        document_vector = [process_word(w, word2vec, vocab, ivocab , word_vector_size, to_return, silent=True) for w in doc]
+    elif to_return=="skip_thought":
+        sentences = punkt_sentences(doc)
+        norm_sentences = [normalize.xml_normalize(s) for s in sentences]
+        document_vector = [ sk.encode(encoder_decoder, norm_sentences)]
+    elif to_return=="one_hot":
+        data_gen.run_onehot(doc, vocab_dict)
+
+    return document_vector
 def get_norm(x):
     x = np.array(x)
     return np.sum(x * x)
