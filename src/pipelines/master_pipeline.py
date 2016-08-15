@@ -28,14 +28,12 @@ def main(argv):
 
     #preprocessing
     print("preprocessing...",file=sys.stderr)
-    vocab, encoder_decoder, lda, tf_model = preprocess.main([features, parameters, corpusdict, data])
+    vocab, encoder_decoder, lda_model, tf_model, w2v_model = preprocess.main([features, parameters, corpusdict, data])
 
     #featurization
-    if len(features)>1:
-        print("generating training and testing data...",file=sys.stderr)
-        train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, encoder_decoder, lda, tf_model])
-        test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, encoder_decoder, lda, tf_model])
-    #this portion doesn't run if memory networks are used
+    print("generating training and testing data...",file=sys.stderr)
+    train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, encoder_decoder, lda_model, tf_model, w2v_model])
+    test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, encoder_decoder, lda_model, tf_model, w2v_model])
 
 
     #modeling
@@ -86,7 +84,7 @@ def parse_args(given_args=None):
 
     paramTuple = namedtuple('parameters','vocab_size, lda_topics, resampling, novel_ratio, oversampling, replacement')
     parameters = paramTuple(args.vocab_size, args.LDA_topics, args.resampling, args.novel_ratio, args.oversampling, args.replacement)
-    
+
     if not (args.cos_similarity or args.tfidf_sum or args.bag_of_words or args.skipthoughts or args.LDA):
         parser.exit(status=1, message="Error: pipeline requires at least one feature\n")
 
@@ -101,12 +99,11 @@ def get_args(
 
     #FEATURES
     #bag of words
-
-    BOW_APPEND = False,
-    BOW_DIFFERENCE = True,
+    BOW_APPEND = True,
+    BOW_DIFFERENCE = False,
     BOW_PRODUCT = True,
-    BOW_COS = True,
-    BOW_TFIDF = True,
+    BOW_COS = False,
+    BOW_TFIDF = False,
 
     #skipthoughts
     ST_APPEND = False,
@@ -120,6 +117,17 @@ def get_args(
     LDA_PRODUCT = False,
     LDA_COS = False,
     LDA_TOPICS = 40,
+
+    #word2vec
+    W2V_APPEND = False,
+    W2V_DIFFERENCE = False,
+    W2V_PRODUCT = False,
+    W2V_COS = False,
+    W2V_PRETRAINED=False,
+    W2V_MIN_COUNT = 5,
+    W2V_WINDOW = 5,
+    W2V_SIZE = 100,
+    W2V_WORKERS = 3,
 
     #one-hot CNN layer
     CNN_APPEND = False,
@@ -147,7 +155,7 @@ def get_args(
     #svm
     SVM = False,
     SVM_C = 2000,
-    SVM_KERNAL = 'linear',
+    SVM_KERNEL = 'linear',
     SVM_GAMMA = 'auto',
 
     #xgboost
@@ -172,16 +180,18 @@ def get_args(
     OVERSAMPLING = False,
     REPLACEMENT = False,
 
+
     #vocabulary
     VOCAB_SIZE = 1000,
     STEM = False,
 
     SEED = None):
-    
+
     #get features
     bow = None
     st = None
     lda = None
+    w2v = None
     wordonehot = None
     cnn = None
 
@@ -205,6 +215,17 @@ def get_args(
         if LDA_PRODUCT: lda['product'] = LDA_PRODUCT
         if LDA_COS: lda['cos'] = LDA_COS
         if LDA_TOPICS: lda['topics'] = LDA_TOPICS
+    if W2V_APPEND or W2V_DIFFERENCE or W2V_PRODUCT or W2V_COS:
+        w2v = dict()
+        if W2V_APPEND: w2v['append'] = W2V_APPEND
+        if W2V_DIFFERENCE: w2v['difference'] = W2V_DIFFERENCE
+        if W2V_PRODUCT: w2v['product'] = W2V_PRODUCT
+        if W2V_COS: w2v['cos'] = W2V_COS
+        if W2V_PRETRAINED: w2v['pretrained'] = W2V_PRETRAINED
+        if W2V_MIN_COUNT: w2v['min_count'] = W2V_MIN_COUNT
+        if W2V_WINDOW: w2v['window'] = W2V_WINDOW
+        if W2V_SIZE: w2v['size'] = W2V_SIZE
+        if W2V_WORKERS: w2v['workers'] = W2V_WORKERS
     if WORDONEHOT:
         wordonehot = dict()
         if WORDONEHOT_VOCAB:
@@ -228,10 +249,16 @@ def get_args(
         features['st'] = st
     if lda:
         features['lda'] = lda
+    if w2v:
+        features['w2v'] = w2v
     if wordonehot:
         features['wordonehot'] = wordonehot
     if cnn:
         features['cnn'] = cnn
+
+    if len(features) == 0:
+        print("Error: At least one feature (ex: Bag of Words, LDA, etc.) must be requested per run.", file=sys.stderr)
+        quit()
 
     #get algorithms
     log_reg = None
@@ -248,7 +275,7 @@ def get_args(
     if SVM:
         svm = dict()
         if SVM_C: svm['svm_C'] = SVM_C
-        if SVM_KERNAL: svm['svm_kernal'] = SVM_KERNAL
+        if SVM_KERNEL: svm['svm_kernel'] = SVM_KERNEL
         if SVM_GAMMA: svm['svm_gamma'] = SVM_GAMMA
     if XGB:
         xgb = dict()
@@ -270,15 +297,24 @@ def get_args(
     if xgb: algorithms['xgb'] = xgb
     if mem_net: algorithms['mem_net']=mem_net
     
+
+    # Enforce requirement and limitation of one algorithm per run
+    if len(algorithms) == 0:
+        print("Error: An algorithm (LOG_REG, SVM, XGB) must be requested per run.", file=sys.stderr)
+        quit()
+    elif len(algorithms) > 1:
+        print("Error: Only one algorithm (LOG_REG, SVM, XGB) can be requested per run.", file=sys.stderr)
+        quit()
+
     #get parameters
     resampling = None
-    
+
     if RESAMPLING:
         resampling = dict()
         if NOVEL_RATIO: resampling['novelToNotNovelRatio'] = NOVEL_RATIO
         if OVERSAMPLING: resampling['over'] = OVERSAMPLING
         if REPLACEMENT: resampling['replacement'] = REPLACEMENT
-            
+
     parameters = dict()
     if RESAMPLING: parameters['resampling'] = resampling
     if VOCAB_SIZE: parameters['vocab'] = VOCAB_SIZE

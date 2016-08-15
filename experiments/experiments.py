@@ -2,9 +2,6 @@
 
 import sys
 import os
-import pprint
-import subprocess
-import json
 
 from sacred import Experiment
 from sacred.observers import MongoObserver
@@ -35,7 +32,7 @@ xp = set_up_xp()
 def config_variables():
 
     # DIRECTORY
-    directory = 'stack_exchange_data/corpus_filtered/movies'
+    directory = 'data/stackexchange/anime'
 
     # FEATURES
     # bag of words
@@ -65,6 +62,17 @@ def config_variables():
     MEM_BATCH = 1
     MEM_EPOCHS = 5 
 
+    #word2vec
+    W2V_APPEND = False
+    W2V_DIFFERENCE = False
+    W2V_PRODUCT = False
+    W2V_COS = False
+    W2V_PRETRAINED = False
+    W2V_MIN_COUNT = 5
+    W2V_WINDOW = 5
+    W2V_SIZE = 100
+    W2V_WORKERS = 3
+
     #one-hot CNN layer
     CNN_APPEND = False
     CNN_DIFFERENCE = False
@@ -91,7 +99,7 @@ def config_variables():
     # svm
     SVM = False
     SVM_C = 2000
-    SVM_KERNAL = 'linear'
+    SVM_KERNEL = 'linear'
     SVM_GAMMA = 'auto'
 
     # xgboost
@@ -109,62 +117,69 @@ def config_variables():
     REPLACEMENT = False
 
     #vocabulary
-    VOCAB_SIZE = 1000
+    VOCAB_SIZE = 10000
     STEM = False
 
     SEED = None
 
 @xp.main
-def run_experiment(
-    directory,
-    BOW_APPEND,
-    BOW_DIFFERENCE,
-    BOW_PRODUCT,
-    BOW_COS,
-    BOW_TFIDF,
-    ST_APPEND,
-    ST_DIFFERENCE,
-    ST_PRODUCT,
-    ST_COS,
-    LDA_APPEND,
-    LDA_DIFFERENCE,
-    LDA_PRODUCT,
-    LDA_COS,
-    LDA_TOPICS,
-    CNN_APPEND,
-    CNN_DIFFERENCE,
-    CNN_PRODUCT,
-    CNN_COS,
-    CNN_VOCAB_TYPE,
-    CNN_CHAR_VOCAB,
-    WORDONEHOT,
-    WORDONEHOT_VOCAB,
-    LOG_REG,
-    LOG_PENALTY,
-    LOG_TOL,
-    LOG_C,
-    SVM,
-    SVM_C,
-    SVM_KERNAL,
-    SVM_GAMMA,
-    XGB,
-    XGB_LEARNRATE,
-    XGB_MAXDEPTH,
-    XGB_MINCHILDWEIGHT,
-    XGB_COLSAMPLEBYTREE,
-    MEM_NET,
-    MEM_VOCAB,
-    MEM_TYPE,
-    MEM_BATCH,
-    MEM_EPOCHS,
-    RESAMPLING,
-    NOVEL_RATIO,
-    OVERSAMPLING,
-    REPLACEMENT,
-    VOCAB_SIZE,
-    STEM,
-    SEED):
-
+def run_experiment(directory,
+            BOW_APPEND,
+            BOW_DIFFERENCE,
+            BOW_PRODUCT,
+            BOW_COS,
+            BOW_TFIDF,
+            ST_APPEND,
+            ST_DIFFERENCE,
+            ST_PRODUCT,
+            ST_COS,
+            LDA_APPEND,
+            LDA_DIFFERENCE,
+            LDA_PRODUCT,
+            LDA_COS,
+            LDA_TOPICS,
+            W2V_APPEND,
+            W2V_DIFFERENCE,
+            W2V_PRODUCT,
+            W2V_COS,
+            W2V_PRETRAINED,
+            W2V_MIN_COUNT,
+            W2V_WINDOW,
+            W2V_SIZE,
+            W2V_WORKERS,
+            CNN_APPEND,
+            CNN_DIFFERENCE,
+            CNN_PRODUCT,
+            CNN_COS,
+            CNN_VOCAB_TYPE,
+            CNN_CHAR_VOCAB,
+            WORDONEHOT,
+            WORDONEHOT_VOCAB,
+            LOG_REG,
+            LOG_PENALTY,
+            LOG_TOL,
+            LOG_C,
+            SVM,
+            SVM_C,
+            SVM_KERNEL,
+            SVM_GAMMA,
+            XGB,
+            XGB_LEARNRATE,
+            XGB_MAXDEPTH,
+            XGB_MINCHILDWEIGHT,
+            XGB_COLSAMPLEBYTREE,
+            MEM_NET,
+            MEM_VOCAB,
+            MEM_TYPE,
+            MEM_BATCH,
+            MEM_EPOCHS,
+            RESAMPLING,
+            NOVEL_RATIO,
+            OVERSAMPLING,
+            REPLACEMENT,
+            VOCAB_SIZE,
+            STEM,
+            SEED):
     return pythia_main(
         get_args(
             directory,
@@ -182,6 +197,15 @@ def run_experiment(
             LDA_PRODUCT,
             LDA_COS,
             LDA_TOPICS,
+            W2V_APPEND,
+            W2V_DIFFERENCE,
+            W2V_PRODUCT,
+            W2V_COS,
+            W2V_PRETRAINED,
+            W2V_MIN_COUNT,
+            W2V_WINDOW,
+            W2V_SIZE,
+            W2V_WORKERS,
             CNN_APPEND,
             CNN_DIFFERENCE,
             CNN_PRODUCT,
@@ -196,7 +220,7 @@ def run_experiment(
             LOG_C,
             SVM,
             SVM_C,
-            SVM_KERNAL,
+            SVM_KERNEL,
             SVM_GAMMA,
             XGB,
             XGB_LEARNRATE,
