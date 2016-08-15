@@ -220,6 +220,14 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
     # Prepare to store results of feature assessments
     data = list()
     labels = list()
+    # mem_net_features is used when the mem_net algorithm is ran
+    # It consist of inputs, labels(answers), input_masks and questions for each entry
+    mem_net_features = list()
+    inputs = []
+    input_masks = []
+    questions = []
+    # Sentence punctuation delimiters
+    punkt = ['.','?','!']
 
     #Iterate through clusters found in JSON file, do feature assessments,
     #build a rolling corpus from ordered documents for each cluster
@@ -238,6 +246,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
         # Store a list of sentences in the cluster at each iteration
         sentences = []
         sentences += (get_first_and_last_sentence(first_doc))
+        sentences_full = tokenize.punkt_sentences(first_doc)
 
         for index in sortedEntries[1:]:
             # Find next document in order
@@ -247,6 +256,47 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
             doc = normalize.normalize_and_remove_stop_words(raw_doc, **parameters)
 
             corpus_array.append(doc)
+
+            if 'mem_net' in features:
+                mem_net_params = features['mem_net']
+                #use the specified mask mode where available
+                if mem_net_params.get('mask_mode', False):
+                    mask_mode = mem_net_params["mask_mode"]
+                else: mask_mode = 'sentence'
+
+                if mem_net_params.get('st', False):
+                    corpus_vectors = sk.encode(encoder_decoder, sentences_full)
+                    doc_vectors = sk.encode(encoder_decoder, raw_doc)
+
+                    sent_mask = [span[1]-1 for span in tokenize.punkt_sentence_span(raw_doc)]
+                    input_masks.append(sent_mask)
+
+                    inputs.append(corpus_vectors)
+                    questions.append(doc_vectors)
+
+                if mem_net_params.get('wordonehot', False):
+                    min_length = None
+                    max_length = None
+                    if mem_net_params.get('wordonehot_min_len', False):
+                        min_length = mem_net_params['one_hot_min_len']
+                    if mem_net_params.get('wordonehot_max_len', False):
+                        max_length = mem_net_params['one_hot_max_len']
+                    if mem_net_params.get('wordonehot_vocab', False):
+                        onehot_vocab = mem_net_params['wordonehot_vocab']
+                    else: onehot_vocab=vocab
+                    corpus_vectors = run_onehot(doc, onehot_vocab, min_length, max_length)
+                    doc_vectors = run_onehot(doc, onehot_vocab, min_length, max_length)
+
+                    #TODO transpose matrix and see if the matrix type is ok for the mem_net code
+
+                if mem_net_params.get('word2vec', False):
+                    corpus_vectors = run_w2v(corpus, vocab, min_length, max_length)
+                    doc_vectors = run_w2v(doc, vocab, min_length, max_length)
+
+                    inputs.append(corpus_vectors)
+                    questions.append(doc_vectors)
+
+                sentences_full += tokenize.punkt_sentences(raw_doc)
 
             feature = list()
 
@@ -273,7 +323,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
 
             # Update corpus and add newest sentence to sentences vector
             corpus+=doc
-            sentences += get_first_and_last_sentence(doc)
+            sentences += get_first_and_last_sentence(raw_doc)
 
     return data, labels
 

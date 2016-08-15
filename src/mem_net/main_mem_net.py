@@ -55,7 +55,7 @@ def parse_args(given_args=None):
         (".d" + str(args.dropout)) if args.dropout>0 else "",
         args.input_train.split("/")[-1])
 
-def run_mem_net(clusters, order, data, test_clusters, test_order, test_data, corpusdict, seed=1, word_vector_size=50,
+def run_mem_net(train_data, train_target, test_data, test_target, seed=1, word_vector_size=50,
                 network='dmn_basic', batch_size=10, epochs=5, vector_type="word2vec",
                 shuffle=False, log_every=10, save_every=1, network_name_pre = '', memory_hops=5, dim=40,
                 normalize_attention=False, batch_norm=False,dropout=0.0,
