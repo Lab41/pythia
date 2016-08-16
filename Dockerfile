@@ -66,14 +66,10 @@ ENV PYTHONPATH=/pythia:$PYTHONPATH
 WORKDIR /pythia
 RUN envs/make_envs.sh
 
-# Install MongoDB service and set default value for PYTHIA_MONGO_DB_URI
-RUN apt-get update -q && apt-get install -qy mongodb-server
-ENV PYTHIA_MONGO_DB_URI=localhost:27017
-RUN echo "mongod --dbpath /opt/db --logpath /opt/dblog &" | tee -a /root/.bashrc && \
-    mkdir -p /opt/db
-
-# Activate the new conda environment whenever a bash shell is created
-RUN echo "source activate py3-pythia" >> /root/.bashrc
+# Set py3-pythia as default in container
+ENV PATH /opt/conda/envs/py3-pythia/bin:$PATH
+ENV CONDA_DEFAULT_ENV py3-pythia
+ENV CONDA_ENV_PATH /opt/conda/envs/py3-pythia
 
 # run tests
 RUN /bin/bash -c 'export THEANO_FLAGS=device=cpu; export PYTHIA_MONGO_DB_URI=localhost:27017; source activate py3-pythia; pip install pytest-cov; py.test -v --cov=src --cov-report term-missing'
