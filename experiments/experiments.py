@@ -32,7 +32,7 @@ xp = set_up_xp()
 def config_variables():
 
     # DIRECTORY
-    directory = 'stack_exchange_data/corpus_filtered/movies'
+    directory = 'data/stackexchange/anime'
 
     # FEATURES
     # bag of words
@@ -110,7 +110,7 @@ def config_variables():
     REPLACEMENT = False
 
     #vocabulary
-    VOCAB_SIZE = 1000
+    VOCAB_SIZE = 10000
     STEM = False
 
     SEED = None
