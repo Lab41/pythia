@@ -74,3 +74,4 @@ ENV CONDA_ENV_PATH /opt/conda/envs/py3-pythia
 # run tests
 RUN /bin/bash -c 'export THEANO_FLAGS=device=cpu; export PYTHIA_MONGO_DB_URI=localhost:27017; source activate py3-pythia; pip install pytest-cov; py.test -v --cov=src --cov-report term-missing'
 
+CMD [ "/bin/bash" ]
