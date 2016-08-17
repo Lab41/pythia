@@ -2,7 +2,6 @@
 
 import sys
 
-sys.path.append('/Users/chrisn/mad-science/pythia/src/featurizers/')
 from training import tools
 from gensim.models import Word2Vec
 import numpy

@@ -4,8 +4,8 @@
 # ## Hard-coding data paths
 # 
 
-parsed_data_location = '/Users/chrisn/testing'
-sample_location = '/Users/chrisn/mad-science/pythia/data/stackexchange'
+parsed_data_location = 'testing'
+sample_location = 'data/stackexchange/anime'
 file_extension = ".json"
 num_pools = 8
 
