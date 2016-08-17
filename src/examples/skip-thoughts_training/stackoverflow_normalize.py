@@ -17,12 +17,12 @@ import sys
 from multiprocessing import Pool
 
 # Import pythia modules
-sys.path.append('/Users/chrisn/mad-science/pythia/')
 from src.utils import normalize, tokenize
 
 # ## Tokenization and normalization
 # 
-# Who knows the best way to do this? I tried to match the expectations of both the skip-thoughts code and the pythia codebase as best I could.
+# Who knows the best way to do this? I tried to match the expectations of both the skip-thoughts code and the pythia
+# codebase as best I could.
 # 
 # For each document:
 # 
@@ -30,7 +30,8 @@ from src.utils import normalize, tokenize
 # 
 # 2) Normalize each sentence. Remove html and make everything lower-case. We use utils.normalize.xml_normalize
 # 
-# 3) Tokenize each sentence. Now each sentence is a string of space-separated tokens. We use utils.tokenize.word_punct_tokens and rejoin the tokens.
+# 3) Tokenize each sentence. Now each sentence is a string of space-separated tokens.
+# We use utils.tokenize.word_punct_tokens and rejoin the tokens.
 # 
 # 
 # 
