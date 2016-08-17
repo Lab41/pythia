@@ -48,7 +48,7 @@ def main(argv):
         xgb_model = xgb.main([train_data, train_target, algorithms['xgb']])
         predicted_labels, perform_results = predict.main([xgb_model, test_data, test_target])
     if 'mem_net' in algorithms:
-        mem_net_model, model_name = main_mem_net.run_mem_net(clusters, order, data, test_clusters, test_order, test_data, corpusdict, **algorithms['mem_net'])
+        mem_net_model, model_name = main_mem_net.run_mem_net(train_data, test_data, corpusdict, **algorithms['mem_net'])
         predicted_labels, perform_results = main_mem_net.test_mem_network(mem_net_model, model_name, **algorithms['mem_net'])
 
     #results
@@ -166,12 +166,16 @@ def get_args(
     XGB_COLSAMPLEBYTREE = 1,
 
     #memory network
-    MEM_NET = True,
+    MEM_NET = False,
     #The memory network vocab uses Glove which can be 50, 100, 200 or 300 depending on the models you have in /data/glove
     MEM_VOCAB = 50,
     MEM_TYPE = 'dmn_basic',
     MEM_BATCH = 1,
     MEM_EPOCHS = 5,
+    MEM_MASK_MODE = 'sentence',
+    MEM_EMBED_MODE = "word2vec",
+    MEM_ONEHOT_MIN_LEN = 140,
+    MEM_ONEHOT_MAX_LEN = 1000,
 
     #PARAMETERS
     #resampling
@@ -194,6 +198,7 @@ def get_args(
     w2v = None
     wordonehot = None
     cnn = None
+    mem_net = None
 
     if BOW_APPEND or BOW_DIFFERENCE or BOW_PRODUCT or BOW_COS or BOW_TFIDF:
         bow = dict()
@@ -241,6 +246,24 @@ def get_args(
             if CNN_VOCAB_TYPE=="word":
                 if WORDONEHOT_VOCAB: cnn['vocab_len'] = WORDONEHOT_VOCAB
         if CNN_CHAR_VOCAB: cnn['topics'] = CNN_CHAR_VOCAB
+    if MEM_NET:
+        mem_net = dict()
+        if MEM_VOCAB: mem_net['word_vector_size'] = MEM_VOCAB
+        if SEED: mem_net['seed'] = SEED
+        if MEM_TYPE: mem_net['network'] = MEM_TYPE
+        if MEM_BATCH: mem_net['batch_size'] = MEM_BATCH
+        if MEM_EPOCHS: mem_net['epochs'] = MEM_EPOCHS
+        if MEM_EPOCHS: mem_net['mask_mode'] = MEM_MASK_MODE
+        if MEM_EMBED_MODE : mem_net['embed_mode'] = MEM_EMBED_MODE
+        if MEM_ONEHOT_MIN_LEN: mem_net['onehot_min_len'] = MEM_ONEHOT_MIN_LEN
+        if MEM_ONEHOT_MAX_LEN: mem_net['onehot_max_len'] = MEM_ONEHOT_MAX_LEN
+        #Use the same input params as word2vec
+        if W2V_PRETRAINED: mem_net['pretrained'] = W2V_PRETRAINED
+        if W2V_MIN_COUNT: mem_net['min_count'] = W2V_MIN_COUNT
+        if W2V_WINDOW: mem_net['window'] = W2V_WINDOW
+        if W2V_SIZE: mem_net['size'] = W2V_SIZE
+        if W2V_WORKERS: mem_net['workers'] = W2V_WORKERS
+
 
     features = dict()
     if bow:
@@ -255,6 +278,10 @@ def get_args(
         features['wordonehot'] = wordonehot
     if cnn:
         features['cnn'] = cnn
+    if mem_net:
+        if len(features)>0:
+            print("Caution!!  Only the memory network feature and algorithm will be ran as they have to run alone")
+        features['mem_net'] = mem_net
 
     if len(features) == 0:
         print("Error: At least one feature (ex: Bag of Words, LDA, etc.) must be requested per run.", file=sys.stderr)
@@ -265,7 +292,6 @@ def get_args(
     svm = None
     xgb = None
 
-    mem_net = None
     
     if LOG_REG:
         log_reg = dict()
@@ -283,20 +309,17 @@ def get_args(
         if XGB_MAXDEPTH: xgb['x_max_depth'] = XGB_MAXDEPTH
         if XGB_COLSAMPLEBYTREE: xgb['svm_gamma'] = XGB_COLSAMPLEBYTREE
         if XGB_MINCHILDWEIGHT: xgb['svm_gamma'] = XGB_MINCHILDWEIGHT
-    if MEM_NET:
-        mem_net = dict()
-        if MEM_VOCAB: mem_net['word_vector_size'] = MEM_VOCAB
-        if SEED: mem_net['seed'] = SEED
-        if MEM_TYPE: mem_net['network'] = MEM_TYPE
-        if MEM_BATCH: mem_net['batch_size'] = MEM_BATCH
-        if MEM_EPOCHS: mem_net['epochs'] = MEM_EPOCHS
 
     algorithms = dict()    
     if log_reg: algorithms['log_reg'] = log_reg
     if svm: algorithms['svm'] = svm
     if xgb: algorithms['xgb'] = xgb
-    if mem_net: algorithms['mem_net']=mem_net
-    
+    #add the memory_net parameters to algorithms as well
+    if mem_net:
+        if len(algorithms)>0:
+            print("Error:  The memory network algorithm must be run alone")
+            quit()
+        algorithms['mem_net']=mem_net
 
     # Enforce requirement and limitation of one algorithm per run
     if len(algorithms) == 0:

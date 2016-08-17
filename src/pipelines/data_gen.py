@@ -217,17 +217,64 @@ def run_w2v(w2v_model, doc, w2v):
         documentvector = np.zeros(w2v['size'])
     return documentvector
 
+def run_w2v_matrix(w2v_model, doc, w2v_params, mask_mode):
+
+    #determine if the first and last sentences will be taken or all sentences
+    if w2v_params.get('mem_w2v_mode', False):
+        w2v_mode = w2v_params['mem_w2v_mode']
+    else: w2v_mode = 'all'
+
+    if w2v_mode == 'all':
+        sentences = tokenize.punkt_sentences(doc)
+    else:
+        sentences = get_first_and_last_sentence(doc)
+
+    normalizedsentences = []
+
+    sentence_mask = []
+    for sentence in sentences:
+        words = normalize.remove_stop_words(tokenize.word_punct_tokens(sentence))
+        if len(sentence_mask)>0: prev_mask = sentence_mask[-1]
+        else: prev_mask = -1
+        sentence_mask.append(prev_mask + len(words))
+        normalizedsentences.append(words)
+
+    wordvectorarray = []
+
+    # Look up word vectors in trained Word2Vec model and build array of word vectors and sentence vectors
+    for phrase in normalizedsentences:
+        for word in phrase:
+            wordvector = None
+            try:
+                wordvector_ = w2v_model[word]
+                wordvector = [float(w) for w in wordvector_]
+            except:
+                wordvector = np.random.uniform(0.0,1.0,(w2v_params['size'],))
+            if wordvector is not None:
+                wordvectorarray.append(wordvector)
+
+    if mask_mode=='sentence': mask = sentence_mask
+    else:
+        mask = np.array([index for index, w in enumerate(wordvectorarray)], dtype=np.int32)
+
+    if len(wordvectorarray)-1!=mask[-1]:
+        print(mask)
+        print(np.array(wordvectorarray).shape)
+        raise
+
+    return np.vstack(wordvectorarray), mask
+
 def run_cnn(doc, corpus, tf_session):
     doc_cnn, corpus_cnn = tf_session.transform_doc(doc, corpus)
 
     return [doc_cnn, corpus_cnn]
 
 def wordonehot(doc, corpus, vocab, transformations, feature, min_length=None, max_length=None):
-    # TODO: do we need to normalize here too?
-    doc_array = tokenize.word_punct_tokens(doc)
-    corpus_array = tokenize.word_punct_tokens(corpus)
-    doc_onehot = run_onehot(doc, vocab, min_length, max_length)
-    corpus_onehot = run_onehot(corpus, vocab, min_length, max_length)
+
+    norm_doc = normalize.xml_normalize(doc)
+    norm_corpus = normalize.xml_normalize(corpus)
+    doc_onehot = run_onehot(norm_doc, vocab, min_length, max_length)
+    corpus_onehot = run_onehot(norm_corpus, vocab, min_length, max_length)
     feature = gen_feature([doc_onehot, corpus_onehot], transformations, feature)
     return feature
 
@@ -269,6 +316,58 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
 
     return doc_onehot
 
+def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params, vocab, w2v_model, encoder_decoder):
+
+    #use the specified mask mode where available
+    if mem_net_params.get('mask_mode', False):
+        mask_mode = mem_net_params["mask_mode"]
+    else: mask_mode = 'sentence'
+
+    if mem_net_params.get('st_embed', False):
+        embed_mode = mem_net_params['embed_mode']
+    else: embed_mode = 'word2vec'
+
+    if mem_net_params.get('st_embed', False):
+        corpus_vectors = sk.encode(encoder_decoder, sentences_full)
+        doc_vectors = sk.encode(encoder_decoder, raw_doc)
+
+        # Since each entry is a sentence, we use the index of each entry for the mask
+        doc_masks = [index for index, w in enumerate(doc_vectors)]
+        doc_questions = corpus_vectors
+        doc_input = doc_vectors
+
+
+    elif embed_mode == 'onehot':
+        min_length = None
+        max_length = None
+        if mem_net_params.get('onehot_min_len', False):
+            min_length = mem_net_params['onehot_min_len']
+        if mem_net_params.get('onehot_max_len', False):
+            max_length = mem_net_params['onehot_max_len']
+        if mem_net_params.get('wordonehot_vocab', False):
+            onehot_vocab = mem_net_params['onehot_vocab']
+        else: onehot_vocab=vocab
+        corpus_vectors = run_onehot(normalize.xml_normalize(raw_corpus), onehot_vocab, min_length, max_length)
+        doc_vectors = run_onehot(normalize.xml_normalize(raw_doc), onehot_vocab, min_length, max_length)
+
+        doc_questions = corpus_vectors.T
+        doc_input = doc_vectors.T
+
+        if mask_mode=='sentence':
+            doc_masks = [index for index, w in enumerate(doc_input)] #TODO fix to be sentence somehow...
+        else: doc_masks = [index for index, w in enumerate(doc_input)]
+
+
+    elif embed_mode == 'word2vec':
+        corpus_vectors, _ = run_w2v_matrix(w2v_model, raw_corpus, mem_net_params, mask_mode)
+        doc_vectors, doc_masks = run_w2v_matrix(w2v_model, raw_doc, mem_net_params, mask_mode)
+
+        if len(corpus_vectors)>0 and len(doc_vectors)>0:
+            doc_questions = corpus_vectors
+            doc_input = doc_vectors
+
+    return doc_input, doc_questions, doc_masks
+
 def gen_observations(all_clusters, lookup_order, documentData, features, parameters, vocab, encoder_decoder, lda_model, tf_session, w2v_model):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
@@ -291,7 +390,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
     labels = list()
     # mem_net_features is used when the mem_net algorithm is ran
     # It consist of inputs, labels(answers), input_masks and questions for each entry
-    mem_net_features = list()
+    mem_net_features = {}
     inputs = []
     input_masks = []
     questions = []
@@ -305,6 +404,8 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
         sortedEntries = [x[1] for x in sorted(lookup_order[cluster], key=lambda x: x[0])]
 
         first_doc = documentData[sortedEntries[0]]["body_text"]
+
+        raw_corpus = first_doc
 
         # Set corpus to first doc in this cluster and prepare to update corpus with new document vocabulary
         corpus = normalize.normalize_and_remove_stop_words(first_doc, **parameters)
@@ -327,77 +428,57 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
             corpus_array.append(doc)
 
             if 'mem_net' in features:
-                mem_net_params = features['mem_net']
-                #use the specified mask mode where available
-                if mem_net_params.get('mask_mode', False):
-                    mask_mode = mem_net_params["mask_mode"]
-                else: mask_mode = 'sentence'
+                doc_input, doc_questions, doc_masks = gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, features['mem_net'], vocab, w2v_model, encoder_decoder)
 
-                if mem_net_params.get('st', False):
-                    corpus_vectors = sk.encode(encoder_decoder, sentences_full)
-                    doc_vectors = sk.encode(encoder_decoder, raw_doc)
 
-                    sent_mask = [span[1]-1 for span in tokenize.punkt_sentence_span(raw_doc)]
-                    input_masks.append(sent_mask)
-
-                    inputs.append(corpus_vectors)
-                    questions.append(doc_vectors)
-
-                if mem_net_params.get('wordonehot', False):
-                    min_length = None
-                    max_length = None
-                    if mem_net_params.get('wordonehot_min_len', False):
-                        min_length = mem_net_params['one_hot_min_len']
-                    if mem_net_params.get('wordonehot_max_len', False):
-                        max_length = mem_net_params['one_hot_max_len']
-                    if mem_net_params.get('wordonehot_vocab', False):
-                        onehot_vocab = mem_net_params['wordonehot_vocab']
-                    else: onehot_vocab=vocab
-                    corpus_vectors = run_onehot(doc, onehot_vocab, min_length, max_length)
-                    doc_vectors = run_onehot(doc, onehot_vocab, min_length, max_length)
-
-                    #TODO transpose matrix and see if the matrix type is ok for the mem_net code
-
-                if mem_net_params.get('word2vec', False):
-                    corpus_vectors = run_w2v(corpus, vocab, min_length, max_length)
-                    doc_vectors = run_w2v(doc, vocab, min_length, max_length)
-
-                    inputs.append(corpus_vectors)
-                    questions.append(doc_vectors)
+                # Now add all of the input docs to the primary list if
+                inputs.append(doc_input)
+                questions.append(doc_questions)
+                input_masks.append(doc_masks)
 
                 sentences_full += tokenize.punkt_sentences(raw_doc)
+            else:
 
-            feature = list()
+                feature = list()
 
-            if 'bow' in features:
-                feature = bow(doc, corpus, corpus_array, vocab, features['bow'], feature)
+                if 'bow' in features:
+                    feature = bow(doc, corpus, corpus_array, vocab, features['bow'], feature)
 
-            if 'st' in features:
-                feature = st(raw_doc, sentences, encoder_decoder, features['st'], feature)
+                if 'st' in features:
+                    feature = st(raw_doc, sentences, encoder_decoder, features['st'], feature)
 
-            if 'lda' in features:
-                feature = lda(doc, corpus, vocab, lda_model, features['lda'], feature)
+                if 'lda' in features:
+                    feature = lda(doc, corpus, vocab, lda_model, features['lda'], feature)
 
-            if 'w2v' in features:
-                feature = w2v(raw_doc, corpus, w2v_model, features['w2v'], feature)
+                if 'w2v' in features:
+                    feature = w2v(raw_doc, corpus, w2v_model, features['w2v'], feature)
 
-            if 'cnn' in features:
-                feature = run_cnn(doc, corpus, tf_session)
+                if 'cnn' in features:
+                    feature = run_cnn(doc, corpus, tf_session)
 
-            if 'wordonehot' in features:
-                feature = wordonehot(doc, corpus, vocab, features['wordonehot'], feature)
+                if 'wordonehot' in features:
+                    feature = wordonehot(doc, corpus, vocab, features['wordonehot'], feature)
 
-            # Save feature and label
-            feature = np.concatenate(feature, axis=0)
-            data.append(feature)
+                # Save feature and label
+                feature = np.concatenate(feature, axis=0)
+                data.append(feature)
             if documentData[index]["novelty"]: labels.append(1)
             else: labels.append(0)
 
             # Update corpus and add newest sentence to sentences vector
             corpus+=doc
+            raw_corpus+=raw_doc
             sentences += get_first_and_last_sentence(raw_doc)
 
-    return data, labels
+    mem_net_features['inputs'] = inputs
+    mem_net_features['questions'] = questions
+    mem_net_features['input_masks'] = input_masks
+    mem_net_features['answers'] = labels
+
+    if 'mem_net' in features:
+        return mem_net_features, labels
+    else:
+        return data, labels
 
 def main(argv):
     '''

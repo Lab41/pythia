@@ -55,15 +55,16 @@ def parse_args(given_args=None):
         (".d" + str(args.dropout)) if args.dropout>0 else "",
         args.input_train.split("/")[-1])
 
-def run_mem_net(train_data, train_target, test_data, test_target, seed=1, word_vector_size=50,
-                network='dmn_basic', batch_size=10, epochs=5, vector_type="word2vec",
-                shuffle=False, log_every=10, save_every=1, network_name_pre = '', memory_hops=5, dim=40,
+def run_mem_net(train_data, test_data, seed=1, word_vector_size=50,
+                network='dmn_basic', batch_size=10, epochs=10, vector_type="word2vec",
+                shuffle=False, log_every=100, save_every=2, network_name_pre = '', memory_hops=5, dim=40,
                 normalize_attention=False, batch_norm=False,dropout=0.0,
                 answer_module = 'feedforward', input_mask_mode = 'sentence', l2 = 0, load_state="", **kwargs):
 
     # Initialize word2vec with utils.load_glove
-    word2vec = utils.load_glove(word_vector_size)
-    #word2vec = {}
+    #word2vec = utils.load_glove(word_vector_size)
+    # Model likely doesn't need word2vec now as it is used previously
+    word2vec = {}
     args_dict = kwargs
     args_dict['word2vec'] = word2vec
 
@@ -72,11 +73,11 @@ def run_mem_net(train_data, train_target, test_data, test_target, seed=1, word_v
 
     #Get the data from the information passed in by the main pythia project
     #This way the same splits and resampling can be used
-    train_raw = utils.analyze_clusters(clusters, order, data)
-    test_raw = utils.analyze_clusters(test_clusters, test_order, test_data)
+    # train_raw = utils.analyze_clusters(clusters, order, data)
+    # test_raw = utils.analyze_clusters(test_clusters, test_order, test_data)
 
-    args_dict['train_raw'] = train_raw
-    args_dict['test_raw'] = test_raw
+    args_dict['train_raw'] = train_data
+    args_dict['test_raw'] = test_data
     #args to use when the cnn is working
     args_dict['char_vocab'] = list("abcdefghijklmnopqrstuvwxyz0123456789")
     args_dict['vocab_len'] = len(args_dict['char_vocab'])

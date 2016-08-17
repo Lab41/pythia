@@ -41,9 +41,23 @@ class DMN_basic:
         self.vocab_dict = {}
         
     # Process the input into its different parts and calculate the input mask
-        self.train_input, self.train_q, self.train_answer, self.train_input_mask = self._process_input(train_raw)
-        self.test_input, self.test_q, self.test_answer, self.test_input_mask = self._process_input(test_raw)
-        self.vocab_size = len(self.vocab)
+        self.train_input = train_raw['inputs']
+        self.train_q = train_raw['questions']
+        self.train_answer = train_raw['answers']
+        self.train_input_mask=train_raw['input_masks']
+        self.test_input = test_raw['inputs']
+        self.test_q = test_raw['questions']
+        self.test_answer = test_raw['answers']
+        self.test_input_mask=test_raw['input_masks']
+        # self.train_input, self.train_q, self.train_answer, self.train_input_mask = self._process_input(train_raw)
+        # self.test_input, self.test_q, self.test_answer, self.test_input_mask = self._process_input(test_raw)
+        self.vocab_size = 2 #vocab size might only be used for the answer module and we only want to give that two choices
+        # print(self.train_answer[0])
+        # print(self.train_input_mask[0])
+        # print(np.array(self.train_input[0]).shape)
+
+        # Get the size of the word_vector from the data itself as this can be variable now
+        self.word_vector_size = np.array(self.train_input[0]).shape[1]
 
         self.input_var = T.matrix('input_var')
         self.q_var = T.matrix('question_var')
@@ -394,10 +408,11 @@ class DMN_basic:
         else:
             raise Exception("Invalid mode")
             
-        inp = inputs[batch_index]
-        q = qs[batch_index]
+        inp = inputs[batch_index].astype(floatX)
+        q = qs[batch_index].astype(floatX)
         ans = answers[batch_index]
         input_mask = input_masks[batch_index]
+        #print(np.array(inp).shape, np.array(q).shape, np.array(ans).shape, np.array(input_mask).shape)
 
         skipped = 0
         grad_norm = float('NaN')
