@@ -54,7 +54,7 @@ def parse_tdt_by_topic(src_dir, doc_type, limit = 0, lang = None):
     Pythia clusters, mapped to an array of relevant docs.
     """
     logger.info('parse_tdt_topics(%s, %s)', src_dir, doc_type)
-    topic_file = '{sdir}{tdir}{tfile}'.format(sdir=src_dir, tdir=REL_TOPIC_DIR, tfile=TOPIC_REL_FILE)
+    topic_file = os.path.join(src_dir, REL_TOPIC_DIR, TOPIC_REL_FILE)
     clusters = dict()
     count = 0
     with open(topic_file) as fin:
@@ -119,7 +119,7 @@ def extract_doc_text(src_dir, file_id, doc_id):
     if doc_src in MANDARIN_SRCS:
         doc_encoding = MAN_ENCODING
     # TODO: Make paths OS agnostic
-    fname = '{base}{dir}{dfile}{ext}'.format(base=src_dir,dir=TDT_DOC_DIR,dfile=file_id,ext=TDT_DOC_EXT)
+    fname = os.path.join(src_dir,TDT_DOC_DIR,'{dfile}{ext}'.format(dfile=file_id,ext=TDT_DOC_EXT))
     logger.debug("TDT doc file: %s", fname)
     with open(fname, encoding=doc_encoding) as fin:
         file_data = fin.read()
