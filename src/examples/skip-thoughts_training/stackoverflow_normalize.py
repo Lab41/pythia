@@ -39,7 +39,7 @@ from src.utils import normalize, tokenize
 
 # Instead of trying to parse in memory, can instead parse line by line and write to disk
 
-def parse(path):
+def parse(path, fieldnames = ["body_text", "post_id","cluster_id", "order", "novelty"]):
     for line in open(path):
         temp_dict = json.loads(line)
         post_id = temp_dict['post_id']
