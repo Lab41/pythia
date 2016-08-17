@@ -7,7 +7,7 @@ import numpy
 
 # name(hyperp, tparams, grads, inputs (list), cost) = f_grad_shared, f_update
 def adam(lr, tparams, grads, inp, cost):
-    gshared = [theano.shared(p.get_value() * 0., name='%s_grad'%k) for k, p in tparams.iteritems()]
+    gshared = [theano.shared(p.get_value() * 0., name='%s_grad'%k) for k, p in tparams.items()]
     gsup = [(gs, g) for gs, g in zip(gshared, grads)]
 
     f_grad_shared = theano.function(inp, cost, updates=gsup, profile=False)
@@ -25,7 +25,7 @@ def adam(lr, tparams, grads, inp, cost):
     fix2 = 1. - b2**(i_t)
     lr_t = lr0 * (tensor.sqrt(fix2) / fix1)
 
-    for p, g in zip(tparams.values(), gshared):
+    for p, g in zip(list(tparams.values()), gshared):
         m = theano.shared(p.get_value() * 0.)
         v = theano.shared(p.get_value() * 0.)
         m_t = (b1 * g) + ((1. - b1) * m)
