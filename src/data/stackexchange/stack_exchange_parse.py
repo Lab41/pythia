@@ -17,7 +17,10 @@ import argparse
 
 def gen_url(section):
     """URL for a given stackexchange site"""
-    return 'https://ia800500.us.archive.org/22/items/stackexchange/' + section + '.stackexchange.com.7z'
+    urls = []
+    urls.append('https://ia800500.us.archive.org/22/items/stackexchange/' + section + '.stackexchange.com.7z')
+    urls.append('https://ia800500.us.archive.org/22/items/stackexchange/' + section + '.7z')
+    return urls
 
 def get_data(filename):
     """Get URLs of StackExchange sites listed in a file on disk
@@ -73,13 +76,16 @@ def load(url, file_name, folder):
     # Need special case for Stack Overflow (more than one 7z file)
 
     if not os.path.isfile(file_name):
-        #downloads file from url
+        #downloads file from url; two url patterns are attempted
         testfile = request.URLopener()
         try:
-            testfile.retrieve(url, file_name)
+            testfile.retrieve(url[0], file_name)
         except error.HTTPError as e:
-            print ("Error: URL retrieval of " + url + " failed for reason: " + e.reason)
-            quit()
+            try:
+                testfile.retrieve(url[1], file_name)
+            except:
+                print ("Error: URL retrieval of " + url[0] + " and " + url[1] + " failed for reason: " + e.reason)
+                quit()
 
     #un-zips file and puts contents in folder
     a = py7z_extractall.un7zip(file_name)
