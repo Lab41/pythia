@@ -65,23 +65,23 @@ def parse_tdt_by_topic(src_dir, doc_type, limit = 0, lang = None):
                 break
             ontopic = bsoup(line, 'lxml').ontopic
             logger.debug(ontopic)
-            if (ontopic):
+            if ontopic is not None:
                 tdt_level = ontopic['level']
+                # Not considering stories with only BRIEF topic references
                 if 'BRIEF' == tdt_level:
-                    # Not considering stories with only BRIEF topic references
                     continue
                 post_id = ontopic['docno']
                 tdt_topicid = ontopic['topicid']
                 tdt_fileid = ontopic['fileid']
-                doc_date = ontopic['fileid'].split('_')[0]
-                doc_src = "_".join(ontopic['fileid'].split('_')[-2:])
+                doc_date = tdt_fileid.split('_')[0]
+                doc_src = "_".join(tdt_fileid.split('_')[-2:])
                 # If a language was specified, limit to sources in the given language
-                if lang != None:
+                if lang is not  None:
                     if 'ENG' == lang and (doc_src not in ENGLISH_SRCS):
-                        logger.debug("Skipping non English source document.")
+                        logger.debug("Skipping non-English source document.")
                         continue
                     if 'MAN' == lang and (doc_src not in MANDARIN_SRCS):
-                        logger.debug("Skipping non Mandarin source document.")
+                        logger.debug("Skipping non-Mandarin source document.")
                         continue
                 cluster_id = '{topic}_{date}'.format(topic=tdt_topicid,date=doc_date)
                 cluster = clusters.get(cluster_id, dict())
