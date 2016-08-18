@@ -17,6 +17,12 @@ We welcome your contributions (see our [contributor guidelines](CONTRIBUTING.md)
 docker build -t lab41/pythia .     # runs tests and builds project image
 ```
 
+## Run a quick experiment
+
+```sh
+docker run -it lab41/pythia experiments/experiments.py with 'XGB=True' 'BOW_APPEND=True' 'BOW_PRODUCT=True'
+```
+
 ## Prerequisites
 
 Our code is written in Python 3. [envs/make_envs.sh](envs/make_envs.sh) will install the necessary dependencies on a Debian/Ubuntu system with Anaconda installed.
