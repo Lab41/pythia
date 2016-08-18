@@ -10,6 +10,8 @@ from collections import namedtuple
 from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict
 from src.utils.sampling import sample
 
+import pickle
+
 def main(argv):
     '''
     controls the over-arching implmentation of the algorithms
@@ -34,6 +36,10 @@ def main(argv):
     train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, encoder_decoder, lda_model, tf_model, w2v_model])
     test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, encoder_decoder, lda_model, tf_model, w2v_model])
 
+    # save training data for separate experimentation and hyperparameter optimization
+    if 'savetrainingdata' in parameters:
+        pickle.dump(train_data, open(parameters['savetrainingdata']['datafile'], "wb"))
+        pickle.dump(train_target, open(parameters['savetrainingdata']['targetfile'], "wb"))
 
     #modeling
     print("running algorithms...",file=sys.stderr)
@@ -95,9 +101,9 @@ def get_args(
 
     #FEATURES
     #bag of words
-    BOW_APPEND = True,
+    BOW_APPEND = False,
     BOW_DIFFERENCE = False,
-    BOW_PRODUCT = True,
+    BOW_PRODUCT = False,
     BOW_COS = False,
     BOW_TFIDF = False,
 
@@ -168,8 +174,12 @@ def get_args(
     OVERSAMPLING = False,
     REPLACEMENT = False,
 
+    #save training data for experimentation and hyperparameter grid search
+    SAVETRAININGDATA = False,
+    SAVEDATAFILE='data/datafile.pkl',
+    SAVETARGETFILE='data/targetfile.pkl',
 
-    #vocabulary
+#vocabulary
     VOCAB_SIZE = 1000,
     STEM = False,
 
@@ -292,8 +302,15 @@ def get_args(
         if OVERSAMPLING: resampling['over'] = OVERSAMPLING
         if REPLACEMENT: resampling['replacement'] = REPLACEMENT
 
+    savetrainingdata = None
+    if SAVETRAININGDATA:
+        savetrainingdata = dict()
+        if SAVEDATAFILE: savetrainingdata['datafile'] = SAVEDATAFILE
+        if SAVETARGETFILE: savetrainingdata['targetfile'] = SAVETARGETFILE
+
     parameters = dict()
     if RESAMPLING: parameters['resampling'] = resampling
+    if SAVETRAININGDATA: parameters['savetrainingdata'] = savetrainingdata
     if VOCAB_SIZE: parameters['vocab'] = VOCAB_SIZE
     if STEM: parameters['stem'] = STEM
     if SEED: parameters['seed'] = SEED

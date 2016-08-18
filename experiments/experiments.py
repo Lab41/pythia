@@ -109,13 +109,18 @@ def config_variables():
     OVERSAMPLING = False
     REPLACEMENT = False
 
+    #save training data for experimentation and hyperparameter grid search
+    SAVETRAININGDATA = False
+    SAVEDATAFILE = 'data/datafile.pkl'
+    SAVETARGETFILE = 'data/targetfile.pkl'
+
     #vocabulary
     VOCAB_SIZE = 10000
     STEM = False
 
     SEED = None
 
-@xp.main
+@xp.automain
 def run_experiment(directory,
             BOW_APPEND,
             BOW_DIFFERENCE,
@@ -165,6 +170,9 @@ def run_experiment(directory,
             NOVEL_RATIO,
             OVERSAMPLING,
             REPLACEMENT,
+            SAVETRAININGDATA,
+            SAVEDATAFILE,
+            SAVETARGETFILE,
             VOCAB_SIZE,
             STEM,
             SEED):
@@ -219,10 +227,10 @@ def run_experiment(directory,
             NOVEL_RATIO,
             OVERSAMPLING,
             REPLACEMENT,
+            SAVETRAININGDATA,
+            SAVEDATAFILE,
+            SAVETARGETFILE,
             VOCAB_SIZE,
             STEM,
             SEED)
     )
-
-if __name__=="__main__":
-    xp.run_commandline()
