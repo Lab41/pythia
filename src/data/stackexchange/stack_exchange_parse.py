@@ -187,13 +187,9 @@ def filter_json_files(filtered_corpus_directory, corpus_directory, minpost, maxp
 
     # Iterate over topic folders in corpus
     for foldername in os.listdir(corpus_directory):
-
         fullfoldername = os.path.join(corpus_directory,foldername)
-
-        if os.path.isdir(fullfoldername) == True:
-
+        if os.path.isdir(fullfoldername):
             jsonstats = []
-
             # Iterate over clusters in this topic
             for file_name in os.listdir(fullfoldername):
                 if file_name.endswith(".json"):
@@ -238,18 +234,16 @@ def main(args):
             #gets the links data from the links table for the site
             links = get_links(unzipped_folder)
 
-            #creates the clusters of related and duplicate posts for a site,
-            #based on links data
-            clusters, related, duplicates, unique_posts = gen_clusters(links)
-
             #gets post data from the posts table
             posts = get_posts(unzipped_folder)
 
-            #extract post title and body text for each document in the site
-            corpus = gen_corpus(posts, unique_posts)
+            #creates the clusters of related and duplicate posts for a site,
+            #based on links data
+            # clusters, related, duplicates, unique_posts = gen_clusters(links)
+            clusters = gen_clusters(links, posts)
 
             #writes cluster information to json files
-            write_json_files(clusters, related, duplicates, corpus, corpus_section_directory)
+            write_json_files(clusters, corpus_section_directory)
 
             print("Completed " + section)
 
