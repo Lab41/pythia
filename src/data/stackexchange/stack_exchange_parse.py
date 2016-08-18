@@ -111,69 +111,40 @@ def gen_clusters(links, posts):
         list of list of dict -- the clusters, each one a list of dicts
         representing the document objects
     """
-    unused_id = 1
 
-    # Code numbers for links in SE Links table
     related_link = '1'
     duplicate_link = '3'
 
-    clusters = dict()
-    related = dict()
-    duplicates = dict()
-    unique_posts = set()
+    clusters = []
 
-    for l in links:
-        # src and destination for a given link
-        post_id = l.attrib['PostId']
-        related_id = l.attrib['RelatedPostId']
-        new_ids = {post_id, related_id}
-        # maintain list of post ids encountered
-        unique_posts = unique_posts.union(new_ids)
-        post_cluster_id = None
-        related_cluster_id = None
-        # add related posts to existing clusters or create new ones
-        for c in clusters:
-            ids = clusters[c]
-            # does src or dest occur in this cluster? if so, add here
-            if post_id in ids:
-                post_cluster_id = c
-            elif related_id in ids:
-                related_cluster_id = c
-        # create new cluster and augment index of next cluster, if neither
-        # src nor dest was a match
-        if not (post_cluster_id or related_cluster_id):
-            cluster_id = unused_id
-            clusters[cluster_id] = set()
-            duplicates[cluster_id] = set()
-            related[cluster_id] = set()
-            unused_id+=1
-        # use cluster assigned to src, if dest not a match
-        elif not related_cluster_id:
-            cluster_id = post_cluster_id
-        # use cluster assigned to dest, if src not a match
-        elif not post_cluster_id:
-            cluster_id = related_cluster_id
-        # or merge clusters, if both src and dest matched clusters
-        # if post_cluster_id and related_cluster_id are
-        # already the same, merge is harmless
-        else:
-            post_cluster = clusters[post_cluster_id]
-            related_cluster = clusters[related_cluster_id]
-            clusters[post_cluster_id] = post_cluster.union(related_cluster)
-            del clusters[related_cluster_id]
-            cluster_id = post_cluster_id
+    for cluster_id, link in enumerate(links):
+        src_id = link.attrib['PostId']
+        dest_id = link.attrib['RelatedPostId']
+        link_type = link.attrib['LinkTypeId']
+        if link_type not in (related_link, duplicate_link):
+            continue
 
-        # Having found the appropriate cluster id, make sure src and dest
-        # are added to it, and data on whether they are linked by relatedness
-        # or duplication
-        clusters[cluster_id] = clusters[cluster_id].union(new_ids)
-        if l.attrib['LinkTypeId'] == related_link:
-            related[cluster_id] = related[cluster_id].union(new_ids)
-        else: # l.attrib['LinkTypeId'] == duplicate:
-            if not l.attrib['LinkTypeId'] == duplicate_link:
-                print(l.attrib['LinkTypeId'])
-            duplicates[cluster_id] = clusters[cluster_id].union(new_ids)
-    return clusters, related, duplicates, unique_posts
+        src_text = extract_post_text(src_id, posts)
+        dest_text = extract_post_text(dest_id, posts)
+        if src_text is None or dest_text is None:
+            continue
+
+        src_doc = { 'post_id': src_id,
+            'order' : 0,
+            'body_text' : src_text,
+            'novelty' : True,
+            'cluster_id' : cluster_id
+        }
+        dest_doc = { 'post_id': dest_id,
+            'order' : 1,
+            'body_text' : dest_text,
+            'novelty' : True if link_type == related_link else False,
+            'cluster_id' : cluster_id
+        }
+
+        clusters.append([src_doc, dest_doc])
+
+    return clusters
 
 def get_posts(folder):
     tree = etree.parse(folder +"/Posts.xml")
