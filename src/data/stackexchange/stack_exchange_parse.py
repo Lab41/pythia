@@ -96,27 +96,10 @@ def get_links(folder):
     tree = etree.parse(folder +"/PostLinks.xml")
     return tree.getroot()
 
-def gen_clusters(links, posts):
-    """
-    Given links, return a data structure representing ordered lists of documents
-    with associated metadata and novelty markings.
-
-    Only outputs lists of two directly linked documents due to lingering
-    questions about how to interpret indirect links.
-
-    Args:
-        links (list): as from get_links
-
-    Returns:
-        list of list of dict -- the clusters, each one a list of dicts
-        representing the document objects
-    """
-
+def iter_clusters(links, posts):
     related_link = '1'
     duplicate_link = '3'
-
-    clusters = []
-
+    
     for cluster_id, link in enumerate(links):
         src_id = link.attrib['PostId']
         dest_id = link.attrib['RelatedPostId']
@@ -141,9 +124,25 @@ def gen_clusters(links, posts):
             'novelty' : True if link_type == related_link else False,
             'cluster_id' : cluster_id
         }
+        yield src_doc, dest_doc
 
-        clusters.append([src_doc, dest_doc])
+def gen_clusters(links, posts):
+    """
+    Given links, return a data structure representing ordered lists of documents
+    with associated metadata and novelty markings.
 
+    Only outputs lists of two directly linked documents due to lingering
+    questions about how to interpret indirect links.
+
+    Args:
+        links (list): as from get_links
+
+    Returns:
+        list of list of dict -- the clusters, each one a list of dicts
+        representing the document objects
+    """
+
+    clusters = list(iter_clusters(links, posts))
     return clusters
 
 def get_posts(folder):
@@ -240,7 +239,7 @@ def main(args):
             #creates the clusters of related and duplicate posts for a site,
             #based on links data
             # clusters, related, duplicates, unique_posts = gen_clusters(links)
-            clusters = gen_clusters(links, posts)
+            clusters = iter_clusters(links, posts)
 
             #writes cluster information to json files
             write_json_files(clusters, corpus_section_directory)
