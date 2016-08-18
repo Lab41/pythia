@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:14.04
 MAINTAINER Pythia
 
 # Install Anaconda
@@ -58,16 +58,20 @@ RUN apt-get update -q && apt-get install -q -y --no-install-recommends --force-y
 	build-essential && \
     rm -rf /var/lib/apt/lists/*
 
+ENTRYPOINT [ "tini", "--" ]
+
 # Add Pythia repo to image and create environments
 ADD . /pythia
 ENV PYTHONPATH=/pythia:$PYTHONPATH
 WORKDIR /pythia
 RUN envs/make_envs.sh
 
-# Activate the new conda environment whenever a bash shell is created
-RUN echo "source activate py3-pythia" >> /root/.bashrc
+# Set py3-pythia as default in container
+ENV PATH /opt/conda/envs/py3-pythia/bin:$PATH
+ENV CONDA_DEFAULT_ENV py3-pythia
+ENV CONDA_ENV_PATH /opt/conda/envs/py3-pythia
 
 # run tests
 RUN /bin/bash -c 'export THEANO_FLAGS=device=cpu; export PYTHIA_MONGO_DB_URI=localhost:27017; source activate py3-pythia; pip install pytest-cov; py.test -v --cov=src --cov-report term-missing'
 
-ENTRYPOINT [ "tini", "--" ]
+CMD [ "/bin/bash" ]
