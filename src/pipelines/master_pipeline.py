@@ -179,7 +179,7 @@ def get_args(
     SAVEDATAFILE='data/datafile.pkl',
     SAVETARGETFILE='data/targetfile.pkl',
 
-#vocabulary
+    #vocabulary
     VOCAB_SIZE = 1000,
     STEM = False,
 
