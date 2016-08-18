@@ -96,17 +96,20 @@ def get_links(folder):
     tree = etree.parse(folder +"/PostLinks.xml")
     return tree.getroot()
 
-def gen_clusters(links):
-    """Find clusters of associated posts using data about duplication and
-    relatedness from the links tables of the SE data dump.
+def gen_clusters(links, posts):
+    """
+    Given links, return a data structure representing ordered lists of documents
+    with associated metadata and novelty markings.
 
-    Returns: tuple--
-        clusters (dict): mapping of cluster id to set of unique documents in cluster
-        related (dict): mapping of cluster id to set of unique documents in cluster
-            linked by "related" links
-        duplicates (dict): mapping of cluster id to set of unique documents in
-            cluster linked by "duplicate" links
-        unique_posts (set): set of all unique post ids encountered
+    Only outputs lists of two directly linked documents due to lingering
+    questions about how to interpret indirect links.
+
+    Args:
+        links (list): as from get_links
+
+    Returns:
+        list of list of dict -- the clusters, each one a list of dicts
+        representing the document objects
     """
     unused_id = 1
 
