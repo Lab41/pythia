@@ -135,14 +135,13 @@ def main(argv):
     if 'st' in features: encoder_decoder = skipthoughts.load_model()
 
     if 'bow' in features or 'lda' in features:
-        print("creating a vocab")
         vocab = gen_vocab(corpus_dict, **parameters)
-        features['lda']['vocab'] = vocab
     elif 'cnn' in features and 'vocab_type' in features['cnn'] and features['cnn']['vocab_type'] == 'word':
-        print("creating a vocab")
         vocab = gen_vocab(corpus_dict, **parameters)
 
-    if 'lda' in features: lda_model = build_lda(trainingdata, vocab, **features['lda'])
+    if 'lda' in features:
+        features['lda']['vocab'] = vocab
+        lda_model = build_lda(trainingdata, vocab, **features['lda'])
 
     if 'cnn' in features: tf_session = tensorflow_cnn.tensorflow_cnn(trainingdata, **features['cnn'])
 
@@ -150,11 +149,14 @@ def main(argv):
 
     #get the appropriate model(s) when running the memory network code
     if 'mem_net' in features:
-        if 'st_embed' in features['mem_net'] and not encoder_decoder:
+        if features['mem_net'].get('embed_mode', False):
+            embed_mode = features['mem_net']['embed_mode']
+        else: embed_mode = 'word2vec'
+        if embed_mode=='skip_thought' and not encoder_decoder:
             encoder_decoder = skipthoughts.load_model()
-        if 'wordonehot_embed' in features['mem_net'] and not vocab:
+        if embed_mode=="onehot" and not vocab:
             vocab = gen_vocab(corpus_dict, **parameters)
-        if 'word2vec_embed' in features['mem_net'] and not w2v_model:
+        if embed_mode=='word2vec' and not w2v_model:
             w2v_model = build_w2v(trainingdata, **features['mem_net'])
 
     return vocab, encoder_decoder, lda_model, tf_session, w2v_model

@@ -270,11 +270,11 @@ def run_cnn(doc, corpus, tf_session):
     return [doc_cnn, corpus_cnn]
 
 def wordonehot(doc, corpus, vocab, transformations, feature, min_length=None, max_length=None):
-
-    norm_doc = normalize.xml_normalize(doc)
-    norm_corpus = normalize.xml_normalize(corpus)
-    doc_onehot = run_onehot(norm_doc, vocab, min_length, max_length)
-    corpus_onehot = run_onehot(norm_corpus, vocab, min_length, max_length)
+    # Normalize and tokenize the text before sending it into the one-hot encoder
+    norm_doc = tokenize.word_punct_tokens(normalize.xml_normalize(doc))
+    norm_corpus = tokenize.word_punct_tokens(normalize.xml_normalize(corpus))
+    doc_onehot, _ = run_onehot(norm_doc, vocab, min_length, max_length)
+    corpus_onehot, _ = run_onehot(norm_corpus, vocab, min_length, max_length)
     feature = gen_feature([doc_onehot, corpus_onehot], transformations, feature)
     return feature
 
@@ -293,11 +293,28 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
     Returns:
         NDArray (vocab size, doc length), with 1 indicating presence of vocab item
             at that position. Out-of-vocab entries do not appear in the result.
+        sentence_mask: a mask which indicates the last word at the end of a sentence.
+            Used for memory networks
     """
     # transform only the non-null entries in the document
-    doc_indices = [doc_idx for doc_idx in
-                        [ vocab.get(wd, None) for wd in doc ]
-                        if doc_idx is not None]
+    # at the same time get a sentence mask which is used for the memory networks
+    punkt = ['.', '!', '?']
+    last_doc_idx = False
+    doc_indices = []
+    sentence_mask = []
+    for wd in doc:
+        doc_idx = vocab.get(wd, None)
+        if doc_idx is not None:
+            doc_indices.append(doc_idx)
+            last_doc_idx = True
+        if wd in punkt and last_doc_idx:
+            # Only add the index if it isn't already there
+            if len(sentence_mask)==0 or sentence_mask[-1] != len(doc_indices)-1:
+                sentence_mask.append(len(doc_indices)-1)
+            # Reset the index to prevent the mask from being longer than the document
+            last_doc_idx = False
+
+
     vocab_size = len(vocab)
     doc_length = len(doc_indices)
     doc_onehot = np.zeros((vocab_size, doc_length), dtype=np.float32)
@@ -314,27 +331,61 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
         doc_onehot = doc_onehot[:, :max_length]
         doc_length = doc_onehot.shape[1]
 
-    return doc_onehot
+    # make sure to add in the last index if it is not already there
+    if len(sentence_mask)==0 or sentence_mask[-1] != doc_length-1:
+        sentence_mask.append(doc_length-1)
+    # Check to ensure there are no mask values
+    sentence_mask = [a for a in sentence_mask if a<doc_length]
+
+    return doc_onehot, sentence_mask
 
 def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params, vocab, w2v_model, encoder_decoder):
+    '''
+    Generates observations to be fed into the mem_net code
 
-    #use the specified mask mode where available
+    Args:
+        raw_doc (string): the raw document text
+        raw_corpus (dict): the raw corpus text
+        sentences_full (list): list of all sentences in the corpus
+        mem_net_params (dict): the specified features to be calculated for mem_net
+        vocab (dict): the vocabulary of the data set
+        w2v_model: the word2vec model of the data set
+        encoder_decoder (???): the encoder/decoder for skipthoughts vectors
+
+    Returns:
+        doc_input (array): the corpus data, known in mem_nets as the input
+        doc_questions: the document data, known in mem_nets as the question
+        doc_masks: the mask for the input data - tells mem_net where the end of each input is
+            this can be per word for the end of a sentence
+    '''
+
+    # Use the specified mask mode where available
     if mem_net_params.get('mask_mode', False):
         mask_mode = mem_net_params["mask_mode"]
     else: mask_mode = 'sentence'
 
-    if mem_net_params.get('st_embed', False):
+    if mem_net_params.get('embed_mode', False):
         embed_mode = mem_net_params['embed_mode']
     else: embed_mode = 'word2vec'
 
-    if mem_net_params.get('st_embed', False):
+    if embed_mode == 'skip_thought':
+        doc_sentences = tokenize.punkt_sentences(raw_doc)
+
+        # Ensure that the document and corpus are long enough and if not make them be long enough
+        if len(sentences_full)==1:
+            print("short corpus")
+            sentences_full.extend(sentences_full)
+        if len(doc_sentences)==1:
+            print("short doc")
+            doc_sentences.extend(doc_sentences)
         corpus_vectors = sk.encode(encoder_decoder, sentences_full)
-        doc_vectors = sk.encode(encoder_decoder, raw_doc)
+        doc_vectors = sk.encode(encoder_decoder, doc_sentences)
 
         # Since each entry is a sentence, we use the index of each entry for the mask
-        doc_masks = [index for index, w in enumerate(doc_vectors)]
-        doc_questions = corpus_vectors
-        doc_input = doc_vectors
+        # We cannot use a word mode in this embedding
+        doc_masks = [index for index, w in enumerate(corpus_vectors)]
+        doc_questions = doc_vectors
+        doc_input = corpus_vectors
 
 
     elif embed_mode == 'onehot':
@@ -347,24 +398,24 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
         if mem_net_params.get('wordonehot_vocab', False):
             onehot_vocab = mem_net_params['onehot_vocab']
         else: onehot_vocab=vocab
-        corpus_vectors = run_onehot(normalize.xml_normalize(raw_corpus), onehot_vocab, min_length, max_length)
-        doc_vectors = run_onehot(normalize.xml_normalize(raw_doc), onehot_vocab, min_length, max_length)
+        corpus_vectors, sentence_mask = run_onehot(normalize.xml_normalize(raw_corpus), onehot_vocab, min_length, max_length)
+        doc_vectors, _ = run_onehot(normalize.xml_normalize(raw_doc), onehot_vocab, min_length, max_length)
 
-        doc_questions = corpus_vectors.T
-        doc_input = doc_vectors.T
+        doc_questions = doc_vectors.T
+        doc_input = corpus_vectors.T
 
         if mask_mode=='sentence':
-            doc_masks = [index for index, w in enumerate(doc_input)] #TODO fix to be sentence somehow...
+            doc_masks = sentence_mask
         else: doc_masks = [index for index, w in enumerate(doc_input)]
 
 
     elif embed_mode == 'word2vec':
-        corpus_vectors, _ = run_w2v_matrix(w2v_model, raw_corpus, mem_net_params, mask_mode)
-        doc_vectors, doc_masks = run_w2v_matrix(w2v_model, raw_doc, mem_net_params, mask_mode)
+        corpus_vectors, doc_masks = run_w2v_matrix(w2v_model, raw_corpus, mem_net_params, mask_mode)
+        doc_vectors, _ = run_w2v_matrix(w2v_model, raw_doc, mem_net_params, mask_mode)
 
         if len(corpus_vectors)>0 and len(doc_vectors)>0:
-            doc_questions = corpus_vectors
-            doc_input = doc_vectors
+            doc_questions = doc_vectors
+            doc_input = corpus_vectors
 
     return doc_input, doc_questions, doc_masks
 
@@ -376,13 +427,17 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
         all_clusters (set): cluster IDs
         lookup_order (dict): document arrival order
         documentData (array): parsed JSON documents
-        filename (str): the name of the corpus file
-        features (namedTuple): the specified features to be calculated
+        features (dict): the specified features to be calculated
         vocab (dict): the vocabulary of the data set
         encoder_decoder (???): the encoder/decoder for skipthoughts vectors
+        lda_model: the lda model of the data set
+        tf_session: the tensor flow session of the data set
+        w2v_model: the word2vec model of the data set
 
     Returns:
-        list: contains for each obeservation a namedtupled with the cluster_id, post_id, novelty, tfidf sum, cosine similarity, bag of words vectors and skip thoughts  (scores are None if feature is unwanted)
+        data(list): contains for each obeservation the features of the document vs corpus which could include:
+            tfidf sum, cosine similarity, bag of words vectors, skip thoughts, lda, w2v or, onehot cnn encoding
+        labels(list): the labels for each document where a one is novel and zero is duplicate
     '''
 
     # Prepare to store results of feature assessments
@@ -431,7 +486,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
                 doc_input, doc_questions, doc_masks = gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, features['mem_net'], vocab, w2v_model, encoder_decoder)
 
 
-                # Now add all of the input docs to the primary list if
+                # Now add all of the input docs to the primary list
                 inputs.append(doc_input)
                 questions.append(doc_questions)
                 input_masks.append(doc_masks)
