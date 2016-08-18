@@ -153,56 +153,30 @@ def get_posts(folder):
 def clean_up(raw_text):
     return BeautifulSoup(raw_text, "lxml").get_text()
 
-def gen_corpus(posts, unique_posts):
-    corpus = dict()
+def extract_post_text(id, posts):
+    """
+        Get post by ID from XML etree object
 
-    for p in posts:
-        id = p.attrib['Id']
-        if id in unique_posts:
-            try:
-                corpus[id] = clean_up(p.attrib['Title']) + ' ' + clean_up(p.attrib['Body'])
-            except:
-                pass
-    return corpus
+        Args:
+            id (int): ID of post to retrieve
+            posts (lxml.etree._Element): root of parsed posts table
+    """
+    try:
+        post = posts.find("./*[@Id='{id}']".format(id=id))
+        return clean_up(post.attrib['Title']) + ' ' + clean_up(post.attrib['Body'])
+    except AttributeError:
+        return None
+    except KeyError:
+        return None
 
-def write_json_files(clusters, related, duplicates, corpus, corpus_directory):
-    next_cluster_id = 0
-    for cluster_id in clusters:
-        time_stamp = 0
-        file_empty = True
-        file_name = '{:05d}.json'.format(next_cluster_id)
-        full_file_name = os.path.join(corpus_directory, file_name)
-        with open(full_file_name, 'w') as outfile:
-            if cluster_id in duplicates:
-                novel = True
-                for duplicate in duplicates[cluster_id]:
-                    if duplicate in corpus:
-                        d = dict()
-                        d['cluster_id'] = next_cluster_id
-                        d['post_id'] = duplicate
-                        d['order'] = time_stamp
-                        d['body_text'] = corpus[duplicate]
-                        d['novelty'] = novel
-                        json.dump(d, outfile)
-                        outfile.write('\n')
-                        novel = False
-                        time_stamp+=1
-                        file_empty = False
-            for related_post in related[cluster_id]:
-                if not related_post in duplicates:
-                    if related_post in corpus:
-                        r = dict()
-                        r['cluster_id'] = next_cluster_id
-                        r['post_id'] = related_post
-                        r['order'] = time_stamp
-                        r['body_text'] = corpus[related_post]
-                        r['novelty'] = True
-                        json.dump(r, outfile)
-                        outfile.write('\n')
-                        time_stamp+=1
-                        file_empty = False
-        if not file_empty:
-            next_cluster_id+=1
+def write_json_files(clusters, corpus_directory, filename_prefix=''):
+    for cluster in clusters:
+        cluster_id = cluster[0]['cluster_id']
+        cluster_filename = "{}{:05d}.json".format(filename_prefix, cluster_id)
+        cluster_path = os.path.join(corpus_directory, cluster_filename)
+        with open(cluster_path, "w") as cluster_out:
+            for doc in cluster:
+                print(json.dumps(doc), file=cluster_out)
 
 def filter_json_files(filtered_corpus_directory, corpus_directory, minpost, maxpost):
 
