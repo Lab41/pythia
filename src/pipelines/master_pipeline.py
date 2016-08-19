@@ -2,7 +2,9 @@
 '''
 Controls the pipeline for Pythia.
 
-This module regulates the features and algorithms used in order to detect novelty, then adminstrates the implementation of the given specifications. It requires a directory full of JSON files, where each file contains a cluster of documents.
+This module regulates the features and algorithms used in order to detect novelty, 
+then adminstrates the implementation of the given specifications. It requires a 
+directory full of JSON files, where each file contains a cluster of documents.
 '''
 import sys
 import argparse
