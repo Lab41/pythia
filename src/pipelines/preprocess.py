@@ -99,9 +99,12 @@ def build_w2v(trainingdata, min_count=5, window=5, size=100, workers=3, pretrain
             with gzip.open(os.path.join(path_to_models, "GoogleNews-vectors-negative300.bin.gz"), 'rb') as f_in:
                 with open(os.path.join(path_to_models, "GoogleNews-vectors-negative300.bin"), 'wb') as f_out:
                     shutil.copyfileobj(f_in, f_out)
-            w2v_model = gensim.models.Word2Vec.load_word2vec_format(os.path.join(path_to_models, "GoogleNews-vectors-negative300.bin"), binary=True)
+            w2v_model = gensim.models.Word2Vec.load_word2vec_format(
+                os.path.join(path_to_models, "GoogleNews-vectors-negative300.bin"), binary=True)
         else:
-            print("Error: Google's pretrained Word2Vec model GoogleNews-vectors-negative300.bin was not found in %s \nSet 'pretrained=False' or download/unzip GoogleNews-vectors-negative300.bin.gz from https://code.google.com/archive/p/word2vec/ into %s" % (path_to_models,path_to_models), file=sys.stderr)
+            print("""Error: Google's pretrained Word2Vec model GoogleNews-vectors-negative300.bin was not found in %s
+Set 'pretrained=False' or download/unzip GoogleNews-vectors-negative300.bin.gz 
+from https://code.google.com/archive/p/word2vec/ into %s""" % (path_to_models,path_to_models), file=sys.stderr)
             quit()
 
     # Train a Word2Vec model with the corpus
