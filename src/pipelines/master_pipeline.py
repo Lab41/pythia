@@ -24,7 +24,7 @@ def main(argv):
 
     #parsing
     print("parsing json data...",file=sys.stderr)
-    clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main([directory, parameters])
+    clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main(directory, parameters)
 
     #resampling
     if 'resampling' in parameters:
@@ -33,7 +33,7 @@ def main(argv):
 
     #preprocessing
     print("preprocessing...",file=sys.stderr)
-    vocab, encoder_decoder, lda, tf_model = preprocess.main([features, parameters, corpusdict, data])
+    vocab, encoder_decoder, lda, tf_model = preprocess.main(features, parameters, corpusdict, data)
 
     #featurization
     print("generating training and testing data...",file=sys.stderr)

@@ -61,7 +61,6 @@ def main(features, parameters, corpus_dict, trainingdata, random_state=np.random
         multiple: dictionary of the corpus vocabulary, skipthoughts encoder_decoder, trained LDA model
     '''
 
-    features, parameters, corpus_dict, trainingdata = argv
     encoder_decoder = None
     vocab= None
     lda = None
