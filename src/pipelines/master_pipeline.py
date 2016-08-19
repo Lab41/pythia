@@ -130,6 +130,9 @@ def get_args(
     STEM = False,
 
     SEED = None):
+    """ Return a parameters data structure with information on how to
+    run an experiment. Argument list should match experiments/experiments.py
+    """
 
     #get features
     bow = None
