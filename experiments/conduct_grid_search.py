@@ -51,10 +51,11 @@ def set_up_xp():
 xp = set_up_xp()
 
 @xp.capture
-def conduct_grid_search(datafile,targetfile,svmsearch,svmparams,logregsearch,logregparams,xgbsearch,xgbparams,_run):
+def conduct_grid_search(datafile,targetfile,svmsearch,svmparams,logregsearch,logregparams,xgbsearch,xgbparams,printallscores):
 
-    # Ensure that at least one classifier has been selected to grid search
-    if [svmsearch,logregsearch,xgbsearch].count(True) == 0:
+    # Ensure that only one classifier has been selected to grid search
+    test = [svmsearch,logregsearch,xgbsearch]
+    if test.count(True) == 0 or test.count(True) > 1:
         print("Error: Grid Search requires one classifier\n")
         quit()
 
@@ -63,37 +64,38 @@ def conduct_grid_search(datafile,targetfile,svmsearch,svmparams,logregsearch,log
     traintarget = pickle.load( open( targetfile, "rb" ) )
 
     # Initiate classifiers and parameters as needed 
-    classifiers = []
     if svmsearch:
         svmmodel = svm.SVC()
-        classifiers.append(('SVM', svmmodel, svmparams))
-    if logregsearch:
+        classifier=['SVM', svmmodel, svmparams]
+    elif logregsearch:
         logregmodel = linear_model.LogisticRegression()
-        classifiers.append(("Logistic Regression", logregmodel, logregparams))
-    if xgbsearch:
+        classifier=["Logistic Regression", logregmodel, logregparams]
+    elif xgbsearch:
         xgbmodel = xgboost.XGBClassifier()
-        classifiers.append(("XGBoost", xgbmodel, xgbparams))
+        classifier=["XGBoost", xgbmodel, xgbparams]
 
-    # Conduct grid search of selected classifiers
-    for i in range(len(classifiers)):
-        print("Searching " + classifiers[i][0] + " parameters...", file=sys.stderr)
+    print("Searching " + classifier[0] + " parameters...", file=sys.stderr)
 
-        # Execute grid search
-        clf = grid_search.GridSearchCV(classifiers[i][1], classifiers[i][2])
-        clf.fit(traindata, traintarget)
+    # Conduct grid search of selected classifier
+    clf = grid_search.GridSearchCV(classifier[1], classifier[2])
+    clf.fit(traindata, traintarget)
 
-        # If Sacred is observing, store priority Grid Search results in Mongo as info dict
-        if len(xp.observers) > 0:
-            _run.info[classifiers[i][0] + " Best Score"] = clf.best_score_
-            _run.info[classifiers[i][0] + " Best Parameters"] = clf.best_params_
-            _run.info[classifiers[i][0] + " Best Estimator"] = str(clf.best_estimator_)
+    results = dict()
+    results["classifier"] = classifier[0]
+    results["best_params"] = clf.best_params_
+    results["best_score"] = clf.best_score_
+    results["best_estimator"] = str(clf.best_estimator_)
 
-        # Print all Grid Search results
-        print(classifiers[i][0] + " Best Estimator",clf.best_estimator_, file=sys.stderr)
-        print(classifiers[i][0] + " Best Score", clf.best_score_, file=sys.stderr)
-        print(classifiers[i][0] + " Best Parameters", clf.best_params_, file=sys.stderr)
-        print(classifiers[i][0] + " All Scores", file=sys.stderr)
+    # Print all Grid Search results
+    print("Best Estimator",clf.best_estimator_, file=sys.stderr)
+    print("Best Score", clf.best_score_, file=sys.stderr)
+    print("Best Parameters", clf.best_params_, file=sys.stderr)
+
+    if printallscores:
+        print("All Scores", file=sys.stderr)
         for score in clf.grid_scores_: print(score, file=sys.stderr)
+
+    return results
 
 @xp.config
 def config_variables():
@@ -127,7 +129,10 @@ def config_variables():
               'max_depth':[3, 5, 10, 50, 100], \
               'min_child_weight': [2, 5, 10, 50, 100]}
 
+    # Boolean value to print all scores from Grid Search
+    printallscores = False
+
 #@xp.main
 @xp.automain
 def run_experiment():
-    conduct_grid_search()
+    return conduct_grid_search()
