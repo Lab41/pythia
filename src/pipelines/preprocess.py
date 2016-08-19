@@ -2,6 +2,7 @@ from src.utils.normalize import normalize_and_remove_stop_words
 from src.featurizers import skipthoughts, tensorflow_cnn
 from sklearn.decomposition import LatentDirichletAllocation
 from sklearn.feature_extraction.text import CountVectorizer
+import numpy as np
 
 def gen_vocab(corpus_dict, vocab=1000, stem=False, **kwargs):
     '''
@@ -26,7 +27,7 @@ def gen_vocab(corpus_dict, vocab=1000, stem=False, **kwargs):
         else: break
     return vocabdict
 
-def build_lda(trainingdata, vocabdict, topics=40, **kwargs):
+def build_lda(trainingdata, vocabdict, topics=40, random_state=0, **kwargs):
     '''
     Fits a LDA topic model based on the corpus vocabulary.
 
@@ -45,11 +46,11 @@ def build_lda(trainingdata, vocabdict, topics=40, **kwargs):
     for entry in trainingdata: trainingdocs.append(entry['body_text'])
     trainingvectors = vectorizer.transform(trainingdocs)
 
-    lda = LatentDirichletAllocation(n_topics=topics, random_state=0)
+    lda = LatentDirichletAllocation(n_topics=topics, random_state=random_state)
     lda.fit(trainingvectors)
     return lda
 
-def main(argv):
+def main(features, parameters, corpus_dict, trainingdata, random_state=np.random):
     '''
     Controls the preprocessing of the corpus, including building vocabulary and model creation.
 
@@ -74,7 +75,7 @@ def main(argv):
         print("creating a vocab")
         features['lda']['vocab'] = vocab
 
-    if 'lda' in features: lda = build_lda(trainingdata, vocab, **features['lda'])
+    if 'lda' in features: lda = build_lda(trainingdata, vocab, random_state=random_state, **features['lda'])
 
     if 'cnn' in features: tf_model = tensorflow_cnn.tensorflow_cnn(trainingdata, **features['cnn'])
 

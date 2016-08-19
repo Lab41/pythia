@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-from numpy.random import choice
+import numpy.random
 import sys
 from src.pipelines.parse_json import count_vocab, order_vocab
 from collections import defaultdict, namedtuple, OrderedDict
 
-def sample(data, key, novelToNotNovelRatio = 1.0, over = False, replacement = False):
+def sample(data, key, novelToNotNovelRatio = 1.0, over = False, replacement = False, random_state = numpy.random):
 	'''
 		This function samples a set of data with two classes based on a ratio.
 
@@ -44,13 +44,13 @@ def sample(data, key, novelToNotNovelRatio = 1.0, over = False, replacement = Fa
 			# If the novel observations are greater, set the returnData to the novel observations, 
 			# and select the non-novel observations based on the ratio.
 			for thing in novelObs: returnData.append(thing)
-			tempNonNovel = choice(nonNovelObs, round(maximum / novelToNotNovelRatio), True)
+			tempNonNovel = random_state.choice(nonNovelObs, round(maximum / novelToNotNovelRatio), True)
 			for thing in tempNonNovel: returnData.append(thing)
 		else:
 			# If the novel observations are fewer, set the returnData to the non-novel observations,
 			# and select the novel observations based on the ratio.
 			for thing in nonNovelObs: returnData.append(thing)		
-			tempNovel = choice(novelObs, round(maximum * novelToNotNovelRatio), True)
+			tempNovel = random_state.choice(novelObs, round(maximum * novelToNotNovelRatio), True)
 			for thing in tempNovel: returnData.append(thing)
 	else:
 		# If you will run into an error when trying to get the number of observations based on the ratio, throw an error.
@@ -59,12 +59,12 @@ def sample(data, key, novelToNotNovelRatio = 1.0, over = False, replacement = Fa
 		elif novelLarge:
 			# If the novel observations are larger, select data from the two classes based on the minimum number and ratio
 			for thing in nonNovelObs: returnData.append(thing)
-			tempNovel = choice(novelObs, round(minimum * novelToNotNovelRatio), replacement)
+			tempNovel = random_state.choice(novelObs, round(minimum * novelToNotNovelRatio), replacement)
 			for thing in tempNovel: returnData.append(thing)			
 		else:
 			# If the novel observations are fewer, select data from the two classes based on the minium number and ratio
 			for thing in novelObs: returnData.append(thing)
-			tempNonNovel = choice(nonNovelObs, round(minimum / novelToNotNovelRatio), replacement)
+			tempNonNovel = random_state.choice(nonNovelObs, round(minimum / novelToNotNovelRatio), replacement)
 			for thing in tempNonNovel: returnData.append(thing)
 			
 	# Rebuild corpus metadata for clusters, arrival order and word frequency due to corpus changes after resampling

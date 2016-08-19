@@ -9,6 +9,7 @@ directory full of JSON files, where each file contains a cluster of documents.
 import sys
 import argparse
 from collections import namedtuple
+import numpy as np
 from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict
 from src.utils.sampling import sample
 
@@ -17,6 +18,9 @@ def main(argv):
     controls the over-arching implmentation of the algorithms
     '''
     directory, features, algorithms, parameters = argv
+    
+    # Create a numpy random state
+    random_state = np.random.RandomState(parameters['seed'])
 
     #parsing
     print("parsing json data...",file=sys.stderr)
@@ -25,7 +29,7 @@ def main(argv):
     #resampling
     if 'resampling' in parameters:
         print("resampling...",file=sys.stderr)
-        data, clusters, order, corpusdict = sample(data, "novelty", **parameters['resampling'])
+        data, clusters, order, corpusdict = sample(data, "novelty", random_state=random_state, **parameters['resampling'])
 
     #preprocessing
     print("preprocessing...",file=sys.stderr)
@@ -261,7 +265,10 @@ def get_args(
     if RESAMPLING: parameters['resampling'] = resampling
     if VOCAB_SIZE: parameters['vocab'] = VOCAB_SIZE
     if STEM: parameters['stem'] = STEM
-    if SEED: parameters['seed'] = SEED
+    if SEED: 
+        parameters['seed'] = SEED
+    else:
+        parameters['seed'] = 41
 
     return directory, features, algorithms, parameters
 
