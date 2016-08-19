@@ -1,9 +1,9 @@
 machine:
   services:
     - docker
-    - mongodb
 test:
   override:
-    - docker build -t pythia .
+    - docker build -t pythia .:
+        timeout: 1200
   post:
     - bash <(curl -s https://codecov.io/bash)

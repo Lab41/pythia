@@ -2,9 +2,6 @@
 
 import sys
 import os
-import pprint
-import subprocess
-import json
 
 from sacred import Experiment
 from sacred.observers import MongoObserver
@@ -19,15 +16,15 @@ def set_up_xp():
     # Check that MongoDB config is set
     try:
         mongo_uri=os.environ['PYTHIA_MONGO_DB_URI']
-    except KeyError as e:
-        print("Must define location of MongoDB in PYTHIA_MONGO_DB_URI for observer output",file=sys.stderr)
-        raise
-
-    ex = Experiment(ex_name)
-    ex.observers.append(MongoObserver.create(url=mongo_uri,
+        ex = Experiment(ex_name)
+        ex.observers.append(MongoObserver.create(url=mongo_uri,
                                          db_name=db_name))
-    return ex
+    except KeyError as e:
+        print("You must define location of MongoDB in PYTHIA_MONGO_DB_URI to record experiment output",file=sys.stderr)
+        print("Proceeding without an observer! Results will not be logged!",file=sys.stderr)
+        ex = Experiment(ex_name)
 
+    return ex
 
 xp = set_up_xp()
 
@@ -35,7 +32,7 @@ xp = set_up_xp()
 def config_variables():
 
     # DIRECTORY
-    directory = 'stack_exchange_data/corpus_filtered/movies'
+    directory = 'data/stackexchange/anime'
 
     # FEATURES
     # bag of words
@@ -57,6 +54,17 @@ def config_variables():
     LDA_PRODUCT = False
     LDA_COS = False
     LDA_TOPICS = 50
+
+    #word2vec
+    W2V_APPEND = False
+    W2V_DIFFERENCE = False
+    W2V_PRODUCT = False
+    W2V_COS = False
+    W2V_PRETRAINED = False
+    W2V_MIN_COUNT = 5
+    W2V_WINDOW = 5
+    W2V_SIZE = 100
+    W2V_WORKERS = 3
 
     #one-hot CNN layer
     CNN_APPEND = False
@@ -102,7 +110,7 @@ def config_variables():
     REPLACEMENT = False
 
     #vocabulary
-    VOCAB_SIZE = 1000
+    VOCAB_SIZE = 10000
     STEM = False
 
     SEED = None
@@ -123,6 +131,15 @@ def run_experiment(directory,
             LDA_PRODUCT,
             LDA_COS,
             LDA_TOPICS,
+            W2V_APPEND,
+            W2V_DIFFERENCE,
+            W2V_PRODUCT,
+            W2V_COS,
+            W2V_PRETRAINED,
+            W2V_MIN_COUNT,
+            W2V_WINDOW,
+            W2V_SIZE,
+            W2V_WORKERS,
             CNN_APPEND,
             CNN_DIFFERENCE,
             CNN_PRODUCT,
@@ -168,6 +185,15 @@ def run_experiment(directory,
             LDA_PRODUCT,
             LDA_COS,
             LDA_TOPICS,
+            W2V_APPEND,
+            W2V_DIFFERENCE,
+            W2V_PRODUCT,
+            W2V_COS,
+            W2V_PRETRAINED,
+            W2V_MIN_COUNT,
+            W2V_WINDOW,
+            W2V_SIZE,
+            W2V_WORKERS,
             CNN_APPEND,
             CNN_DIFFERENCE,
             CNN_PRODUCT,
