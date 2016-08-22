@@ -10,7 +10,7 @@ from src.utils import performance_metrics
 
 from src.mem_net import utils
 from src.mem_net import nn_utils
-from src.mem_net import dmn_basic, dmn_basic_w_cnn
+from src.mem_net import dmn_basic, dmn_basic_w_cnn, dmn_batch
 
 def parse_args(given_args=None):
 
@@ -93,7 +93,9 @@ def run_mem_net(train_data, test_data, seed=1, word_vector_size=50,
     args_dict['memory_hops'] = memory_hops
     args_dict['l2'] = l2
     args_dict['normalize_attention'] = normalize_attention
-
+    args_dict['batch_size'] = batch_size
+    args_dict['batch_norm'] = batch_norm
+    args_dict['dropout'] = dropout
 
     network_name = network_name_pre + '%s.mh%d.n%d.bs%d%s%s%s' % (
         network,
@@ -107,8 +109,8 @@ def run_mem_net(train_data, test_data, seed=1, word_vector_size=50,
 
     # init class
     #TODO try out the classes besides basic and add in if they work
-    # if args.network == 'dmn_batch':
-    #     import dmn_batch
+    # Currently only basic works, but hopefully that will change in the future
+    # if network == 'dmn_batch':
     #     dmn = dmn_batch.DMN_batch(**args_dict)
 
     # The basic module is implemented for document similarity
@@ -119,13 +121,13 @@ def run_mem_net(train_data, test_data, seed=1, word_vector_size=50,
             batch_size = 1
         dmn = dmn_basic.DMN_basic(**args_dict) # Initialize the dmn basic with all the arguments available. This also initializes theano functions and parameters.
 
-    elif network == 'dmn_cnn':
-        #raise Exception("Sorry - this isn't working right now!!")
-
-        if (batch_size != 1):
-            print("==> no minibatch training, argument batch_size is useless")
-            batch_size = 1
-        dmn = dmn_basic_w_cnn.DMN_basic(**args_dict)
+    # elif network == 'dmn_cnn':
+    #     #raise Exception("Sorry - this isn't working right now!!")
+    #
+    #     if (batch_size != 1):
+    #         print("==> no minibatch training, argument batch_size is useless")
+    #         batch_size = 1
+    #     dmn = dmn_basic_w_cnn.DMN_basic(**args_dict)
     #
     # elif args.network == 'dmn_smooth':
     #     import dmn_smooth
@@ -142,7 +144,7 @@ def run_mem_net(train_data, test_data, seed=1, word_vector_size=50,
     #     dmn = dmn_qa_draft.DMN_qa(**args_dict)
     #
     else:
-        raise Exception("No such network known: " + network)
+        raise Exception("No such valid network known: " + network + " Currently only dmn_basic")
 
 
     if load_state != "":
