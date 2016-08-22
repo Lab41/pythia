@@ -16,15 +16,15 @@ def set_up_xp():
     # Check that MongoDB config is set
     try:
         mongo_uri=os.environ['PYTHIA_MONGO_DB_URI']
-    except KeyError as e:
-        print("Must define location of MongoDB in PYTHIA_MONGO_DB_URI for observer output",file=sys.stderr)
-        raise
-
-    ex = Experiment(ex_name)
-    ex.observers.append(MongoObserver.create(url=mongo_uri,
+        ex = Experiment(ex_name)
+        ex.observers.append(MongoObserver.create(url=mongo_uri,
                                          db_name=db_name))
-    return ex
+    except KeyError as e:
+        print("You must define location of MongoDB in PYTHIA_MONGO_DB_URI to record experiment output",file=sys.stderr)
+        print("Proceeding without an observer! Results will not be logged!",file=sys.stderr)
+        ex = Experiment(ex_name)
 
+    return ex
 
 xp = set_up_xp()
 
@@ -32,7 +32,7 @@ xp = set_up_xp()
 def config_variables():
 
     # DIRECTORY
-    directory = 'stack_exchange_data/corpus_filtered/movies'
+    directory = 'data/stackexchange/anime'
 
     # FEATURES
     # bag of words
