@@ -53,6 +53,7 @@ Icon
 
 ##Github Python Ignore
 *.py[cod]
+*.ipynb_checkpoints/
 
 # C extensions
 *.so
