@@ -90,9 +90,9 @@ set -e
 
     # Install auto-sklearn (Linux only) and dependencies for experimentation and hyperparameter optimization
     # http://automl.github.io/auto-sklearn/stable/index.html
-    pip install -q Cython
+    pip install -q Cython==0.24.1
     pip install -q -r https://raw.githubusercontent.com/automl/auto-sklearn/master/requirements.txt
-    pip install auto-sklearn
+    pip install auto-sklearn==0.0.1
 
     # install theano and keras
     pip install -q nose-parameterized==0.5.0 Theano==0.8.2 keras==1.0.7
