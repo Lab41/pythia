@@ -14,9 +14,9 @@ def test_onehot():
                 ","     : 3
             }
 
-    doc_onehot = data_gen.run_onehot(doc, vocab)
-    doc_onehot_minlength = data_gen.run_onehot(doc, vocab, min_length = 10)
-    doc_onehot_maxlength = data_gen.run_onehot(doc, vocab, max_length = 2)
+    doc_onehot, _ = data_gen.run_onehot(doc, vocab)
+    doc_onehot_minlength, _ = data_gen.run_onehot(doc, vocab, min_length = 10)
+    doc_onehot_maxlength, _ = data_gen.run_onehot(doc, vocab, max_length = 2)
     doc_onehot_encoded = np.array(
         [[ 1.,  0.,  0.,  0.,  0.],
         [ 0.,  1.,  0.,  0.,  1.],
