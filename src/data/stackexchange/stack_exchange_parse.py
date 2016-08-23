@@ -91,7 +91,8 @@ def load(url, file_name, folder):
 
     #un-zips file and puts contents in folder
     a = py7z_extractall.un7zip(file_name)
-    a.extractall(folder)
+    if not (os.path.isfile(os.path.join(folder, "PostLinks.xml")) and os.path.isfile(os.path.join(folder, "Posts.xml"))):
+        a.extractall(folder)
 
 def get_links(folder):
     """Parse Links table from a SE site data release"""
