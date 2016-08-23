@@ -73,6 +73,8 @@ def section_setup(section, zip_directory, corpus_directory):
     return full_file_name, section_directory, corpus_section_directory
 
 def load(url, file_name, folder):
+    """ Download archive for a StackExchange site and unzip it,
+    skipping either or both if the neessary tables are already available """
     # Need special case for Stack Overflow (more than one 7z file)
 
     if not os.path.isfile(file_name):
