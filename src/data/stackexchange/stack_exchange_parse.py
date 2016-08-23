@@ -224,11 +224,15 @@ def main(args):
 
     if args.skipparse == False:
         for (section, url) in stack_exchange_data:
-            print("Starting " + section)
-
             #creates directories for the current SE site
             zip_file_path, unzipped_folder, corpus_section_directory = section_setup(
                 section, zip_directory, corpus_directory)
+
+            if os.path.isfile(os.path.join(corpus_section_directory, ".done")):
+                continue
+
+            print("Starting " + section)
+
 
             #downloads and unzips data release for a site
             load(url, zip_file_path, unzipped_folder)
@@ -246,6 +250,10 @@ def main(args):
 
             #writes cluster information to json files
             write_json_files(clusters, corpus_section_directory)
+            
+            # put completion marker in folder so we can skip it next time
+            with open(os.path.join(corpus_section_directory, ".done"), "w") as f:
+                print("", file=f)
 
             print("Completed " + section)
 
