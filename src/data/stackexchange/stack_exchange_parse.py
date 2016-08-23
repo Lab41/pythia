@@ -222,45 +222,40 @@ def main(args):
     zip_directory, corpus_directory = args.zip_path, args.dest_path
     setup(zip_directory, corpus_directory)
 
-    if args.skipparse == False:
-        for (section, url) in stack_exchange_data:
-            #creates directories for the current SE site
-            zip_file_path, unzipped_folder, corpus_section_directory = section_setup(
-                section, zip_directory, corpus_directory)
+    for (section, url) in stack_exchange_data:
+        #creates directories for the current SE site
+        zip_file_path, unzipped_folder, corpus_section_directory = section_setup(
+            section, zip_directory, corpus_directory)
 
-            if os.path.isfile(os.path.join(corpus_section_directory, ".done")):
-                continue
+        done_signal_path = os.path.join(corpus_section_directory, ".done")):
+        if os.path.isfile(done_signal_path):
+            continue
 
-            print("Starting " + section)
+        print("Starting " + section)
 
 
-            #downloads and unzips data release for a site
-            load(url, zip_file_path, unzipped_folder)
+        #downloads and unzips data release for a site
+        load(url, zip_file_path, unzipped_folder)
 
-            #gets the links data from the links table for the site
-            links = get_links(unzipped_folder)
+        #gets the links data from the links table for the site
+        links = get_links(unzipped_folder)
 
-            #gets post data from the posts table
-            posts = get_posts(unzipped_folder)
+        #gets post data from the posts table
+        posts = get_posts(unzipped_folder)
 
-            #creates the clusters of related and duplicate posts for a site,
-            #based on links data
-            # clusters, related, duplicates, unique_posts = gen_clusters(links)
-            clusters = iter_clusters(links, posts)
+        #creates the clusters of related and duplicate posts for a site,
+        #based on links data
+        # clusters, related, duplicates, unique_posts = gen_clusters(links)
+        clusters = iter_clusters(links, posts)
 
-            #writes cluster information to json files
-            write_json_files(clusters, corpus_section_directory)
-            
-            # put completion marker in folder so we can skip it next time
-            with open(os.path.join(corpus_section_directory, ".done"), "w") as f:
-                print("", file=f)
+        #writes cluster information to json files
+        write_json_files(clusters, corpus_section_directory)
+        
+        # put completion marker in folder so we can skip it next time
+        with open(done_signal_path, "w") as f:
+            print("", file=f)
 
-            print("Completed " + section)
-
-    if args.filter or args.skipparse:
-        filter_json_files(os.path.normpath(corpus_directory) + "_filtered",
-            corpus_directory, int(args.minpost), int(args.maxpost))
-
+        print("Completed " + section)
 
 if __name__ == '__main__':
 
@@ -273,17 +268,6 @@ if __name__ == '__main__':
         default="stack_exchange_data/zip_files")
     parser.add_argument("--dest-path", help="path to folder where processed data will " \
         "be stored.", default="stack_exchange_data/corpus")
-    parser.add_argument("--filter", help="flag to filter JSON files after " \
-        "downloading/parsing Stack Exchange data, based on minpost/maxpost arguments",
-        action="store_true")
-    parser.add_argument("--minpost", default=3, help="when filtering, set " \
-        "minimum allowable posts in a single JSON file (default is 3)")
-    parser.add_argument("--maxpost", default=10, help="when filtering, set " \
-        "maximum allowable posts in a single JSON file (default is 10)")
-    parser.add_argument("--skipparse", help="flag to bypass downloading/parsing " \
-        "JSON files and proceed directly to JSON file filtering; " \
-        "can be used if corpus was previously downloaded/parsed", action="store_true")
-
     args = parser.parse_args()
     main(args)
     #parser.exit(status=0, message=None)
