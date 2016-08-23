@@ -90,3 +90,6 @@ nosetests.xml
 
 # Remote sync config
 .remote-sync.json
+
+# backup files
+*.py.bak

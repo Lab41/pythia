@@ -1,9 +1,9 @@
 """
 Constructing and loading dictionaries
 """
-import cPickle as pkl
 import numpy
 from collections import OrderedDict
+import pickle
 
 def build_dictionary(text):
     """
@@ -14,17 +14,20 @@ def build_dictionary(text):
     for cc in text:
         words = cc.split()
         for w in words:
-            if w not in wordcount:
-                wordcount[w] = 0
-            wordcount[w] += 1
-    words = wordcount.keys()
-    freqs = wordcount.values()
+            wordcount[w] = wordcount.get(w,0) + 1
+
+    ####
+    words = list(wordcount.keys())
+    freqs = list(wordcount.values())
     sorted_idx = numpy.argsort(freqs)[::-1]
 
     worddict = OrderedDict()
     for idx, sidx in enumerate(sorted_idx):
         worddict[words[sidx]] = idx+2 # 0: <eos>, 1: <unk>
-
+    ###
+        
+    #Alternative: OrderedDict((word,idx + 2) for idx,(word,count) in enumerate(sorted(wordcount.items(),key=lambda _:_[1],reverse=True)))
+    
     return worddict, wordcount
 
 def load_dictionary(loc='/ais/gobi3/u/rkiros/bookgen/book_dictionary_large.pkl'):
@@ -32,7 +35,7 @@ def load_dictionary(loc='/ais/gobi3/u/rkiros/bookgen/book_dictionary_large.pkl')
     Load a dictionary
     """
     with open(loc, 'rb') as f:
-        worddict = pkl.load(f)
+        worddict = pickle.load(f)
     return worddict
 
 def save_dictionary(worddict, wordcount, loc):
@@ -40,7 +43,7 @@ def save_dictionary(worddict, wordcount, loc):
     Save a dictionary to the specified location 
     """
     with open(loc, 'wb') as f:
-        pkl.dump(worddict, f)
-        pkl.dump(wordcount, f)
+        pickle.dump(worddict, f)
+        pickle.dump(wordcount, f)
 
 
