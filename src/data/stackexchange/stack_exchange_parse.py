@@ -180,35 +180,6 @@ def write_json_files(clusters, corpus_directory, filename_prefix=''):
             for doc in cluster:
                 print(json.dumps(doc), file=cluster_out)
 
-def filter_json_files(filtered_corpus_directory, corpus_directory, minpost, maxpost):
-
-    print("Filtering JSON files")
-    make_directory(filtered_corpus_directory)
-
-    filestokeep = list()
-
-    # Iterate over topic folders in corpus
-    for foldername in os.listdir(corpus_directory):
-        fullfoldername = os.path.join(corpus_directory,foldername)
-        if os.path.isdir(fullfoldername):
-            jsonstats = []
-            # Iterate over clusters in this topic
-            for file_name in os.listdir(fullfoldername):
-                if file_name.endswith(".json"):
-                    full_file_name = os.path.join(fullfoldername, file_name)
-                    entries = 0
-                    with open(full_file_name,'r') as dataFile:
-                        for line in dataFile: entries += 1
-                    if entries >= minpost and entries <= maxpost: filestokeep.append((full_file_name, foldername))
-
-    # Copy cluster files that meet min and max post requirements
-    for entry in filestokeep:
-       copylocation = os.path.join(filtered_corpus_directory, entry[1])
-       make_directory(copylocation)
-       copy(entry[0], copylocation)
-
-    print("Filtered corpus copied to: ", filtered_corpus_directory)
-
 def main(args):
     """Go through list of SE sites, create directories to store downloaded data
     and parsed clusters. Process SE data releases into Pythia-specific format.
