@@ -9,20 +9,16 @@ from sacred.observers import MongoObserver
 from src.pipelines.master_pipeline import main as pythia_main
 from src.pipelines.master_pipeline import get_args
 
-ex_name='pythia_experiment'
-db_name='pythia_experiment'
+'''
+Conducts an experiment on Pythia's master pipeline using Sacred
+
+The output is recorded by Sacred if a MongoObserver is passed in via command line (-m HOST:PORT:MY_DB)
+'''
 
 def set_up_xp():
-    # Check that MongoDB config is set
-    try:
-        mongo_uri=os.environ['PYTHIA_MONGO_DB_URI']
-        ex = Experiment(ex_name)
-        ex.observers.append(MongoObserver.create(url=mongo_uri,
-                                         db_name=db_name))
-    except KeyError as e:
-        print("You must define location of MongoDB in PYTHIA_MONGO_DB_URI to record experiment output",file=sys.stderr)
-        print("Proceeding without an observer! Results will not be logged!",file=sys.stderr)
-        ex = Experiment(ex_name)
+
+    ex_name='pythia_experiment'
+    ex = Experiment(ex_name)
 
     return ex
 
@@ -110,9 +106,8 @@ def config_variables():
     REPLACEMENT = False
 
     #save training data for experimentation and hyperparameter grid search
-    SAVETRAININGDATA = False
-    SAVEDATAFILE = 'data/datafile.pkl'
-    SAVETARGETFILE = 'data/targetfile.pkl'
+    SAVEEXPERIMENTDATA = False
+    EXPERIMENTDATAFILE = 'data/experimentdatafile.pkl'
 
     #vocabulary
     VOCAB_SIZE = 10000
@@ -170,9 +165,8 @@ def run_experiment(directory,
             NOVEL_RATIO,
             OVERSAMPLING,
             REPLACEMENT,
-            SAVETRAININGDATA,
-            SAVEDATAFILE,
-            SAVETARGETFILE,
+            SAVEEXPERIMENTDATA,
+            EXPERIMENTDATAFILE,
             VOCAB_SIZE,
             STEM,
             SEED):
@@ -227,9 +221,8 @@ def run_experiment(directory,
             NOVEL_RATIO,
             OVERSAMPLING,
             REPLACEMENT,
-            SAVETRAININGDATA,
-            SAVEDATAFILE,
-            SAVETARGETFILE,
+            SAVEEXPERIMENTDATA,
+            EXPERIMENTDATAFILE,
             VOCAB_SIZE,
             STEM,
             SEED)
