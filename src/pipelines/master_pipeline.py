@@ -21,9 +21,9 @@ def main(argv):
     clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main([directory, parameters])
 
     #resampling
-    if 'resampling' in parameters:
-        print("resampling...",file=sys.stderr)
-        data, clusters, order, corpusdict = sample(data, "novelty", **parameters['resampling'])
+    #if 'resampling' in parameters:
+    #    print("resampling...",file=sys.stderr)
+    #    data, clusters, order, corpusdict = sample(data, "novelty", **parameters['resampling'])
 
     #preprocessing
     print("preprocessing...",file=sys.stderr)
