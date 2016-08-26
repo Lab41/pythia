@@ -277,13 +277,17 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
         all_clusters (set): cluster IDs
         lookup_order (dict): document arrival order
         documentData (array): parsed JSON documents
-        filename (str): the name of the corpus file
         features (namedTuple): the specified features to be calculated
+        parameters (???): data structure with run parameters
         vocab (dict): the vocabulary of the data set
         encoder_decoder (???): the encoder/decoder for skipthoughts vectors
+        lda_model (sklearn.???): trained LDA model
+        tf_session: active TensorFlow session
+        w2v_model (gensim.word2vec): trained word2vec model
 
     Returns:
-        list: contains for each obeservation a namedtupled with the cluster_id, post_id, novelty, tfidf sum, cosine similarity, bag of words vectors and skip thoughts  (scores are None if feature is unwanted)
+        list, list: lists containing featurized data (np.array) and associated 
+            labels (int), 0 if duplicate and 1 if novel
     '''
 
     # Prepare to store results of feature assessments
