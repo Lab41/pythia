@@ -271,14 +271,14 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
 
     return doc_onehot
 
-def gen_observations(all_clusters, lookup_order, documentData, features, parameters, vocab, encoder_decoder, lda_model, tf_session, w2v_model):
+def gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, encoder_decoder, lda_model, tf_session, w2v_model, random_state=np.random):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
 
     Args:
         all_clusters (set): cluster IDs
         lookup_order (dict): document arrival order
-        documentData (array): parsed JSON documents
+        document_data (array): parsed JSON documents
         features (namedTuple): the specified features to be calculated
         parameters (???): data structure with run parameters
         vocab (dict): the vocabulary of the data set
@@ -303,10 +303,10 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
         # Determine arrival order in this cluster
         sorted_entries = [x[1] for x in sorted(lookup_order[cluster], key=lambda x: x[0])]
 
-        observations = [documentData[sortedEntries[0]]]
+        observations = [document_data[sorted_entries[0]]]
 
         for index in sorted_entries[1:]:
-            next_doc = documentData[index]
+            next_doc = document_data[index]
             observations.append(next_doc)
             corpus_unprocessed.append(observations)
     
@@ -334,32 +334,33 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
     # across observations
     for case in corpus:
         # Create raw and normalized document arrays
-        case_text_raw = [ record['body_text'] for record in case ]
-        case_text_normalized = [ normalize.normalize_and_remove_stop_words(body_text) for body_text in case_text_raw ]
+        case_docs_raw = [ record['body_text'] for record in case['data'] ]
+        case_docs_normalized = [ normalize.normalize_and_remove_stop_words(body_text) for body_text in case_docs_raw ]
         # Pull out query documents
-        doc_raw = case_text_raw[-1]
-        doc_normalized = case_text_raw[-1]
+        doc_raw = case_docs_raw[-1]
+        doc_normalized = case_docs_raw[-1]
         # Create lists of background documents
-        bkgd_raw = case_text_raw[:-1]
-        bkgd_normalized = case_text_normalized[:-1]
+        bkgd_docs_raw = case_docs_raw[:-1]
+        bkgd_docs_normalized = case_docs_normalized[:-1]
+        bkgd_text_raw = '\n'.join(bkgd_docs_raw)
 
         feature_vectors = list()
 
         if 'bow' in features:
-            feature_vectors = bow(doc_normalized, bkgd_text_raw, case_text_normalized, vocab, features['bow'], feature_vectors)
+            feature_vectors = bow(doc_normalized, bkgd_text_raw, bkgd_docs_normalized, vocab, features['bow'], feature_vectors)
 
         if 'st' in features:
-            sentences = [ get_first_and_last_sentence(doc) for doc in bkgd_text_raw ]
+            sentences = [ get_first_and_last_sentence(doc) for doc in bkgd_raw ]
             feature_vectors = st(doc_raw, sentences, encoder_decoder, features['st'], feature_vectors)
 
         if 'lda' in features:
-            feature_vectors = lda(doc_normalized, case_text_normalized, vocab, lda_model, features['lda'], feature_vectors)
+            feature_vectors = lda(doc_normalized, bkgd_docs_normalized, vocab, lda_model, features['lda'], feature_vectors)
 
         if 'w2v' in features:
-            feature_vectors = w2v(doc_raw, case_text_normalized, w2v_model, features['w2v'], feature_vectors)
+            feature_vectors = w2v(doc_raw, bkgd_docs_normalized, w2v_model, features['w2v'], feature_vectors)
 
         if 'cnn' in features:
-            feature_vectors = run_cnn(doc_normalized, case_text_normalized, tf_session)
+            feature_vectors = run_cnn(doc_normalized, bkgd_docs_normalized, tf_session)
 
         if 'wordonehot' in features:
             feature_vectors = wordonehot(doc_raw, bkgd_text_raw, vocab, features['wordonehot'], feature_vectors)
