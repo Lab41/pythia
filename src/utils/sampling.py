@@ -95,7 +95,7 @@ def sample(data, key, novelToNotNovelRatio = 1.0, over = False, replacement = Fa
 
     return returnData, clusters, order, corpusdict
 
-def sample2(observations, label_key, replacement=False, desired_size=None, random_state = np.random, final_shuffle=True):
+def label_sample(observations, label_key, replacement=False, desired_size=None, random_state = np.random, final_shuffle=True):
     """ Resample observations based on a binary key and a yield a 0.5
     proportion of cases with True responses. Provides options to 
     oversample or to downsample.
@@ -106,7 +106,7 @@ def sample2(observations, label_key, replacement=False, desired_size=None, rando
         replacement (bool): when sampling, use replacement or not?
         desired_size (int): if not None, desired size of each resampled class. If None,
             value is either: minimum class size (if replacement is False), else the maximum
-            class size
+            class size. If -np.Inf, sample to smaller class size.
         random_state (numpy.random.RandomState)
         final_shuffle (bool): should a final shuffle be performed on the resampled results
     """
@@ -127,6 +127,8 @@ def sample2(observations, label_key, replacement=False, desired_size=None, rando
             desired_size = min_size
         else:
             desired_size = max_size
+    if desired_size == -np.Inf:
+        desired_size = min_size
     if not replacement:
         desired_size = np.min((desired_size, min_size))
 
