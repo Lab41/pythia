@@ -308,7 +308,9 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
         for index in sorted_entries[1:]:
             next_doc = document_data[index]
             observations.append(next_doc)
-            corpus_unprocessed.append(observations)
+            labeled_observation = { 'novelty' : next_doc['novelty'],
+                    'data' : copy.copy(observations) }
+            corpus_unprocessed.append(labeled_observation)
     
     # Resample if necessary
     # If oversampling +/- replacement, sample up
@@ -368,7 +370,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
         # Save features and label
         feature_vectors = np.concatenate(feature_vectors, axis=0)
         data.append(feature_vectors)
-        if case[-1]["novelty"]: 
+        if case["novelty"]: 
             labels.append(1)
         else: 
             labels.append(0)
