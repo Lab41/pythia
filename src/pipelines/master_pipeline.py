@@ -8,7 +8,6 @@ import sys
 import argparse
 from collections import namedtuple
 from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict
-from src.utils.sampling import sample
 
 def main(argv):
     '''
@@ -20,11 +19,6 @@ def main(argv):
     print("parsing json data...",file=sys.stderr)
     clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main([directory, parameters])
 
-    #resampling
-    #if 'resampling' in parameters:
-    #    print("resampling...",file=sys.stderr)
-    #    data, clusters, order, corpusdict = sample(data, "novelty", **parameters['resampling'])
-
     #preprocessing
     print("preprocessing...",file=sys.stderr)
     vocab, encoder_decoder, lda_model, tf_model, w2v_model = preprocess.main([features, parameters, corpusdict, data])
@@ -33,7 +27,6 @@ def main(argv):
     print("generating training and testing data...",file=sys.stderr)
     train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, encoder_decoder, lda_model, tf_model, w2v_model])
     test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, encoder_decoder, lda_model, tf_model, w2v_model])
-
 
     #modeling
     print("running algorithms...",file=sys.stderr)
@@ -288,7 +281,9 @@ def get_args(
 
     if RESAMPLING:
         resampling = dict()
-        if NOVEL_RATIO: resampling['novelToNotNovelRatio'] = NOVEL_RATIO
+        if NOVEL_RATIO: 
+            resampling['novelToNotNovelRatio'] = NOVEL_RATIO
+            print("NOVEL_RATIO specified but not supported", file=sys.stderr)
         if OVERSAMPLING: resampling['over'] = OVERSAMPLING
         if REPLACEMENT: resampling['replacement'] = REPLACEMENT
 
