@@ -1,5 +1,7 @@
+import copy
+
 from src.featurizers.skipthoughts import skipthoughts as sk
-from src.utils import normalize, tokenize
+from src.utils import normalize, tokenize, sampling
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.preprocessing import OneHotEncoder
@@ -323,7 +325,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
             replacement = True
         else:
             replacement = False
-        corpus = utils.label_sample(corpus_unprocessed, "novelty", replacement, desired_size, random_state)  
+        corpus = sampling.label_sample(corpus_unprocessed, "novelty", replacement, desired_size, random_state)  
     else:
         corpus = corpus_unprocessed
 
