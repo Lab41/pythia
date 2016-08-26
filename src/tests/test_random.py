@@ -1,6 +1,6 @@
 import numpy as np
 from src.pipelines.master_pipeline import get_args, main as pipeline_main
-from src.utils.sampling  import sample
+from src.utils.sampling  import label_sample
 
 #FIXME: Should make so many of these for different arguments
 def test_random():
@@ -65,7 +65,7 @@ def test_random_resampling():
             ]
     def get_state(seed):
         return np.random.RandomState(seed)
-    sampled_data = sample(data, 'key', random_state=get_state(41))
-    sampled_data2 = sample(data, 'key', random_state=get_state(41))
+    sampled_data = label_sample(data, 'key', random_state=get_state(41))
+    sampled_data2 = label_sample(data, 'key', random_state=get_state(41))
     assert sampled_data == sampled_data2
     raise Exception
