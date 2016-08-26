@@ -217,17 +217,64 @@ def run_w2v(w2v_model, doc, w2v):
         documentvector = np.zeros(w2v['size'])
     return documentvector
 
+def run_w2v_matrix(w2v_model, doc, w2v_params, mask_mode):
+
+    #determine if the first and last sentences will be taken or all sentences
+    if w2v_params.get('mem_w2v_mode', False):
+        w2v_mode = w2v_params['mem_w2v_mode']
+    else: w2v_mode = 'all'
+
+    if w2v_mode == 'all':
+        sentences = tokenize.punkt_sentences(doc)
+    else:
+        sentences = get_first_and_last_sentence(doc)
+
+    normalizedsentences = []
+
+    sentence_mask = []
+    for sentence in sentences:
+        words = normalize.remove_stop_words(tokenize.word_punct_tokens(sentence))
+        if len(sentence_mask)>0: prev_mask = sentence_mask[-1]
+        else: prev_mask = -1
+        sentence_mask.append(prev_mask + len(words))
+        normalizedsentences.append(words)
+
+    wordvectorarray = []
+
+    # Look up word vectors in trained Word2Vec model and build array of word vectors and sentence vectors
+    for phrase in normalizedsentences:
+        for word in phrase:
+            wordvector = None
+            try:
+                wordvector_ = w2v_model[word]
+                wordvector = [float(w) for w in wordvector_]
+            except:
+                wordvector = np.random.uniform(0.0,1.0,(w2v_params['size'],))
+            if wordvector is not None:
+                wordvectorarray.append(wordvector)
+
+    if mask_mode=='sentence': mask = sentence_mask
+    else:
+        mask = np.array([index for index, w in enumerate(wordvectorarray)], dtype=np.int32)
+
+    if len(wordvectorarray)-1!=mask[-1]:
+        print(mask)
+        print(np.array(wordvectorarray).shape)
+        raise
+
+    return np.vstack(wordvectorarray), mask
+
 def run_cnn(doc, corpus, tf_session):
     doc_cnn, corpus_cnn = tf_session.transform_doc(doc, corpus)
 
     return [doc_cnn, corpus_cnn]
 
 def wordonehot(doc, corpus, vocab, transformations, feature, min_length=None, max_length=None):
-    # TODO: do we need to normalize here too?
-    doc_array = tokenize.word_punct_tokens(doc)
-    corpus_array = tokenize.word_punct_tokens(corpus)
-    doc_onehot = run_onehot(doc, vocab, min_length, max_length)
-    corpus_onehot = run_onehot(corpus, vocab, min_length, max_length)
+    # Normalize and tokenize the text before sending it into the one-hot encoder
+    norm_doc = tokenize.word_punct_tokens(normalize.xml_normalize(doc))
+    norm_corpus = tokenize.word_punct_tokens(normalize.xml_normalize(corpus))
+    doc_onehot, _ = run_onehot(norm_doc, vocab, min_length, max_length)
+    corpus_onehot, _ = run_onehot(norm_corpus, vocab, min_length, max_length)
     feature = gen_feature([doc_onehot, corpus_onehot], transformations, feature)
     return feature
 
@@ -246,11 +293,28 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
     Returns:
         NDArray (vocab size, doc length), with 1 indicating presence of vocab item
             at that position. Out-of-vocab entries do not appear in the result.
+        sentence_mask: a mask which indicates the last word at the end of a sentence.
+            Used for memory networks
     """
     # transform only the non-null entries in the document
-    doc_indices = [doc_idx for doc_idx in
-                        [ vocab.get(wd, None) for wd in doc ]
-                        if doc_idx is not None]
+    # at the same time get a sentence mask which is used for the memory networks
+    punkt = ['.', '!', '?']
+    last_doc_idx = False
+    doc_indices = []
+    sentence_mask = []
+    for wd in doc:
+        doc_idx = vocab.get(wd, None)
+        if doc_idx is not None:
+            doc_indices.append(doc_idx)
+            last_doc_idx = True
+        if wd in punkt and last_doc_idx:
+            # Only add the index if it isn't already there
+            if len(sentence_mask)==0 or sentence_mask[-1] != len(doc_indices)-1:
+                sentence_mask.append(len(doc_indices)-1)
+            # Reset the index to prevent the mask from being longer than the document
+            last_doc_idx = False
+
+
     vocab_size = len(vocab)
     doc_length = len(doc_indices)
     doc_onehot = np.zeros((vocab_size, doc_length), dtype=np.float32)
@@ -267,7 +331,93 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
         doc_onehot = doc_onehot[:, :max_length]
         doc_length = doc_onehot.shape[1]
 
-    return doc_onehot
+    # make sure to add in the last index if it is not already there
+    if len(sentence_mask)==0 or sentence_mask[-1] != doc_length-1:
+        sentence_mask.append(doc_length-1)
+    # Check to ensure there are no mask values
+    sentence_mask = [a for a in sentence_mask if a<doc_length]
+
+    return doc_onehot, sentence_mask
+
+def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params, vocab, w2v_model, encoder_decoder):
+    '''
+    Generates observations to be fed into the mem_net code
+
+    Args:
+        raw_doc (string): the raw document text
+        raw_corpus (dict): the raw corpus text
+        sentences_full (list): list of all sentences in the corpus
+        mem_net_params (dict): the specified features to be calculated for mem_net
+        vocab (dict): the vocabulary of the data set
+        w2v_model: the word2vec model of the data set
+        encoder_decoder (???): the encoder/decoder for skipthoughts vectors
+
+    Returns:
+        doc_input (array): the corpus data, known in mem_nets as the input
+        doc_questions: the document data, known in mem_nets as the question
+        doc_masks: the mask for the input data - tells mem_net where the end of each input is
+            this can be per word for the end of a sentence
+    '''
+
+    # Use the specified mask mode where available
+    if mem_net_params.get('mask_mode', False):
+        mask_mode = mem_net_params["mask_mode"]
+    else: mask_mode = 'sentence'
+
+    if mem_net_params.get('embed_mode', False):
+        embed_mode = mem_net_params['embed_mode']
+    else: embed_mode = 'word2vec'
+
+    if embed_mode == 'skip_thought':
+        doc_sentences = tokenize.punkt_sentences(raw_doc)
+
+        # Ensure that the document and corpus are long enough and if not make them be long enough
+        if len(sentences_full)==1:
+            print("short corpus")
+            sentences_full.extend(sentences_full)
+        if len(doc_sentences)==1:
+            print("short doc")
+            doc_sentences.extend(doc_sentences)
+        corpus_vectors = sk.encode(encoder_decoder, sentences_full)
+        doc_vectors = sk.encode(encoder_decoder, doc_sentences)
+
+        # Since each entry is a sentence, we use the index of each entry for the mask
+        # We cannot use a word mode in this embedding
+        doc_masks = [index for index, w in enumerate(corpus_vectors)]
+        doc_questions = doc_vectors
+        doc_input = corpus_vectors
+
+
+    elif embed_mode == 'onehot':
+        min_length = None
+        max_length = None
+        if mem_net_params.get('onehot_min_len', False):
+            min_length = mem_net_params['onehot_min_len']
+        if mem_net_params.get('onehot_max_len', False):
+            max_length = mem_net_params['onehot_max_len']
+        if mem_net_params.get('wordonehot_vocab', False):
+            onehot_vocab = mem_net_params['onehot_vocab']
+        else: onehot_vocab=vocab
+        corpus_vectors, sentence_mask = run_onehot(normalize.xml_normalize(raw_corpus), onehot_vocab, min_length, max_length)
+        doc_vectors, _ = run_onehot(normalize.xml_normalize(raw_doc), onehot_vocab, min_length, max_length)
+
+        doc_questions = doc_vectors.T
+        doc_input = corpus_vectors.T
+
+        if mask_mode=='sentence':
+            doc_masks = sentence_mask
+        else: doc_masks = [index for index, w in enumerate(doc_input)]
+
+
+    elif embed_mode == 'word2vec':
+        corpus_vectors, doc_masks = run_w2v_matrix(w2v_model, raw_corpus, mem_net_params, mask_mode)
+        doc_vectors, _ = run_w2v_matrix(w2v_model, raw_doc, mem_net_params, mask_mode)
+
+        if len(corpus_vectors)>0 and len(doc_vectors)>0:
+            doc_questions = doc_vectors
+            doc_input = corpus_vectors
+
+    return doc_input, doc_questions, doc_masks
 
 def gen_observations(all_clusters, lookup_order, documentData, features, parameters, vocab, encoder_decoder, lda_model, tf_session, w2v_model):
     '''
@@ -277,18 +427,30 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
         all_clusters (set): cluster IDs
         lookup_order (dict): document arrival order
         documentData (array): parsed JSON documents
-        filename (str): the name of the corpus file
-        features (namedTuple): the specified features to be calculated
+        features (dict): the specified features to be calculated
         vocab (dict): the vocabulary of the data set
         encoder_decoder (???): the encoder/decoder for skipthoughts vectors
+        lda_model: the lda model of the data set
+        tf_session: the tensor flow session of the data set
+        w2v_model: the word2vec model of the data set
 
     Returns:
-        list: contains for each obeservation a namedtupled with the cluster_id, post_id, novelty, tfidf sum, cosine similarity, bag of words vectors and skip thoughts  (scores are None if feature is unwanted)
+        data(list): contains for each obeservation the features of the document vs corpus which could include:
+            tfidf sum, cosine similarity, bag of words vectors, skip thoughts, lda, w2v or, onehot cnn encoding
+        labels(list): the labels for each document where a one is novel and zero is duplicate
     '''
 
     # Prepare to store results of feature assessments
     data = list()
     labels = list()
+    # mem_net_features is used when the mem_net algorithm is ran
+    # It consist of inputs, labels(answers), input_masks and questions for each entry
+    mem_net_features = {}
+    inputs = []
+    input_masks = []
+    questions = []
+    # Sentence punctuation delimiters
+    punkt = ['.','?','!']
 
     #Iterate through clusters found in JSON file, do feature assessments,
     #build a rolling corpus from ordered documents for each cluster
@@ -297,6 +459,8 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
         sortedEntries = [x[1] for x in sorted(lookup_order[cluster], key=lambda x: x[0])]
 
         first_doc = documentData[sortedEntries[0]]["body_text"]
+
+        raw_corpus = first_doc
 
         # Set corpus to first doc in this cluster and prepare to update corpus with new document vocabulary
         corpus = normalize.normalize_and_remove_stop_words(first_doc, **parameters)
@@ -307,6 +471,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
         # Store a list of sentences in the cluster at each iteration
         sentences = []
         sentences += (get_first_and_last_sentence(first_doc))
+        sentences_full = tokenize.punkt_sentences(first_doc)
 
         for index in sortedEntries[1:]:
             # Find next document in order
@@ -317,37 +482,58 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
 
             corpus_array.append(doc)
 
-            feature = list()
+            if 'mem_net' in features:
+                doc_input, doc_questions, doc_masks = gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, features['mem_net'], vocab, w2v_model, encoder_decoder)
 
-            if 'bow' in features:
-                feature = bow(doc, corpus, corpus_array, vocab, features['bow'], feature)
 
-            if 'st' in features:
-                feature = st(raw_doc, sentences, encoder_decoder, features['st'], feature)
+                # Now add all of the input docs to the primary list
+                inputs.append(doc_input)
+                questions.append(doc_questions)
+                input_masks.append(doc_masks)
 
-            if 'lda' in features:
-                feature = lda(doc, corpus, vocab, lda_model, features['lda'], feature)
+                sentences_full += tokenize.punkt_sentences(raw_doc)
+            else:
 
-            if 'w2v' in features:
-                feature = w2v(raw_doc, corpus, w2v_model, features['w2v'], feature)
+                feature = list()
 
-            if 'cnn' in features:
-                feature = run_cnn(doc, corpus, tf_session)
+                if 'bow' in features:
+                    feature = bow(doc, corpus, corpus_array, vocab, features['bow'], feature)
 
-            if 'wordonehot' in features:
-                feature = wordonehot(doc, corpus, vocab, features['wordonehot'], feature)
+                if 'st' in features:
+                    feature = st(raw_doc, sentences, encoder_decoder, features['st'], feature)
 
-            # Save feature and label
-            feature = np.concatenate(feature, axis=0)
-            data.append(feature)
+                if 'lda' in features:
+                    feature = lda(doc, corpus, vocab, lda_model, features['lda'], feature)
+
+                if 'w2v' in features:
+                    feature = w2v(raw_doc, corpus, w2v_model, features['w2v'], feature)
+
+                if 'cnn' in features:
+                    feature = run_cnn(doc, corpus, tf_session)
+
+                if 'wordonehot' in features:
+                    feature = wordonehot(doc, corpus, vocab, features['wordonehot'], feature)
+
+                # Save feature and label
+                feature = np.concatenate(feature, axis=0)
+                data.append(feature)
             if documentData[index]["novelty"]: labels.append(1)
             else: labels.append(0)
 
             # Update corpus and add newest sentence to sentences vector
             corpus+=doc
-            sentences += get_first_and_last_sentence(doc)
+            raw_corpus+=raw_doc
+            sentences += get_first_and_last_sentence(raw_doc)
 
-    return data, labels
+    mem_net_features['inputs'] = inputs
+    mem_net_features['questions'] = questions
+    mem_net_features['input_masks'] = input_masks
+    mem_net_features['answers'] = labels
+
+    if 'mem_net' in features:
+        return mem_net_features, labels
+    else:
+        return data, labels
 
 def main(argv):
     '''

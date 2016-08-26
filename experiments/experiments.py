@@ -33,10 +33,11 @@ def config_variables():
 
     # DIRECTORY
     directory = 'data/stackexchange/anime'
+    #directory = 'stack_exchange_data/corpus/scifi'
 
     # FEATURES
     # bag of words
-    BOW_APPEND = True
+    BOW_APPEND = False
     BOW_DIFFERENCE = False
     BOW_PRODUCT = False
     BOW_COS = False
@@ -54,6 +55,17 @@ def config_variables():
     LDA_PRODUCT = False
     LDA_COS = False
     LDA_TOPICS = 50
+    
+    #Mem_nets
+    MEM_NET = False
+    MEM_VOCAB = 50
+    MEM_TYPE = 'dmn_basic'
+    MEM_BATCH = 1
+    MEM_EPOCHS = 5
+    MEM_MASK_MODE = 'word'
+    MEM_EMBED_MODE = 'word2vec'
+    MEM_ONEHOT_MIN_LEN = 140
+    MEM_ONEHOT_MAX_LEN = 1000
 
     #word2vec
     W2V_APPEND = False
@@ -96,7 +108,7 @@ def config_variables():
     SVM_GAMMA = 'auto'
 
     # xgboost
-    XGB = True
+    XGB = False
     XGB_LEARNRATE = 0.1
     XGB_MAXDEPTH = 3
     XGB_MINCHILDWEIGHT = 1
@@ -161,6 +173,15 @@ def run_experiment(directory,
             XGB_MAXDEPTH,
             XGB_MINCHILDWEIGHT,
             XGB_COLSAMPLEBYTREE,
+            MEM_NET,
+            MEM_VOCAB,
+            MEM_TYPE,
+            MEM_BATCH,
+            MEM_EPOCHS,
+            MEM_MASK_MODE,
+            MEM_EMBED_MODE,
+            MEM_ONEHOT_MIN_LEN,
+            MEM_ONEHOT_MAX_LEN,
             RESAMPLING,
             NOVEL_RATIO,
             OVERSAMPLING,
@@ -215,6 +236,15 @@ def run_experiment(directory,
             XGB_MAXDEPTH,
             XGB_MINCHILDWEIGHT,
             XGB_COLSAMPLEBYTREE,
+            MEM_NET,
+            MEM_VOCAB,
+            MEM_TYPE,
+            MEM_BATCH,
+            MEM_EPOCHS,
+            MEM_MASK_MODE,
+            MEM_EMBED_MODE,
+            MEM_ONEHOT_MIN_LEN,
+            MEM_ONEHOT_MAX_LEN,
             RESAMPLING,
             NOVEL_RATIO,
             OVERSAMPLING,
