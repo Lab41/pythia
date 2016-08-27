@@ -269,13 +269,7 @@ def run_cnn(doc, corpus, tf_session):
 
     return [doc_cnn, corpus_cnn]
 
-def wordonehot(doc, corpus, vocab, transformations, feature, min_length=None, max_length=None):
-    # Normalize and tokenize the text before sending it into the one-hot encoder
-    norm_doc = tokenize.word_punct_tokens(normalize.xml_normalize(doc))
-    norm_corpus = tokenize.word_punct_tokens(normalize.xml_normalize(corpus))
-    doc_onehot, _ = run_onehot(norm_doc, vocab, min_length, max_length)
-    corpus_onehot, _ = run_onehot(norm_corpus, vocab, min_length, max_length)
-    feature = gen_feature([doc_onehot, corpus_onehot], transformations, feature)
+
     return feature
 
 def run_onehot(doc, vocab, min_length=None, max_length=None):
@@ -339,6 +333,97 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
 
     return doc_onehot, sentence_mask
 
+def encode_doc(doc, vocab, oov_strategy='skip'):
+    """
+    Integer-encode doc according to vocab. Options for 
+    how to treat out-of-vocabulary tokens
+
+    Args:
+        doc (list): list of tokens to encode
+        vocab (dict): mapping of tokens to integer codes
+        oov_strategy (str or int): if 'skip', leave out-of-vocab tokens
+            out of result. If 'none', replace oov tokens with None. If 
+            any integer, replace oov tokens with that integer.
+    Returns:
+        list of integers (and possibly None)
+    """
+
+    if oov_strategy == 'skip':
+        doc = strip_to_vocab(doc, vocab)
+        oov_code = None
+    elif type(oov_strategy) is int:
+        oov_code = oov_strategy
+    elif oov_strategy is None:
+        oov_code = None
+        
+    encoded_doc = [ vocab.get(tkn, oov_code) for tkn in doc ]
+    return encoded_doc
+
+def get_mask(doc_idxs, vocab, dividers = ['.', '!', '?']):
+    """ Return the indices from a integer-encoded document
+    representing the non-contiguous instances of divider characters
+
+    Args:
+        doc_idxs (list, NDArray): document to mask, encoded according to the mapping in vocab
+        vocab (dict): map of token (str) to id (int)
+        dividers (list of str): which characters to divide on?
+
+    Returns:
+        list of list indices where dividers occur
+    """
+
+    last_tkn_was_mask = False
+    sentence_mask = []
+    divider_idx = set(vocab[divider] for divider in dividers)
+    for tkn in doc_idxs:
+        if tkn is in divider_idx and not last_tkn_was_mask:
+            last_tkn_was_mask = True
+            sentence_mask.append(tkn)
+        else:
+            last_tkn_was_mask = False
+    return sentence_mask
+
+def remove_by_position(doc, idxs):
+    """Remove elements from document by position
+    and return the result alongside with the list index 
+    of the last element before each removed element
+    
+    Args:
+        doc (list): list of tokens
+        idxs (list): indices in doc to remove
+    
+    Returns:
+        list, list: doc, with elements at idxs removed, and 
+          and adjusted list of indices into the modified doc"""
+    
+    idxs = sorted(idxs)
+    # new indices are offset by 1 + however many indices come before them 
+    mask_idxs = [ i - (1 + offset) for offset, i in enumerate(idxs) ]
+
+    masked_doc = []
+    for idx, last_idx in zip(idxs, [-1] + idxs[:-1]):
+        masked_doc.extend(doc[last_idx + 1:idx])
+    return masked_doc, mask_idxs 
+
+def strip_to_vocab(doc, vocab):
+    """ Remove from doc any tokens not in vocab.
+
+    Args:
+        doc (list): list of tokens
+        vocab (dict): keys overlap with tokens in doc
+
+    Returns:
+        list
+    """
+    return [ tkn for tkn in doc if tkn in vocab ]
+
+def wordonehot(doc, corpus, vocab, transformations, feature, min_length=None, max_length=None):
+    # Normalize and tokenize the text before sending it into the one-hot encoder
+    norm_doc = tokenize.word_punct_tokens(normalize.xml_normalize(doc))
+    norm_corpus = tokenize.word_punct_tokens(normalize.xml_normalize(corpus))
+    doc_onehot, _ = run_onehot(norm_doc, vocab, min_length, max_length)
+    corpus_onehot, _ = run_onehot(norm_corpus, vocab, min_length, max_length)
+    feature = gen_feature([doc_onehot, corpus_onehot], transformations, feature)
 def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params, vocab, w2v_model, encoder_decoder):
     '''
     Generates observations to be fed into the mem_net code
