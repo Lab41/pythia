@@ -288,27 +288,9 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
         NDArray (vocab size, doc length), with 1 indicating presence of vocab item
             at that position. Out-of-vocab entries do not appear in the result.
         sentence_mask: a mask which indicates the last word at the end of a sentence.
-            Used for memory networks
+            Used for memory n etworks
     """
-    # transform only the non-null entries in the document
-    # at the same time get a sentence mask which is used for the memory networks
-    punkt = ['.', '!', '?']
-    last_doc_idx = False
-    doc_indices = []
-    sentence_mask = []
-    for wd in doc:
-        doc_idx = vocab.get(wd, None)
-        if doc_idx is not None:
-            doc_indices.append(doc_idx)
-            last_doc_idx = True
-        if wd in punkt and last_doc_idx:
-            # Only add the index if it isn't already there
-            if len(sentence_mask)==0 or sentence_mask[-1] != len(doc_indices)-1:
-                sentence_mask.append(len(doc_indices)-1)
-            # Reset the index to prevent the mask from being longer than the document
-            last_doc_idx = False
-
-
+    doc_indices = encode_doc(doc, vocab, oov_strategy='skip')
     vocab_size = len(vocab)
     doc_length = len(doc_indices)
     doc_onehot = np.zeros((vocab_size, doc_length), dtype=np.float32)
@@ -328,10 +310,8 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
     # make sure to add in the last index if it is not already there
     if len(sentence_mask)==0 or sentence_mask[-1] != doc_length-1:
         sentence_mask.append(doc_length-1)
-    # Check to ensure there are no mask values
-    sentence_mask = [a for a in sentence_mask if a<doc_length]
 
-    return doc_onehot, sentence_mask
+    return doc_onehot
 
 def encode_doc(doc, vocab, oov_strategy='skip'):
     """
