@@ -10,6 +10,8 @@ from collections import namedtuple
 from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict
 from src.utils.sampling import sample
 
+import pickle
+
 def main(argv):
     '''
     controls the over-arching implmentation of the algorithms
@@ -34,6 +36,18 @@ def main(argv):
     train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, encoder_decoder, lda_model, tf_model, w2v_model])
     test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, encoder_decoder, lda_model, tf_model, w2v_model])
 
+    # save training data for separate experimentation and hyperparameter optimization
+    if 'saveexperimentdata' in parameters:
+        lunchbox = dict()
+        lunchbox['directory'] = directory
+        lunchbox['features'] = features
+        lunchbox['algorithms'] = algorithms
+        lunchbox['parameters'] = parameters
+        lunchbox['train_data'] = train_data
+        lunchbox['train_target'] = train_target
+        lunchbox['test_data'] = test_data
+        lunchbox['test_target'] = test_target
+        pickle.dump(lunchbox, open(parameters['saveexperimentdata']['experimentdatafile'], "wb"))
 
     #modeling
     print("running algorithms...",file=sys.stderr)
@@ -95,9 +109,9 @@ def get_args(
 
     #FEATURES
     #bag of words
-    BOW_APPEND = True,
+    BOW_APPEND = False,
     BOW_DIFFERENCE = False,
-    BOW_PRODUCT = True,
+    BOW_PRODUCT = False,
     BOW_COS = False,
     BOW_TFIDF = False,
 
@@ -168,6 +182,9 @@ def get_args(
     OVERSAMPLING = False,
     REPLACEMENT = False,
 
+    #save training data for experimentation and hyperparameter grid search
+    SAVEEXPERIMENTDATA = False,
+    EXPERIMENTDATAFILE='data/experimentdatafile.pkl',
 
     #vocabulary
     VOCAB_SIZE = 1000,
@@ -292,8 +309,14 @@ def get_args(
         if OVERSAMPLING: resampling['over'] = OVERSAMPLING
         if REPLACEMENT: resampling['replacement'] = REPLACEMENT
 
+    saveexperimentdata = None
+    if SAVEEXPERIMENTDATA:
+        saveexperimentdata = dict()
+        if EXPERIMENTDATAFILE: saveexperimentdata['experimentdatafile'] = EXPERIMENTDATAFILE
+
     parameters = dict()
     if RESAMPLING: parameters['resampling'] = resampling
+    if SAVEEXPERIMENTDATA: parameters['saveexperimentdata'] = saveexperimentdata
     if VOCAB_SIZE: parameters['vocab'] = VOCAB_SIZE
     if STEM: parameters['stem'] = STEM
     if SEED: parameters['seed'] = SEED
