@@ -272,7 +272,7 @@ def run_cnn(doc, corpus, tf_session):
 
     return feature
 
-def run_onehot(doc, vocab, min_length=None, max_length=None):
+def run_onehot(doc, vocab, min_length=None, max_length=None, already_encoded=False):
     """ One-hot encode array of tokens, given a vocabulary mapping
     them to 0-to-n integer space
 
@@ -283,19 +283,19 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
         min_length: if not None, enforce a minimum document length by zero-padding
             the right edge of the result
         max_length: if not None, truncate documents to max_length
+        already_encoded (bool): if True, skip encoding step and treat
+            doc as onehot-encoded NDArray
 
     Returns:
         NDArray (vocab size, doc length), with 1 indicating presence of vocab item
             at that position. Out-of-vocab entries do not appear in the result.
-        sentence_mask: a mask which indicates the last word at the end of a sentence.
-            Used for memory n etworks
     """
-    doc_indices = encode_doc(doc, vocab, oov_strategy='skip')
-    vocab_size = len(vocab)
-    doc_length = len(doc_indices)
-    doc_onehot = np.zeros((vocab_size, doc_length), dtype=np.float32)
-    for token_idx, token in enumerate(doc_indices):
-        doc_onehot[token, token_idx] = 1
+    if not already_encoded:
+        doc_indices = encode_doc(doc, vocab, oov_strategy='skip')
+        vocab_size = len(vocab)
+        doc_onehot = onehot_encode(doc_indices, vocab_size)
+    else:
+        doc_onehot = doc
 
     # Zero-padding if doc is too short
     if min_length is not None and doc_length < min_length:
