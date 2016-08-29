@@ -421,13 +421,14 @@ def wordonehot(doc, corpus, vocab, transformations, feature, min_length=None, ma
     doc_onehot = run_onehot(norm_doc, vocab, min_length, max_length)
     corpus_onehot = run_onehot(norm_corpus, vocab, min_length, max_length)
     feature = gen_feature([doc_onehot, corpus_onehot], transformations, feature)
+
 def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params, vocab, w2v_model, encoder_decoder):
     '''
     Generates observations to be fed into the mem_net code
 
     Args:
         raw_doc (string): the raw document text
-        raw_corpus (dict): the raw corpus text
+        raw_corpus (str): the raw corpus text
         sentences_full (list): list of all sentences in the corpus
         mem_net_params (dict): the specified features to be calculated for mem_net
         vocab (dict): the vocabulary of the data set
@@ -439,7 +440,7 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
         doc_questions: the document data, known in mem_nets as the question
         doc_masks: the mask for the input data - tells mem_net where the end of each input is
             this can be per word for the end of a sentence
-    '''
+     '''
 
     # Use the specified mask mode where available
     if mem_net_params.get('mask_mode', False):
