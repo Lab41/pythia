@@ -1,5 +1,7 @@
+import copy
+
 from src.featurizers.skipthoughts import skipthoughts as sk
-from src.utils import normalize, tokenize
+from src.utils import normalize, tokenize, sampling
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.preprocessing import OneHotEncoder
@@ -269,84 +271,110 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
 
     return doc_onehot
 
-def gen_observations(all_clusters, lookup_order, documentData, features, parameters, vocab, encoder_decoder, lda_model, tf_session, w2v_model):
+def gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, encoder_decoder, lda_model, tf_session, w2v_model, random_state=np.random):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
 
     Args:
         all_clusters (set): cluster IDs
         lookup_order (dict): document arrival order
-        documentData (array): parsed JSON documents
-        filename (str): the name of the corpus file
+        document_data (array): parsed JSON documents
         features (namedTuple): the specified features to be calculated
+        parameters (???): data structure with run parameters
         vocab (dict): the vocabulary of the data set
         encoder_decoder (???): the encoder/decoder for skipthoughts vectors
+        lda_model (sklearn.???): trained LDA model
+        tf_session: active TensorFlow session
+        w2v_model (gensim.word2vec): trained word2vec model
 
     Returns:
-        list: contains for each obeservation a namedtupled with the cluster_id, post_id, novelty, tfidf sum, cosine similarity, bag of words vectors and skip thoughts  (scores are None if feature is unwanted)
+        list, list: lists containing featurized data (np.array) and associated 
+            labels (int), 0 if duplicate and 1 if novel
     '''
 
     # Prepare to store results of feature assessments
     data = list()
     labels = list()
+    corpus_unprocessed = list()
 
-    #Iterate through clusters found in JSON file, do feature assessments,
-    #build a rolling corpus from ordered documents for each cluster
+    # Iterate through clusters found in JSON file, generate observations
+    # pairing data and label
     for cluster in all_clusters:
         # Determine arrival order in this cluster
-        sortedEntries = [x[1] for x in sorted(lookup_order[cluster], key=lambda x: x[0])]
+        sorted_entries = [x[1] for x in sorted(lookup_order[cluster], key=lambda x: x[0])]
 
-        first_doc = documentData[sortedEntries[0]]["body_text"]
+        observations = [document_data[sorted_entries[0]]]
 
-        # Set corpus to first doc in this cluster and prepare to update corpus with new document vocabulary
-        corpus = normalize.normalize_and_remove_stop_words(first_doc, **parameters)
+        for index in sorted_entries[1:]:
+            next_doc = document_data[index]
+            observations.append(next_doc)
+            labeled_observation = { 'novelty' : next_doc['novelty'],
+                    'data' : copy.copy(observations) }
+            corpus_unprocessed.append(labeled_observation)
+    
+    # Resample if necessary
+    # If oversampling +/- replacement, sample up
+    # to larger class size for both classes, with replacement
+    # If -oversampling, sample down to 
+    # smaller class size for both classes with or w/o replacement
+    if 'resampling' in parameters:
+        if 'over' in parameters:
+            desired_size = None
+            parameters['replacement'] = True
+        else:
+            desired_size = -np.Inf
+        if 'replacement' in parameters:
+            replacement = True
+        else:
+            replacement = False
+        corpus = sampling.label_sample(corpus_unprocessed, "novelty", replacement, desired_size, random_state)  
+    else:
+        corpus = corpus_unprocessed
 
-        # Create a document array for TFIDF
-        corpus_array = [corpus]
+    # Featurize each observation
+    # Some duplication of effort here bc docs will appear multiple times 
+    # across observations
+    for case in corpus:
+        # Create raw and normalized document arrays
+        case_docs_raw = [ record['body_text'] for record in case['data'] ]
+        case_docs_normalized = [ normalize.normalize_and_remove_stop_words(body_text) for body_text in case_docs_raw ]
+        # Pull out query documents
+        doc_raw = case_docs_raw[-1]
+        doc_normalized = case_docs_raw[-1]
+        # Create lists of background documents
+        bkgd_docs_raw = case_docs_raw[:-1]
+        bkgd_docs_normalized = case_docs_normalized[:-1]
+        bkgd_text_raw = '\n'.join(bkgd_docs_raw)
 
-        # Store a list of sentences in the cluster at each iteration
-        sentences = []
-        sentences += (get_first_and_last_sentence(first_doc))
+        feature_vectors = list()
 
-        for index in sortedEntries[1:]:
-            # Find next document in order
-            raw_doc = documentData[index]["body_text"]
+        if 'bow' in features:
+            feature_vectors = bow(doc_normalized, bkgd_text_raw, bkgd_docs_normalized, vocab, features['bow'], feature_vectors)
 
-            #normalize and remove stop words from doc
-            doc = normalize.normalize_and_remove_stop_words(raw_doc, **parameters)
+        if 'st' in features:
+            sentences = [ get_first_and_last_sentence(doc) for doc in bkgd_raw ]
+            feature_vectors = st(doc_raw, sentences, encoder_decoder, features['st'], feature_vectors)
 
-            corpus_array.append(doc)
+        if 'lda' in features:
+            feature_vectors = lda(doc_normalized, bkgd_docs_normalized, vocab, lda_model, features['lda'], feature_vectors)
 
-            feature = list()
+        if 'w2v' in features:
+            feature_vectors = w2v(doc_raw, bkgd_docs_normalized, w2v_model, features['w2v'], feature_vectors)
 
-            if 'bow' in features:
-                feature = bow(doc, corpus, corpus_array, vocab, features['bow'], feature)
+        if 'cnn' in features:
+            feature_vectors = run_cnn(doc_normalized, bkgd_docs_normalized, tf_session)
 
-            if 'st' in features:
-                feature = st(raw_doc, sentences, encoder_decoder, features['st'], feature)
+        if 'wordonehot' in features:
+            feature_vectors = wordonehot(doc_raw, bkgd_text_raw, vocab, features['wordonehot'], feature_vectors)
 
-            if 'lda' in features:
-                feature = lda(doc, corpus, vocab, lda_model, features['lda'], feature)
-
-            if 'w2v' in features:
-                feature = w2v(raw_doc, corpus, w2v_model, features['w2v'], feature)
-
-            if 'cnn' in features:
-                feature = run_cnn(doc, corpus, tf_session)
-
-            if 'wordonehot' in features:
-                feature = wordonehot(doc, corpus, vocab, features['wordonehot'], feature)
-
-            # Save feature and label
-            feature = np.concatenate(feature, axis=0)
-            data.append(feature)
-            if documentData[index]["novelty"]: labels.append(1)
-            else: labels.append(0)
-
-            # Update corpus and add newest sentence to sentences vector
-            corpus+=doc
-            sentences += get_first_and_last_sentence(doc)
-
+        # Save features and label
+        feature_vectors = np.concatenate(feature_vectors, axis=0)
+        data.append(feature_vectors)
+        if case["novelty"]: 
+            labels.append(1)
+        else: 
+            labels.append(0)
+        
     return data, labels
 
 def main(argv):
