@@ -316,11 +316,11 @@ def onehot_encode(doc, size):
 
     Args:
         doc (list): indices to 'flip on' in one-hot encoding
-        size (int): size of one-hot vecctors to create
+        size (int): size of one-hot vectors to create
     '''
-    doc_length = len(doc_indices)
+    doc_length = len(doc)
     doc_onehot = np.zeros((size, doc_length), dtype=np.float32)
-    for token_idx, token in enumerate(doc_indices):
+    for token_idx, token in enumerate(doc):
         doc_onehot[token, token_idx] = 1
     return doc_onehot
 
