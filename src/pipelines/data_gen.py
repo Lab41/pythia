@@ -368,10 +368,10 @@ def get_mask(doc_idxs, vocab, dividers = ['.', '!', '?'], add_final_posn=True):
     last_tkn_was_mask = False
     sentence_mask = []
     divider_idx = set(vocab[divider] for divider in dividers)
-    for tkn in doc_idxs:
+    for idx, tkn in enumerate(doc_idxs):
         if tkn in divider_idx and not last_tkn_was_mask:
             last_tkn_was_mask = True
-            sentence_mask.append(tkn)
+            sentence_mask.append(idx)
         else:
             last_tkn_was_mask = False
     if add_final_posn:
