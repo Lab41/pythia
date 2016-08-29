@@ -307,9 +307,6 @@ def run_onehot(doc, vocab, min_length=None, max_length=None, already_encoded=Fal
         doc_onehot = doc_onehot[:, :max_length]
         doc_length = doc_onehot.shape[1]
 
-    # make sure to add in the last index if it is not already there
-    if len(sentence_mask)==0 or sentence_mask[-1] != doc_length-1:
-        sentence_mask.append(doc_length-1)
 
     return doc_onehot
 
@@ -339,19 +336,21 @@ def encode_doc(doc, vocab, oov_strategy='skip'):
     encoded_doc = [ vocab.get(tkn, oov_code) for tkn in doc ]
     return encoded_doc
 
-def get_mask(doc_idxs, vocab, dividers = ['.', '!', '?']):
+def get_mask(doc_idxs, vocab, dividers = ['.', '!', '?'], add_final_posn=True):
     """ Return the indices from a integer-encoded document
     representing the non-contiguous instances of divider characters
 
     Args:
-        doc_idxs (list, NDArray): document to mask, encoded according to the mapping in vocab
+        doc_idxs (list): document to mask, encoded as int according to the mapping in vocab
         vocab (dict): map of token (str) to id (int)
         dividers (list of str): which characters to divide on?
+        add_final_posn (bool): Add an index for the last posn in doc_idxs, even if not a divider
 
     Returns:
         list of list indices where dividers occur
     """
 
+    doc_length = len(doc_idxs)
     last_tkn_was_mask = False
     sentence_mask = []
     divider_idx = set(vocab[divider] for divider in dividers)
@@ -361,6 +360,10 @@ def get_mask(doc_idxs, vocab, dividers = ['.', '!', '?']):
             sentence_mask.append(tkn)
         else:
             last_tkn_was_mask = False
+    if add_final_posn:
+        # make sure to add in the last index if it is not already there
+        if len(sentence_mask)==0 or sentence_mask[-1] != doc_length-1:
+            sentence_mask.append(doc_length-1)
     return sentence_mask
 
 def remove_by_position(doc, idxs):
