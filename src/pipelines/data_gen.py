@@ -269,16 +269,10 @@ def run_cnn(doc, corpus, tf_session):
 
     return [doc_cnn, corpus_cnn]
 
-def wordonehot(doc, corpus, vocab, transformations, feature, min_length=None, max_length=None):
-    # Normalize and tokenize the text before sending it into the one-hot encoder
-    norm_doc = tokenize.word_punct_tokens(normalize.xml_normalize(doc))
-    norm_corpus = tokenize.word_punct_tokens(normalize.xml_normalize(corpus))
-    doc_onehot, _ = run_onehot(norm_doc, vocab, min_length, max_length)
-    corpus_onehot, _ = run_onehot(norm_corpus, vocab, min_length, max_length)
-    feature = gen_feature([doc_onehot, corpus_onehot], transformations, feature)
+
     return feature
 
-def run_onehot(doc, vocab, min_length=None, max_length=None):
+def run_onehot(doc, vocab, min_length=None, max_length=None, already_encoded=False):
     """ One-hot encode array of tokens, given a vocabulary mapping
     them to 0-to-n integer space
 
@@ -289,37 +283,19 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
         min_length: if not None, enforce a minimum document length by zero-padding
             the right edge of the result
         max_length: if not None, truncate documents to max_length
+        already_encoded (bool): if True, skip encoding step and treat
+            doc as onehot-encoded NDArray
 
     Returns:
         NDArray (vocab size, doc length), with 1 indicating presence of vocab item
             at that position. Out-of-vocab entries do not appear in the result.
-        sentence_mask: a mask which indicates the last word at the end of a sentence.
-            Used for memory networks
     """
-    # transform only the non-null entries in the document
-    # at the same time get a sentence mask which is used for the memory networks
-    punkt = ['.', '!', '?']
-    last_doc_idx = False
-    doc_indices = []
-    sentence_mask = []
-    for wd in doc:
-        doc_idx = vocab.get(wd, None)
-        if doc_idx is not None:
-            doc_indices.append(doc_idx)
-            last_doc_idx = True
-        if wd in punkt and last_doc_idx:
-            # Only add the index if it isn't already there
-            if len(sentence_mask)==0 or sentence_mask[-1] != len(doc_indices)-1:
-                sentence_mask.append(len(doc_indices)-1)
-            # Reset the index to prevent the mask from being longer than the document
-            last_doc_idx = False
-
-
-    vocab_size = len(vocab)
-    doc_length = len(doc_indices)
-    doc_onehot = np.zeros((vocab_size, doc_length), dtype=np.float32)
-    for token_idx, token in enumerate(doc_indices):
-        doc_onehot[token, token_idx] = 1
+    if not already_encoded:
+        doc_indices = encode_doc(doc, vocab, oov_strategy='skip')
+        vocab_size = len(vocab)
+        doc_onehot = onehot_encode(doc_indices, vocab_size)
+    else:
+        doc_onehot = doc
 
     # Zero-padding if doc is too short
     if min_length is not None and doc_length < min_length:
@@ -331,13 +307,120 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
         doc_onehot = doc_onehot[:, :max_length]
         doc_length = doc_onehot.shape[1]
 
-    # make sure to add in the last index if it is not already there
-    if len(sentence_mask)==0 or sentence_mask[-1] != doc_length-1:
-        sentence_mask.append(doc_length-1)
-    # Check to ensure there are no mask values
-    sentence_mask = [a for a in sentence_mask if a<doc_length]
 
-    return doc_onehot, sentence_mask
+    return doc_onehot
+
+def onehot_encode(doc, size):
+    ''' Encode list of indices in one-hot format, producing a sparse
+    matrix of binary codes
+
+    Args:
+        doc (list): indices to 'flip on' in one-hot encoding
+        size (int): size of one-hot vectors to create
+    '''
+    doc_length = len(doc)
+    doc_onehot = np.zeros((size, doc_length), dtype=np.float32)
+    for token_idx, token in enumerate(doc):
+        doc_onehot[token, token_idx] = 1
+    return doc_onehot
+
+def encode_doc(doc, vocab, oov_strategy='skip'):   
+    """
+    Integer-encode doc according to vocab. Options for 
+    how to treat out-of-vocabulary tokens
+
+    Args:
+        doc (list): list of tokens to encode
+        vocab (dict): mapping of tokens to integer codes
+        oov_strategy (str or int): if 'skip', leave out-of-vocab tokens
+            out of result. If 'none', replace oov tokens with None. If 
+            any integer, replace oov tokens with that integer.
+    Returns:
+        list of integers (and possibly None)
+    """
+
+    if oov_strategy == 'skip':
+        doc = strip_to_vocab(doc, vocab)
+        oov_code = None
+    elif type(oov_strategy) is int:
+        oov_code = oov_strategy
+    elif oov_strategy is None:
+        oov_code = None
+        
+    encoded_doc = [ vocab.get(tkn, oov_code) for tkn in doc ]
+    return encoded_doc
+
+def get_mask(doc_idxs, vocab, dividers = ['.', '!', '?'], add_final_posn=True):
+    """ Return the indices from a integer-encoded document
+    representing the non-contiguous instances of divider characters
+
+    Args:
+        doc_idxs (list): document to mask, encoded as int according to the mapping in vocab
+        vocab (dict): map of token (str) to id (int)
+        dividers (list of str): which characters to divide on?
+        add_final_posn (bool): Add an index for the last posn in doc_idxs, even if not a divider
+
+    Returns:
+        list of list indices where dividers occur
+    """
+
+    doc_length = len(doc_idxs)
+    last_tkn_was_mask = False
+    sentence_mask = []
+    divider_idx = set(vocab[divider] for divider in dividers)
+    for idx, tkn in enumerate(doc_idxs):
+        if tkn in divider_idx and not last_tkn_was_mask:
+            last_tkn_was_mask = True
+            sentence_mask.append(idx)
+        else:
+            last_tkn_was_mask = False
+    if add_final_posn:
+        # make sure to add in the last index if it is not already there
+        if len(sentence_mask)==0 or sentence_mask[-1] != doc_length-1:
+            sentence_mask.append(doc_length-1)
+    return sentence_mask
+
+def remove_by_position(doc, idxs):
+    """Remove elements from document by position
+    and return the result alongside with the list index 
+    of the last element before each removed element
+    
+    Args:
+        doc (list): list of tokens
+        idxs (list): indices in doc to remove
+    
+    Returns:
+        list, list: doc, with elements at idxs removed, and 
+          and adjusted list of indices into the modified doc"""
+    
+    idxs = sorted(idxs)
+    # new indices are offset by 1 + however many indices come before them 
+    mask_idxs = [ i - (1 + offset) for offset, i in enumerate(idxs) ]
+
+    masked_doc = []
+    for idx, last_idx in zip(idxs, [-1] + idxs[:-1]):
+        masked_doc.extend(doc[last_idx + 1:idx])
+    return masked_doc, mask_idxs 
+
+def strip_to_vocab(doc, vocab):
+    """ Remove from doc any tokens not in vocab.
+
+    Args:
+        doc (list): list of tokens
+        vocab (dict): keys overlap with tokens in doc
+
+    Returns:
+        list
+    """
+    return [ tkn for tkn in doc if tkn in vocab ]
+
+def wordonehot(doc, corpus, vocab, transformations, feature, min_length=None, max_length=None):
+    # Normalize and tokenize the text before sending it into the one-hot encoder
+    norm_doc = tokenize.word_punct_tokens(normalize.xml_normalize(doc))
+    norm_corpus = tokenize.word_punct_tokens(normalize.xml_normalize(corpus))
+    doc_onehot = run_onehot(norm_doc, vocab, min_length, max_length)
+    corpus_onehot = run_onehot(norm_corpus, vocab, min_length, max_length)
+    feature = gen_feature([doc_onehot, corpus_onehot], transformations, feature)
 
 def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params, vocab, w2v_model, encoder_decoder):
     '''
@@ -345,7 +428,7 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
 
     Args:
         raw_doc (string): the raw document text
-        raw_corpus (dict): the raw corpus text
+        raw_corpus (str): the raw corpus text
         sentences_full (list): list of all sentences in the corpus
         mem_net_params (dict): the specified features to be calculated for mem_net
         vocab (dict): the vocabulary of the data set
@@ -357,7 +440,7 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
         doc_questions: the document data, known in mem_nets as the question
         doc_masks: the mask for the input data - tells mem_net where the end of each input is
             this can be per word for the end of a sentence
-    '''
+     '''
 
     # Use the specified mask mode where available
     if mem_net_params.get('mask_mode', False):
@@ -398,8 +481,20 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
         if mem_net_params.get('wordonehot_vocab', False):
             onehot_vocab = mem_net_params['onehot_vocab']
         else: onehot_vocab=vocab
-        corpus_vectors, sentence_mask = run_onehot(normalize.xml_normalize(raw_corpus), onehot_vocab, min_length, max_length)
-        doc_vectors, _ = run_onehot(normalize.xml_normalize(raw_doc), onehot_vocab, min_length, max_length)
+
+        # Preprocess and tokenize bkgd documents
+        corpus_tokens = tokenize.word_punct_tokens(normalize.xml_normalize(raw_corpus))
+        corpus_tokens = strip_to_vocab(corpus_tokens, onehot_vocab)
+        corpus_indices = encode_doc(corpus_tokens, onehot_vocab)
+        # Get sentence mask indices
+        assert {'.',',','!','?'} <= onehot_vocab.keys()  # ensure that you are using a vocabulary w/ punctuation
+        sentence_mask = get_mask(corpus_indices, onehot_vocab)
+        # One-hot encode documents w/ masks, and query document
+        corpus_encoded = onehot_encode(corpus_indices, len(onehot_vocab))
+        corpus_vectors = run_onehot(corpus_encoded, min_length, max_length, already_encoded=True)
+        # Tokenize and  one-hot encode query document
+        doc_vectors = run_onehot(tokenize.word_punct_tokens(normalize.xml_normalize(raw_doc)), 
+                                    onehot_vocab, min_length, max_length)
 
         doc_questions = doc_vectors.T
         doc_input = corpus_vectors.T
