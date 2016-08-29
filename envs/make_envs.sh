@@ -66,15 +66,6 @@ set -e
             touch $envloc/etc/conda/activate.d/env_vars.sh
             touch $envloc/etc/conda/deactivate.d/env_vars.sh
 
-            # Search PYTHIA_CONFIG's JSON format for the PYTHIA_MONGO_DB_URI property and return PYTHIA_MONGO_DB_URI's value
-            dbval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MONGO_DB_URI'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
-            # Due to the colon (:) delimiter, go back to PYTHIA_MONGO_DB_URI's value in PYTHIA_CONFIG's JSON and extract the port from the next string
-            dbport=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MONGO_DB_URI'\042/){print $(i+2)}}}' | cut -d'"' -f1 ) )
-            if [ "$dbval" != "" ]; then
-                echo "export PYTHIA_MONGO_DB_URI=$dbval:$dbport" >> $envloc/etc/conda/activate.d/env_vars.sh
-                echo "unset PYTHIA_MONGO_DB_URI" >> $envloc/etc/conda/deactivate.d/env_vars.sh
-            fi
-
             # Search PYTHIA_CONFIG's JSON format for the PYTHIA_MODELS_PATH property and return PYTHIA_MODELS_PATH's value
             modelval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MODELS_PATH'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
             if [ "$modelval" != "" ]; then
@@ -86,7 +77,7 @@ set -e
 
     conda install -q -y python="$python_version" scikit-learn \
         beautifulsoup4==4.4.1 lxml==3.6.1 jupyter==1.0.0 pandas==0.18.1 nltk==3.2.1 \
-        seaborn==0.7.1 gensim==0.12.4 pip==8.1.1 pymongo==3.0.3
+        seaborn==0.7.1 gensim==0.12.4 pip==8.1.1 pymongo==3.0.3 pytest
 
     # install tensorflow
     conda install -q -y -c conda-forge tensorflow==0.9.0
@@ -96,6 +87,12 @@ set -e
 
     # Install XGBoost classifier
     pip install -q xgboost==0.4a30
+
+    # Install auto-sklearn (Linux only) and dependencies for experimentation and hyperparameter optimization
+    # http://automl.github.io/auto-sklearn/stable/index.html
+    pip install -q Cython==0.24.1
+    pip install -q -r https://raw.githubusercontent.com/automl/auto-sklearn/master/requirements.txt
+    pip install auto-sklearn==0.0.1
 
     # install theano and keras
     pip install -q nose-parameterized==0.5.0 Theano==0.8.2 keras==1.0.7

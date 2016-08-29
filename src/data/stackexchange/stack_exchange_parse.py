@@ -73,6 +73,8 @@ def section_setup(section, zip_directory, corpus_directory):
     return full_file_name, section_directory, corpus_section_directory
 
 def load(url, file_name, folder):
+    """ Download archive for a StackExchange site and unzip it,
+    skipping either or both if the neessary tables are already available """
     # Need special case for Stack Overflow (more than one 7z file)
 
     if not os.path.isfile(file_name):
@@ -89,88 +91,62 @@ def load(url, file_name, folder):
 
     #un-zips file and puts contents in folder
     a = py7z_extractall.un7zip(file_name)
-    a.extractall(folder)
+    if not (os.path.isfile(os.path.join(folder, "PostLinks.xml")) and os.path.isfile(os.path.join(folder, "Posts.xml"))):
+        a.extractall(folder)
 
 def get_links(folder):
     """Parse Links table from a SE site data release"""
     tree = etree.parse(folder +"/PostLinks.xml")
     return tree.getroot()
 
-def gen_clusters(links):
-    """Find clusters of associated posts using data about duplication and
-    relatedness from the links tables of the SE data dump.
-
-    Returns: tuple--
-        clusters (dict): mapping of cluster id to set of unique documents in cluster
-        related (dict): mapping of cluster id to set of unique documents in cluster
-            linked by "related" links
-        duplicates (dict): mapping of cluster id to set of unique documents in
-            cluster linked by "duplicate" links
-        unique_posts (set): set of all unique post ids encountered
-    """
-    unused_id = 1
-
-    # Code numbers for links in SE Links table
+def iter_clusters(links, posts):
     related_link = '1'
     duplicate_link = '3'
+    
+    for cluster_id, link in enumerate(links):
+        src_id = link.attrib['PostId']
+        dest_id = link.attrib['RelatedPostId']
+        link_type = link.attrib['LinkTypeId']
+        if link_type not in (related_link, duplicate_link):
+            continue
 
-    clusters = dict()
-    related = dict()
-    duplicates = dict()
-    unique_posts = set()
+        src_text = extract_post_text(src_id, posts)
+        dest_text = extract_post_text(dest_id, posts)
+        if src_text is None or dest_text is None:
+            continue
 
-    for l in links:
-        # src and destination for a given link
-        post_id = l.attrib['PostId']
-        related_id = l.attrib['RelatedPostId']
-        new_ids = {post_id, related_id}
-        # maintain list of post ids encountered
-        unique_posts = unique_posts.union(new_ids)
-        post_cluster_id = None
-        related_cluster_id = None
-        # add related posts to existing clusters or create new ones
-        for c in clusters:
-            ids = clusters[c]
-            # does src or dest occur in this cluster? if so, add here
-            if post_id in ids:
-                post_cluster_id = c
-            elif related_id in ids:
-                related_cluster_id = c
-        # create new cluster and augment index of next cluster, if neither
-        # src nor dest was a match
-        if not (post_cluster_id or related_cluster_id):
-            cluster_id = unused_id
-            clusters[cluster_id] = set()
-            duplicates[cluster_id] = set()
-            related[cluster_id] = set()
-            unused_id+=1
-        # use cluster assigned to src, if dest not a match
-        elif not related_cluster_id:
-            cluster_id = post_cluster_id
-        # use cluster assigned to dest, if src not a match
-        elif not post_cluster_id:
-            cluster_id = related_cluster_id
-        # or merge clusters, if both src and dest matched clusters
-        # if post_cluster_id and related_cluster_id are
-        # already the same, merge is harmless
-        else:
-            post_cluster = clusters[post_cluster_id]
-            related_cluster = clusters[related_cluster_id]
-            clusters[post_cluster_id] = post_cluster.union(related_cluster)
-            del clusters[related_cluster_id]
-            cluster_id = post_cluster_id
+        src_doc = { 'post_id': src_id,
+            'order' : 0,
+            'body_text' : src_text,
+            'novelty' : True,
+            'cluster_id' : cluster_id
+        }
+        dest_doc = { 'post_id': dest_id,
+            'order' : 1,
+            'body_text' : dest_text,
+            'novelty' : True if link_type == related_link else False,
+            'cluster_id' : cluster_id
+        }
+        yield src_doc, dest_doc
 
-        # Having found the appropriate cluster id, make sure src and dest
-        # are added to it, and data on whether they are linked by relatedness
-        # or duplication
-        clusters[cluster_id] = clusters[cluster_id].union(new_ids)
-        if l.attrib['LinkTypeId'] == related_link:
-            related[cluster_id] = related[cluster_id].union(new_ids)
-        else: # l.attrib['LinkTypeId'] == duplicate:
-            if not l.attrib['LinkTypeId'] == duplicate_link:
-                print(l.attrib['LinkTypeId'])
-            duplicates[cluster_id] = clusters[cluster_id].union(new_ids)
-    return clusters, related, duplicates, unique_posts
+def gen_clusters(links, posts):
+    """
+    Given links, return a data structure representing ordered lists of documents
+    with associated metadata and novelty markings.
+
+    Only outputs lists of two directly linked documents due to lingering
+    questions about how to interpret indirect links.
+
+    Args:
+        links (list): as from get_links
+
+    Returns:
+        list of list of dict -- the clusters, each one a list of dicts
+        representing the document objects
+    """
+
+    clusters = list(iter_clusters(links, posts))
+    return clusters
 
 def get_posts(folder):
     tree = etree.parse(folder +"/Posts.xml")
@@ -179,89 +155,30 @@ def get_posts(folder):
 def clean_up(raw_text):
     return BeautifulSoup(raw_text, "lxml").get_text()
 
-def gen_corpus(posts, unique_posts):
-    corpus = dict()
+def extract_post_text(id, posts):
+    """
+        Get post by ID from XML etree object
 
-    for p in posts:
-        id = p.attrib['Id']
-        if id in unique_posts:
-            try:
-                corpus[id] = clean_up(p.attrib['Title']) + ' ' + clean_up(p.attrib['Body'])
-            except:
-                pass
-    return corpus
+        Args:
+            id (int): ID of post to retrieve
+            posts (lxml.etree._Element): root of parsed posts table
+    """
+    try:
+        post = posts.find("./*[@Id='{id}']".format(id=id))
+        return clean_up(post.attrib['Title']) + ' ' + clean_up(post.attrib['Body'])
+    except AttributeError:
+        return None
+    except KeyError:
+        return None
 
-def write_json_files(clusters, related, duplicates, corpus, corpus_directory):
-    next_cluster_id = 0
-    for cluster_id in clusters:
-        time_stamp = 0
-        file_empty = True
-        file_name = '{:05d}.json'.format(next_cluster_id)
-        full_file_name = os.path.join(corpus_directory, file_name)
-        with open(full_file_name, 'w') as outfile:
-            if cluster_id in duplicates:
-                novel = True
-                for duplicate in duplicates[cluster_id]:
-                    if duplicate in corpus:
-                        d = dict()
-                        d['cluster_id'] = next_cluster_id
-                        d['post_id'] = duplicate
-                        d['order'] = time_stamp
-                        d['body_text'] = corpus[duplicate]
-                        d['novelty'] = novel
-                        json.dump(d, outfile)
-                        outfile.write('\n')
-                        novel = False
-                        time_stamp+=1
-                        file_empty = False
-            for related_post in related[cluster_id]:
-                if not related_post in duplicates:
-                    if related_post in corpus:
-                        r = dict()
-                        r['cluster_id'] = next_cluster_id
-                        r['post_id'] = related_post
-                        r['order'] = time_stamp
-                        r['body_text'] = corpus[related_post]
-                        r['novelty'] = True
-                        json.dump(r, outfile)
-                        outfile.write('\n')
-                        time_stamp+=1
-                        file_empty = False
-        if not file_empty:
-            next_cluster_id+=1
-
-def filter_json_files(filtered_corpus_directory, corpus_directory, minpost, maxpost):
-
-    print("Filtering JSON files")
-    make_directory(filtered_corpus_directory)
-
-    filestokeep = list()
-
-    # Iterate over topic folders in corpus
-    for foldername in os.listdir(corpus_directory):
-
-        fullfoldername = os.path.join(corpus_directory,foldername)
-
-        if os.path.isdir(fullfoldername) == True:
-
-            jsonstats = []
-
-            # Iterate over clusters in this topic
-            for file_name in os.listdir(fullfoldername):
-                if file_name.endswith(".json"):
-                    full_file_name = os.path.join(fullfoldername, file_name)
-                    entries = 0
-                    with open(full_file_name,'r') as dataFile:
-                        for line in dataFile: entries += 1
-                    if entries >= minpost and entries <= maxpost: filestokeep.append((full_file_name, foldername))
-
-    # Copy cluster files that meet min and max post requirements
-    for entry in filestokeep:
-       copylocation = os.path.join(filtered_corpus_directory, entry[1])
-       make_directory(copylocation)
-       copy(entry[0], copylocation)
-
-    print("Filtered corpus copied to: ", filtered_corpus_directory)
+def write_json_files(clusters, corpus_directory, filename_prefix=''):
+    for cluster in clusters:
+        cluster_id = cluster[0]['cluster_id']
+        cluster_filename = "{}{:05d}.json".format(filename_prefix, cluster_id)
+        cluster_path = os.path.join(corpus_directory, cluster_filename)
+        with open(cluster_path, "w") as cluster_out:
+            for doc in cluster:
+                print(json.dumps(doc), file=cluster_out)
 
 def main(args):
     """Go through list of SE sites, create directories to store downloaded data
@@ -276,39 +193,40 @@ def main(args):
     zip_directory, corpus_directory = args.zip_path, args.dest_path
     setup(zip_directory, corpus_directory)
 
-    if args.skipparse == False:
-        for (section, url) in stack_exchange_data:
-            print("Starting " + section)
+    for (section, url) in stack_exchange_data:
+        #creates directories for the current SE site
+        zip_file_path, unzipped_folder, corpus_section_directory = section_setup(
+            section, zip_directory, corpus_directory)
 
-            #creates directories for the current SE site
-            zip_file_path, unzipped_folder, corpus_section_directory = section_setup(
-                section, zip_directory, corpus_directory)
+        done_signal_path = os.path.join(corpus_section_directory, ".done")):
+        if os.path.isfile(done_signal_path):
+            continue
 
-            #downloads and unzips data release for a site
-            load(url, zip_file_path, unzipped_folder)
+        print("Starting " + section)
 
-            #gets the links data from the links table for the site
-            links = get_links(unzipped_folder)
 
-            #creates the clusters of related and duplicate posts for a site,
-            #based on links data
-            clusters, related, duplicates, unique_posts = gen_clusters(links)
+        #downloads and unzips data release for a site
+        load(url, zip_file_path, unzipped_folder)
 
-            #gets post data from the posts table
-            posts = get_posts(unzipped_folder)
+        #gets the links data from the links table for the site
+        links = get_links(unzipped_folder)
 
-            #extract post title and body text for each document in the site
-            corpus = gen_corpus(posts, unique_posts)
+        #gets post data from the posts table
+        posts = get_posts(unzipped_folder)
 
-            #writes cluster information to json files
-            write_json_files(clusters, related, duplicates, corpus, corpus_section_directory)
+        #creates the clusters of related and duplicate posts for a site,
+        #based on links data
+        # clusters, related, duplicates, unique_posts = gen_clusters(links)
+        clusters = iter_clusters(links, posts)
 
-            print("Completed " + section)
+        #writes cluster information to json files
+        write_json_files(clusters, corpus_section_directory)
+        
+        # put completion marker in folder so we can skip it next time
+        with open(done_signal_path, "w") as f:
+            print("", file=f)
 
-    if args.filter or args.skipparse:
-        filter_json_files(os.path.normpath(corpus_directory) + "_filtered",
-            corpus_directory, int(args.minpost), int(args.maxpost))
-
+        print("Completed " + section)
 
 if __name__ == '__main__':
 
@@ -321,17 +239,6 @@ if __name__ == '__main__':
         default="stack_exchange_data/zip_files")
     parser.add_argument("--dest-path", help="path to folder where processed data will " \
         "be stored.", default="stack_exchange_data/corpus")
-    parser.add_argument("--filter", help="flag to filter JSON files after " \
-        "downloading/parsing Stack Exchange data, based on minpost/maxpost arguments",
-        action="store_true")
-    parser.add_argument("--minpost", default=3, help="when filtering, set " \
-        "minimum allowable posts in a single JSON file (default is 3)")
-    parser.add_argument("--maxpost", default=10, help="when filtering, set " \
-        "maximum allowable posts in a single JSON file (default is 10)")
-    parser.add_argument("--skipparse", help="flag to bypass downloading/parsing " \
-        "JSON files and proceed directly to JSON file filtering; " \
-        "can be used if corpus was previously downloaded/parsed", action="store_true")
-
     args = parser.parse_args()
     main(args)
     #parser.exit(status=0, message=None)
