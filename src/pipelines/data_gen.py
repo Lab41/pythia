@@ -418,8 +418,8 @@ def wordonehot(doc, corpus, vocab, transformations, feature, min_length=None, ma
     # Normalize and tokenize the text before sending it into the one-hot encoder
     norm_doc = tokenize.word_punct_tokens(normalize.xml_normalize(doc))
     norm_corpus = tokenize.word_punct_tokens(normalize.xml_normalize(corpus))
-    doc_onehot, _ = run_onehot(norm_doc, vocab, min_length, max_length)
-    corpus_onehot, _ = run_onehot(norm_corpus, vocab, min_length, max_length)
+    doc_onehot = run_onehot(norm_doc, vocab, min_length, max_length)
+    corpus_onehot = run_onehot(norm_corpus, vocab, min_length, max_length)
     feature = gen_feature([doc_onehot, corpus_onehot], transformations, feature)
 def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params, vocab, w2v_model, encoder_decoder):
     '''
@@ -480,8 +480,19 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
         if mem_net_params.get('wordonehot_vocab', False):
             onehot_vocab = mem_net_params['onehot_vocab']
         else: onehot_vocab=vocab
-        corpus_vectors, sentence_mask = run_onehot(normalize.xml_normalize(raw_corpus), onehot_vocab, min_length, max_length)
-        doc_vectors, _ = run_onehot(normalize.xml_normalize(raw_doc), onehot_vocab, min_length, max_length)
+
+        # Preprocess and tokenize bkgd documents
+        corpus_tokens = tokenize.word_punct_tokens(normalize.xml_normalize(raw_corpus))
+        corpus_tokens = strip_to_vocab(corpus_tokens, onehot_vocab)
+        corpus_indices = encode_doc(corpus_tokens, onehot_vocab)
+        # Get sentence mask indices
+        assert {'.',',','!','?'} <= onehot_vocab.keys()  # ensure that you are using a vocabulary w/ punctuation
+        sentence_mask = get_mask(corpus_indices, onehot_vocab)
+        # One-hot encode documents w/ masks, and query document
+        corpus_encoded = onehot_encode(corpus_indices, len(onehot_vocab))
+        corpus_vectors = run_onehot(corpus_encoded, min_length, max_length, already_encoded=True)
+        doc_vectors = run_onehot(tokenize.word_punct_tokens(normalize.xml_normalize(raw_doc)), 
+                                    onehot_vocab, min_length, max_length)
 
         doc_questions = doc_vectors.T
         doc_input = corpus_vectors.T
