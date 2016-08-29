@@ -79,14 +79,11 @@ def config_variables():
     W2V_WORKERS = 3
 
     #one-hot CNN layer
+    #The one-hot CNN will use the full_vocab parameters
     CNN_APPEND = False
     CNN_DIFFERENCE = False
     CNN_PRODUCT = False
     CNN_COS = False
-    #The vocabulary can either be character or word
-    #If words, WORDONEHOT_VOCAB will be used as the vocab length
-    CNN_VOCAB_TYPE = "character"
-    CNN_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789"
 
     # wordonehot (will not play nicely with other featurization methods b/c not
     # vector)
@@ -124,6 +121,9 @@ def config_variables():
     #vocabulary
     VOCAB_SIZE = 10000
     STEM = False
+    FULL_VOCAB_SIZE = 1000
+    FULL_VOCAB_TYPE = 'character'
+    FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}"
 
     SEED = None
 
@@ -156,8 +156,6 @@ def run_experiment(directory,
             CNN_DIFFERENCE,
             CNN_PRODUCT,
             CNN_COS,
-            CNN_VOCAB_TYPE,
-            CNN_CHAR_VOCAB,
             WORDONEHOT,
             WORDONEHOT_VOCAB,
             LOG_REG,
@@ -188,6 +186,9 @@ def run_experiment(directory,
             REPLACEMENT,
             VOCAB_SIZE,
             STEM,
+            FULL_VOCAB_SIZE,
+            FULL_VOCAB_TYPE,
+            FULL_CHAR_VOCAB,
             SEED):
     return pythia_main(
         get_args(
@@ -219,8 +220,6 @@ def run_experiment(directory,
             CNN_DIFFERENCE,
             CNN_PRODUCT,
             CNN_COS,
-            CNN_VOCAB_TYPE,
-            CNN_CHAR_VOCAB,
             WORDONEHOT,
             WORDONEHOT_VOCAB,
             LOG_REG,
@@ -251,6 +250,9 @@ def run_experiment(directory,
             REPLACEMENT,
             VOCAB_SIZE,
             STEM,
+            FULL_VOCAB_SIZE,
+            FULL_VOCAB_TYPE,
+            FULL_CHAR_VOCAB,
             SEED)
     )
 

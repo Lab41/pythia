@@ -28,12 +28,12 @@ def main(argv):
 
     #preprocessing
     print("preprocessing...",file=sys.stderr)
-    vocab, encoder_decoder, lda_model, tf_model, w2v_model = preprocess.main([features, parameters, corpusdict, data])
+    vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model = preprocess.main([features, parameters, corpusdict, data])
 
     #featurization
     print("generating training and testing data...",file=sys.stderr)
-    train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, encoder_decoder, lda_model, tf_model, w2v_model])
-    test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, encoder_decoder, lda_model, tf_model, w2v_model])
+    train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
+    test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
 
 
     #modeling
@@ -134,10 +134,7 @@ def get_args(
     CNN_DIFFERENCE = False,
     CNN_PRODUCT = False,
     CNN_COS = False,
-    #The vocabulary can either be character or word
-    #If words, WORDONEHOT_VOCAB will be used as the vocab length
-    CNN_VOCAB_TYPE = "character",
-    CNN_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789",
+    #The one-hot CNN will use the full_vocab parameters
 
     # wordonehot (will not play nicely with other featurization methods b/c not
     # vector)
@@ -188,6 +185,9 @@ def get_args(
     #vocabulary
     VOCAB_SIZE = 1000,
     STEM = False,
+    FULL_VOCAB_SIZE = 1000,
+    FULL_VOCAB_TYPE = 'character',
+    FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}",
 
     SEED = None):
 
@@ -241,11 +241,6 @@ def get_args(
         if CNN_DIFFERENCE: cnn['difference'] = CNN_DIFFERENCE
         if CNN_PRODUCT: cnn['product'] = CNN_PRODUCT
         if CNN_COS: cnn['cos'] = CNN_COS
-        if CNN_VOCAB_TYPE:
-            cnn['vocab_type'] = CNN_VOCAB_TYPE
-            if CNN_VOCAB_TYPE=="word":
-                if WORDONEHOT_VOCAB: cnn['vocab_len'] = WORDONEHOT_VOCAB
-        if CNN_CHAR_VOCAB: cnn['topics'] = CNN_CHAR_VOCAB
     if MEM_NET:
         mem_net = dict()
         if MEM_VOCAB: mem_net['word_vector_size'] = MEM_VOCAB
@@ -343,6 +338,9 @@ def get_args(
     if VOCAB_SIZE: parameters['vocab'] = VOCAB_SIZE
     if STEM: parameters['stem'] = STEM
     if SEED: parameters['seed'] = SEED
+    if FULL_VOCAB_SIZE: parameters['full_vocab_size'] = FULL_VOCAB_SIZE
+    if FULL_VOCAB_TYPE: parameters['full_vocab_type'] = FULL_VOCAB_TYPE
+    if FULL_CHAR_VOCAB: parameters['full_char_vocab'] = FULL_CHAR_VOCAB
 
     return directory, features, algorithms, parameters
 

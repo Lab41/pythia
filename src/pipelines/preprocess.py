@@ -35,6 +35,39 @@ def gen_vocab(corpus_dict, vocab=1000, stem=False, **kwargs):
         else: break
     return vocabdict
 
+def gen_full_vocab(corpus_dict, full_vocab_type='word', full_vocab_size=1000, stem=False, full_char_vocab="", **kwargs):
+    '''
+    Generates a dictionary of words to be used as the vocabulary in features that utilize bag of words.
+    This vocab contains stop words and punctuation
+
+    Args:
+        corpus_dict (OrderedDict): An ordered list of the most frequently occurring tokens in the corpus
+        vocab_size (int): the number of words to be used in the vocabulary
+
+    Returns:
+        dict: a dictionary of size vocab_size that contains the most frequent normalized and non-stop words in the corpus
+    '''
+    if full_vocab_type=='char':
+        char_dict = {}
+        i=0
+        for c in full_char_vocab:
+            char_dict[c] = i
+            i += 1
+        return char_dict
+
+    else:
+        index = 0
+        vocabdict = dict()
+        for word in corpus_dict:
+            if len(vocabdict) < full_vocab_size:
+                cleantext = xml_normalize(word, stem)
+                if cleantext != '':
+                    if not cleantext in vocabdict:
+                        vocabdict[cleantext] = index
+                        index+=1
+            else: break
+        return vocabdict
+
 def build_lda(trainingdata, vocabdict, topics=40, **kwargs):
     '''
     Fits a LDA topic model based on the corpus vocabulary.
@@ -131,19 +164,21 @@ def main(argv):
     lda_model = None
     tf_session = None
     w2v_model = None
+    full_vocab = None
 
     if 'st' in features: encoder_decoder = skipthoughts.load_model()
 
     if 'bow' in features or 'lda' in features:
         vocab = gen_vocab(corpus_dict, **parameters)
-    elif 'cnn' in features and 'vocab_type' in features['cnn'] and features['cnn']['vocab_type'] == 'word':
-        vocab = gen_vocab(corpus_dict, **parameters)
+
+    if 'cnn' in features:
+        full_vocab = gen_full_vocab(corpus_dict, **parameters)
+        features['cnn']['vocab'] = full_vocab
+        tf_session = tensorflow_cnn.tensorflow_cnn(trainingdata, **features['cnn'])
 
     if 'lda' in features:
         features['lda']['vocab'] = vocab
         lda_model = build_lda(trainingdata, vocab, **features['lda'])
-
-    if 'cnn' in features: tf_session = tensorflow_cnn.tensorflow_cnn(trainingdata, **features['cnn'])
 
     if 'w2v' in features: w2v_model = build_w2v(trainingdata, **features['w2v'])
 
@@ -154,9 +189,9 @@ def main(argv):
         else: embed_mode = 'word2vec'
         if embed_mode=='skip_thought' and not encoder_decoder:
             encoder_decoder = skipthoughts.load_model()
-        if embed_mode=="onehot" and not vocab:
-            vocab = gen_vocab(corpus_dict, **parameters)
+        if embed_mode=="onehot" and not full_vocab:
+            full_vocab = gen_full_vocab(corpus_dict, **parameters)
         if embed_mode=='word2vec' and not w2v_model:
             w2v_model = build_w2v(trainingdata, **features['mem_net'])
 
-    return vocab, encoder_decoder, lda_model, tf_session, w2v_model
+    return vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model

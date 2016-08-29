@@ -7,19 +7,9 @@ import random
 
 class tensorflow_cnn:
 
-    def __init__(self, trainingdata, vocab_type = "character", vocab=list("abcdefghijklmnopqrstuvwxyz0123456789"), doc_length=1000, batch_size=32, rand_seed = 41, \
+    def __init__(self, trainingdata, doc_length=1000, batch_size=32, rand_seed = 41, \
                  hidden_layer_len = 32, connected_layer_len = 600, learning_rate = 0.001, num_steps=1000, print_step=100, **kwargs):
         self.trainingdata = trainingdata
-        self.vocab_type = vocab_type
-
-        if type(vocab) != dict:
-            self.vocab_dict = {}
-            i=0
-            for c in vocab:
-                self.vocab_dict[c] = i
-                i += 1
-        else:
-            self.vocab_dict = vocab
 
         self.doc_length = doc_length
         print("starting to train the CNN")
