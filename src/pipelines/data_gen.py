@@ -310,7 +310,21 @@ def run_onehot(doc, vocab, min_length=None, max_length=None, already_encoded=Fal
 
     return doc_onehot
 
-def encode_doc(doc, vocab, oov_strategy='skip'):
+def onehot_encode(doc, size):
+    ''' Encode list of indices in one-hot format, producing a sparse
+    matrix of binary codes
+
+    Args:
+        doc (list): indices to 'flip on' in one-hot encoding
+        size (int): size of one-hot vecctors to create
+    '''
+    doc_length = len(doc_indices)
+    doc_onehot = np.zeros((size, doc_length), dtype=np.float32)
+    for token_idx, token in enumerate(doc_indices):
+        doc_onehot[token, token_idx] = 1
+    return doc_onehot
+
+def encode_doc(doc, vocab, oov_strategy='skip'):   
     """
     Integer-encode doc according to vocab. Options for 
     how to treat out-of-vocabulary tokens
