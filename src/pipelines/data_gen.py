@@ -369,7 +369,7 @@ def get_mask(doc_idxs, vocab, dividers = ['.', '!', '?'], add_final_posn=True):
     sentence_mask = []
     divider_idx = set(vocab[divider] for divider in dividers)
     for tkn in doc_idxs:
-        if tkn is in divider_idx and not last_tkn_was_mask:
+        if tkn in divider_idx and not last_tkn_was_mask:
             last_tkn_was_mask = True
             sentence_mask.append(tkn)
         else:
@@ -492,6 +492,7 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
         # One-hot encode documents w/ masks, and query document
         corpus_encoded = onehot_encode(corpus_indices, len(onehot_vocab))
         corpus_vectors = run_onehot(corpus_encoded, min_length, max_length, already_encoded=True)
+        # Tokenize and  one-hot encode query document
         doc_vectors = run_onehot(tokenize.word_punct_tokens(normalize.xml_normalize(raw_doc)), 
                                     onehot_vocab, min_length, max_length)
 
