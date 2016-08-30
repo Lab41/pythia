@@ -120,7 +120,7 @@ from https://code.google.com/archive/p/word2vec/ into %s""" % (path_to_models,pa
 
     return w2v_model
 
-def main(features, parameters, corpus_dict, trainingdata, random_state=np.random):
+def main(features, parameters, corpus_dict, trainingdata):
     '''
     Controls the preprocessing of the corpus, including building vocabulary and model creation.
 
@@ -146,7 +146,8 @@ def main(features, parameters, corpus_dict, trainingdata, random_state=np.random
         print("creating a vocab")
         features['lda']['vocab'] = vocab
 
-    if 'lda' in features: lda_model = build_lda(trainingdata, vocab, random_state=random_state, **features['lda'])
+    if 'lda' in features: lda_model = build_lda(trainingdata, vocab, 
+            random_state=parameters['seed'], **features['lda'])
 
     if 'cnn' in features: tf_session = tensorflow_cnn.tensorflow_cnn(trainingdata, **features['cnn'])
 
