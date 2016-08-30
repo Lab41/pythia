@@ -71,6 +71,7 @@ def gen_full_vocab(corpus_dict, full_vocab_type='word', full_vocab_size=1000, st
     for t in token_include:
         if t not in vocabdict.keys():
             vocabdict[t] = index
+            index+=1
 
     return vocabdict
 
