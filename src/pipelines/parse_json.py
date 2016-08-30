@@ -46,7 +46,7 @@ def parse_json(folder, seed=1, **kwargs):
             full_file_name = os.path.join(folder, file_name)
 
             with open(full_file_name,'r') as dataFile:
-                if random_state.random() > 0.2:
+                if random_state.random_sample() > 0.2:
                     for line in dataFile:
                         parsedData = json.loads(fix_escapes(line))
                         clusters.add(parsedData["cluster_id"])
