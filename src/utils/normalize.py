@@ -52,7 +52,7 @@ def porter_stem(words):
     stemmer = stem.PorterStemmer()
     return [stemmer.stem(w) for w in words]
 
-def xml_normalize(raw_text):
+def xml_normalize(raw_text, stem=False, **kwargs ):
     """Alternative normalization: HTML/XML and URLs stripped out, lower-cased,
     but stop words and punctuation remain."""
     # 1. Remove web links
@@ -66,9 +66,16 @@ def xml_normalize(raw_text):
         review_text = BeautifulSoup(links_removed, "lxml").get_text()
 
     # 3. Convert to lower-case
-    lower_case = review_text.lower()
+    lower_case = review_text.lower().split()
 
-    return lower_case
+    # 4. Stemp if necessary
+    if stem: lower_case = porter_stem(lower_case)
+    #
+    # 7. Join the words back into one string separated by space,
+    # and return the result.
+    clean_text = ( " ".join( lower_case ))
+
+    return clean_text
 
 def remove_links(text):
     links_removed = link_re.sub('', text)
