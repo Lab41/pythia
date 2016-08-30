@@ -295,8 +295,9 @@ def run_onehot(doc, vocab, min_length=None, max_length=None, already_encoded=Fal
         vocab_size = len(vocab)
         doc_onehot = onehot_encode(doc_indices, vocab_size)
     else:
+        vocab_size = len(vocab)
         doc_onehot = doc
-
+    doc_length = doc_onehot.shape[1]
     # Zero-padding if doc is too short
     if min_length is not None and doc_length < min_length:
         padding_size = (vocab_size, min_length - doc_length)
@@ -350,7 +351,7 @@ def encode_doc(doc, vocab, oov_strategy='skip'):
     encoded_doc = [ vocab.get(tkn, oov_code) for tkn in doc ]
     return encoded_doc
 
-def get_mask(doc_idxs, vocab, dividers = ['.', '!', '?'], add_final_posn=True):
+def get_mask(doc_idxs, vocab, dividers = ['.', '!', '?'], add_final_posn=True, max_length=None):
     """ Return the indices from a integer-encoded document
     representing the non-contiguous instances of divider characters
 
@@ -374,10 +375,16 @@ def get_mask(doc_idxs, vocab, dividers = ['.', '!', '?'], add_final_posn=True):
             sentence_mask.append(idx)
         else:
             last_tkn_was_mask = False
+    #check to ensure there are no mask values greater than the maximum value
+    if max_length and doc_length-1>max_length - 1:
+        max_mask = max_length - 1
+    else:
+        max_mask = doc_length-1
+    sentence_mask = [a for a in sentence_mask if a<max_mask]
     if add_final_posn:
         # make sure to add in the last index if it is not already there
-        if len(sentence_mask)==0 or sentence_mask[-1] != doc_length-1:
-            sentence_mask.append(doc_length-1)
+        if len(sentence_mask)==0 or sentence_mask[-1] != max_mask:
+            sentence_mask.append(max_mask)
     return sentence_mask
 
 def remove_by_position(doc, idxs):
@@ -421,8 +428,9 @@ def wordonehot(doc, corpus, vocab, transformations, feature, min_length=None, ma
     doc_onehot = run_onehot(norm_doc, vocab, min_length, max_length)
     corpus_onehot = run_onehot(norm_corpus, vocab, min_length, max_length)
     feature = gen_feature([doc_onehot, corpus_onehot], transformations, feature)
+    return feature
 
-def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params, vocab, w2v_model, encoder_decoder):
+def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params, vocab, full_vocab, w2v_model, encoder_decoder):
     '''
     Generates observations to be fed into the mem_net code
 
@@ -478,9 +486,7 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
             min_length = mem_net_params['onehot_min_len']
         if mem_net_params.get('onehot_max_len', False):
             max_length = mem_net_params['onehot_max_len']
-        if mem_net_params.get('wordonehot_vocab', False):
-            onehot_vocab = mem_net_params['onehot_vocab']
-        else: onehot_vocab=vocab
+        onehot_vocab=full_vocab
 
         # Preprocess and tokenize bkgd documents
         corpus_tokens = tokenize.word_punct_tokens(normalize.xml_normalize(raw_corpus))
@@ -488,10 +494,10 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
         corpus_indices = encode_doc(corpus_tokens, onehot_vocab)
         # Get sentence mask indices
         assert {'.',',','!','?'} <= onehot_vocab.keys()  # ensure that you are using a vocabulary w/ punctuation
-        sentence_mask = get_mask(corpus_indices, onehot_vocab)
+        sentence_mask = get_mask(corpus_indices, onehot_vocab, max_length=max_length)
         # One-hot encode documents w/ masks, and query document
         corpus_encoded = onehot_encode(corpus_indices, len(onehot_vocab))
-        corpus_vectors = run_onehot(corpus_encoded, min_length, max_length, already_encoded=True)
+        corpus_vectors = run_onehot(corpus_encoded, onehot_vocab, min_length, max_length, already_encoded=True)
         # Tokenize and  one-hot encode query document
         doc_vectors = run_onehot(tokenize.word_punct_tokens(normalize.xml_normalize(raw_doc)), 
                                     onehot_vocab, min_length, max_length)
@@ -514,7 +520,7 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
 
     return doc_input, doc_questions, doc_masks
 
-def gen_observations(all_clusters, lookup_order, documentData, features, parameters, vocab, encoder_decoder, lda_model, tf_session, w2v_model):
+def gen_observations(all_clusters, lookup_order, documentData, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
 
@@ -578,7 +584,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
             corpus_array.append(doc)
 
             if 'mem_net' in features:
-                doc_input, doc_questions, doc_masks = gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, features['mem_net'], vocab, w2v_model, encoder_decoder)
+                doc_input, doc_questions, doc_masks = gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, features['mem_net'], vocab, full_vocab, w2v_model, encoder_decoder)
 
 
                 # Now add all of the input docs to the primary list
@@ -607,7 +613,7 @@ def gen_observations(all_clusters, lookup_order, documentData, features, paramet
                     feature = run_cnn(doc, corpus, tf_session)
 
                 if 'wordonehot' in features:
-                    feature = wordonehot(doc, corpus, vocab, features['wordonehot'], feature)
+                    feature = wordonehot(doc, corpus, full_vocab, features['wordonehot'], feature)
 
                 # Save feature and label
                 feature = np.concatenate(feature, axis=0)
@@ -640,7 +646,7 @@ def main(argv):
     Returns:
         list: contains for each obeservation
     '''
-    all_clusters, lookup_order, document_data, features, parameters, vocab, encoder_decoder, lda_model, tf_session, w2v_model = argv
-    data, labels = gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, encoder_decoder, lda_model, tf_session, w2v_model)
+    all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model = argv
+    data, labels = gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model)
 
     return data, labels

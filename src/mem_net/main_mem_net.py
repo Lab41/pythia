@@ -12,6 +12,20 @@ from src.mem_net import utils
 from src.mem_net import nn_utils
 from src.mem_net import dmn_basic, dmn_basic_w_cnn, dmn_batch
 
+import os
+os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=gpu,floatX=float32"  # Sets flags for use of GPU
+import errno
+
+#-----------------------------------------------------------------------------#
+# Look at environment variable 'PYTHIA_MODELS_PATH' for user-defined model location
+# If environment variable is not defined, use current working directory
+#-----------------------------------------------------------------------------#
+if os.environ.get('PYTHIA_MODELS_PATH') is not None:
+    path_to_models = os.path.join(os.environ.get('PYTHIA_MODELS_PATH'), 'mem_net_states')
+else:
+    path_to_models = os.path.join(os.getcwd(), 'mem_net_states')
+#-----------------------------------------------------------------------------#
+
 def parse_args(given_args=None):
 
     print("==> parsing input arguments")
@@ -106,6 +120,12 @@ def run_mem_net(train_data, test_data, seed=1, word_vector_size=50,
         ".bn" if batch_norm else "",
         (".d" + str(dropout)) if dropout>0 else "")
 
+    # Check if 'models' directory exists and contains the Skip-Thought models, download if not found
+    try:
+        os.makedirs(path_to_models)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST: raise
+
 
     # init class
     #TODO try out the classes besides basic and add in if they work
@@ -166,7 +186,7 @@ def run_mem_net(train_data, test_data, seed=1, word_vector_size=50,
 
         epoch_loss, skipped, perform_results, y_pred = do_epoch(dmn, 'test', epoch, batch_size, log_every, skipped) # Run do_epoch for test
 
-        state_name = 'data/mem_net_states/%s.epoch%d.test%.5f.state' % (network_name, epoch, epoch_loss)
+        state_name = path_to_models + '/%s.epoch%d.test%.5f.state' % (network_name, epoch, epoch_loss)
 
         if (epoch % save_every == 0):
             print("==> saving ... %s" % state_name)

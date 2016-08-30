@@ -35,7 +35,7 @@ def gen_vocab(corpus_dict, vocab=1000, stem=False, **kwargs):
         else: break
     return vocabdict
 
-def gen_full_vocab(corpus_dict, full_vocab_type='word', full_vocab_size=1000, stem=False, full_char_vocab="", **kwargs):
+def gen_full_vocab(corpus_dict, full_vocab_type='word', full_vocab_size=1000, stem=False, full_char_vocab="", token_include = {'.',',','!','?'}, **kwargs):
     '''
     Generates a dictionary of words to be used as the vocabulary in features that utilize bag of words.
     This vocab contains stop words and punctuation
@@ -47,13 +47,13 @@ def gen_full_vocab(corpus_dict, full_vocab_type='word', full_vocab_size=1000, st
     Returns:
         dict: a dictionary of size vocab_size that contains the most frequent normalized and non-stop words in the corpus
     '''
+
+    vocabdict = dict()
     if full_vocab_type=='char':
-        char_dict = {}
-        i=0
+        index=0
         for c in full_char_vocab:
-            char_dict[c] = i
-            i += 1
-        return char_dict
+            vocabdict[c] = index
+            index+= 1
 
     else:
         index = 0
@@ -66,7 +66,13 @@ def gen_full_vocab(corpus_dict, full_vocab_type='word', full_vocab_size=1000, st
                         vocabdict[cleantext] = index
                         index+=1
             else: break
-        return vocabdict
+
+    #For each of these we need to ensure that the punctuation or list of tokens we desire is in the dictionary
+    for t in token_include:
+        if t not in vocabdict.keys():
+            vocabdict[t] = index
+
+    return vocabdict
 
 def build_lda(trainingdata, vocabdict, topics=40, **kwargs):
     '''
@@ -181,6 +187,8 @@ def main(argv):
         lda_model = build_lda(trainingdata, vocab, **features['lda'])
 
     if 'w2v' in features: w2v_model = build_w2v(trainingdata, **features['w2v'])
+
+    if 'wordonehot' in features: full_vocab = gen_full_vocab(corpus_dict, **parameters)
 
     #get the appropriate model(s) when running the memory network code
     if 'mem_net' in features:

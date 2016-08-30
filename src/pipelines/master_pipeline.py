@@ -248,7 +248,7 @@ def get_args(
         if MEM_TYPE: mem_net['network'] = MEM_TYPE
         if MEM_BATCH: mem_net['batch_size'] = MEM_BATCH
         if MEM_EPOCHS: mem_net['epochs'] = MEM_EPOCHS
-        if MEM_EPOCHS: mem_net['mask_mode'] = MEM_MASK_MODE
+        if MEM_MASK_MODE: mem_net['mask_mode'] = MEM_MASK_MODE
         if MEM_EMBED_MODE : mem_net['embed_mode'] = MEM_EMBED_MODE
         if MEM_ONEHOT_MIN_LEN: mem_net['onehot_min_len'] = MEM_ONEHOT_MIN_LEN
         if MEM_ONEHOT_MAX_LEN: mem_net['onehot_max_len'] = MEM_ONEHOT_MAX_LEN
