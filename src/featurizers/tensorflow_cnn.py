@@ -8,12 +8,17 @@ import sys
 
 class tensorflow_cnn:
 
-    def __init__(self, trainingdata, vocab={}, doc_length=1000, batch_size=32, rand_seed = 41, \
-                 hidden_layer_len = 32, connected_layer_len = 600, learning_rate = 0.001, num_steps=1000, print_step=100, **kwargs):
+    def __init__(self, trainingdata, vocab={}, doc_length=500, batch_size=32, rand_seed = 41, \
+                 hidden_layer_len = 32, connected_layer_len = 600, learning_rate = 0.001, num_steps=100, print_step=10, **kwargs):
         self.trainingdata = trainingdata
         if len(vocab)==0:
             print("Error: Must pass in a vocabulary with at least one entry", file=sys.stderr)
             quit()
+        elif len(vocab)%2!=0:
+            # We are going to add a bottom item as Tensorflow requires an even array
+            # This doesn't need to be a real word, in fact it is better that it is not
+            vocab['rwehwerohfaiuhfrahoiraehwiu'] = len(vocab)
+
         self.vocab_dict = vocab
         self.doc_length = doc_length
         print("starting to train the CNN")
@@ -52,21 +57,21 @@ class tensorflow_cnn:
 
         def build_cnn(x_in):
             x_shaped = tf.reshape(x_in, [-1, n_characters, n_char_length, 1])
-            print(x_shaped)
+            #print(x_shaped)
             lay1 = tf.nn.conv2d(x_shaped, W_1, strides = [1,1,1,1], padding='SAME', name="conv1")
             #print(lay1)
             hidden1 = tf.nn.relu(lay1+b_1)
             #print(hidden1)
             pool1 = tf.nn.max_pool(hidden1, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME', name="pool1")
-            print(pool1)
+            #print(pool1)
 
             pool1_flat = tf.reshape(pool1, [-1, connected_layer_dim1]) #TODO get the shape in here better :)
-            print(pool1_flat)
+            #print(pool1_flat)
             connected = tf.nn.relu(tf.matmul(pool1_flat, W_connect) + b_connect, name="connected")
-            print(connected)
+            #print(connected)
 
             out_layer = tf.matmul(connected,W_out) + b_out
-            print(out_layer)
+            #print(out_layer)
             return out_layer, connected
 
         pred, self.connected_layer = build_cnn(self.x)
