@@ -11,7 +11,8 @@ import argparse
 from collections import namedtuple
 import numpy as np
 from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict
-
+from src.utils.sampling import sample
+from src.mem_net import main_mem_net
 import pickle
 
 def main(argv):
@@ -29,12 +30,12 @@ def main(argv):
 
     #preprocessing
     print("preprocessing...",file=sys.stderr)
-    vocab, encoder_decoder, lda_model, tf_model, w2v_model = preprocess.main(features, parameters, corpusdict, data)
+    vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model = preprocess.main(features, parameters, corpusdict, data)
 
     #featurization
     print("generating training and testing data...",file=sys.stderr)
-    train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, encoder_decoder, lda_model, tf_model, w2v_model])
-    test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, encoder_decoder, lda_model, tf_model, w2v_model])
+    train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
+    test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
 
     # save training data for separate experimentation and hyperparameter optimization
     if 'saveexperimentdata' in parameters:
@@ -60,6 +61,9 @@ def main(argv):
     if 'xgb' in algorithms:
         xgb_model = xgb.main([train_data, train_target, algorithms['xgb']])
         predicted_labels, perform_results = predict.main([xgb_model, test_data, test_target])
+    if 'mem_net' in algorithms:
+        mem_net_model, model_name = main_mem_net.run_mem_net(train_data, test_data, corpusdict, **algorithms['mem_net'])
+        predicted_labels, perform_results = main_mem_net.test_mem_network(mem_net_model, model_name, **algorithms['mem_net'])
 
     #results
     return perform_results
@@ -105,10 +109,7 @@ def get_args(
     CNN_DIFFERENCE = False,
     CNN_PRODUCT = False,
     CNN_COS = False,
-    #The vocabulary can either be character or word
-    #If words, WORDONEHOT_VOCAB will be used as the vocab length
-    CNN_VOCAB_TYPE = "character",
-    CNN_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789",
+    #The one-hot CNN will use the full_vocab parameters
 
     # wordonehot (will not play nicely with other featurization methods b/c not
     # vector)
@@ -136,6 +137,18 @@ def get_args(
     XGB_MINCHILDWEIGHT = 1,
     XGB_COLSAMPLEBYTREE = 1,
 
+    #memory network
+    MEM_NET = False,
+    #The memory network vocab uses Glove which can be 50, 100, 200 or 300 depending on the models you have in /data/glove
+    MEM_VOCAB = 50,
+    MEM_TYPE = 'dmn_basic',
+    MEM_BATCH = 1,
+    MEM_EPOCHS = 5,
+    MEM_MASK_MODE = 'sentence',
+    MEM_EMBED_MODE = "word2vec",
+    MEM_ONEHOT_MIN_LEN = 140,
+    MEM_ONEHOT_MAX_LEN = 1000,
+
     #PARAMETERS
     #resampling
     RESAMPLING = True,
@@ -150,6 +163,9 @@ def get_args(
     #vocabulary
     VOCAB_SIZE = 1000,
     STEM = False,
+    FULL_VOCAB_SIZE = 1000,
+    FULL_VOCAB_TYPE = 'character',
+    FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}",
 
     SEED = None):
     """ Return a parameters data structure with information on how to
@@ -163,6 +179,7 @@ def get_args(
     w2v = None
     wordonehot = None
     cnn = None
+    mem_net = None
 
     if BOW_APPEND or BOW_DIFFERENCE or BOW_PRODUCT or BOW_COS or BOW_TFIDF:
         bow = dict()
@@ -205,11 +222,24 @@ def get_args(
         if CNN_DIFFERENCE: cnn['difference'] = CNN_DIFFERENCE
         if CNN_PRODUCT: cnn['product'] = CNN_PRODUCT
         if CNN_COS: cnn['cos'] = CNN_COS
-        if CNN_VOCAB_TYPE:
-            cnn['vocab_type'] = CNN_VOCAB_TYPE
-            if CNN_VOCAB_TYPE=="word":
-                if WORDONEHOT_VOCAB: cnn['vocab_len'] = WORDONEHOT_VOCAB
-        if CNN_CHAR_VOCAB: cnn['topics'] = CNN_CHAR_VOCAB
+    if MEM_NET:
+        mem_net = dict()
+        if MEM_VOCAB: mem_net['word_vector_size'] = MEM_VOCAB
+        if SEED: mem_net['seed'] = SEED
+        if MEM_TYPE: mem_net['network'] = MEM_TYPE
+        if MEM_BATCH: mem_net['batch_size'] = MEM_BATCH
+        if MEM_EPOCHS: mem_net['epochs'] = MEM_EPOCHS
+        if MEM_MASK_MODE: mem_net['mask_mode'] = MEM_MASK_MODE
+        if MEM_EMBED_MODE : mem_net['embed_mode'] = MEM_EMBED_MODE
+        if MEM_ONEHOT_MIN_LEN: mem_net['onehot_min_len'] = MEM_ONEHOT_MIN_LEN
+        if MEM_ONEHOT_MAX_LEN: mem_net['onehot_max_len'] = MEM_ONEHOT_MAX_LEN
+        #Use the same input params as word2vec
+        if W2V_PRETRAINED: mem_net['pretrained'] = W2V_PRETRAINED
+        if W2V_MIN_COUNT: mem_net['min_count'] = W2V_MIN_COUNT
+        if W2V_WINDOW: mem_net['window'] = W2V_WINDOW
+        if W2V_SIZE: mem_net['size'] = W2V_SIZE
+        if W2V_WORKERS: mem_net['workers'] = W2V_WORKERS
+
 
     features = dict()
     if bow:
@@ -224,6 +254,10 @@ def get_args(
         features['wordonehot'] = wordonehot
     if cnn:
         features['cnn'] = cnn
+    if mem_net:
+        if len(features)>0:
+            print("Caution!!  Only the memory network feature and algorithm will be ran as they have to run alone")
+        features['mem_net'] = mem_net
 
     if len(features) == 0:
         print("Error: At least one feature (ex: Bag of Words, LDA, etc.) must be requested per run.", file=sys.stderr)
@@ -234,6 +268,7 @@ def get_args(
     svm = None
     xgb = None
 
+    
     if LOG_REG:
         log_reg = dict()
         if LOG_PENALTY: log_reg['log_penalty'] = LOG_PENALTY
@@ -251,10 +286,16 @@ def get_args(
         if XGB_COLSAMPLEBYTREE: xgb['svm_gamma'] = XGB_COLSAMPLEBYTREE
         if XGB_MINCHILDWEIGHT: xgb['svm_gamma'] = XGB_MINCHILDWEIGHT
 
-    algorithms = dict()
+    algorithms = dict()    
     if log_reg: algorithms['log_reg'] = log_reg
     if svm: algorithms['svm'] = svm
     if xgb: algorithms['xgb'] = xgb
+    #add the memory_net parameters to algorithms as well
+    if mem_net:
+        if len(algorithms)>0:
+            print("Error:  The memory network algorithm must be run alone")
+            quit()
+        algorithms['mem_net']=mem_net
 
     # Enforce requirement and limitation of one algorithm per run
     if len(algorithms) == 0:
@@ -289,6 +330,9 @@ def get_args(
         parameters['seed'] = SEED
     else:
         parameters['seed'] = 41
+    if FULL_VOCAB_SIZE: parameters['full_vocab_size'] = FULL_VOCAB_SIZE
+    if FULL_VOCAB_TYPE: parameters['full_vocab_type'] = FULL_VOCAB_TYPE
+    if FULL_CHAR_VOCAB: parameters['full_char_vocab'] = FULL_CHAR_VOCAB
 
     return directory, features, algorithms, parameters
 
