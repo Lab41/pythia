@@ -271,7 +271,7 @@ def run_onehot(doc, vocab, min_length=None, max_length=None):
 
     return doc_onehot
 
-def gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, encoder_decoder, lda_model, tf_session, w2v_model, random_state=np.random):
+def gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, encoder_decoder, lda_model, tf_session, w2v_model):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
 
@@ -296,6 +296,9 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     data = list()
     labels = list()
     corpus_unprocessed = list()
+
+    # Create random state
+    random_state = np.random.RandomState(parameters['seed'])
 
     # Iterate through clusters found in JSON file, generate observations
     # pairing data and label

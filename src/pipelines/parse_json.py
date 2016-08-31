@@ -2,7 +2,6 @@
 '''
 Parses Pythia-style JSON files and inventories most frequent words in the corpus.
 '''
-import random
 import sys
 import json
 import os.path
@@ -40,14 +39,14 @@ def parse_json(folder, seed=1, **kwargs):
     test_order = defaultdict(set)
     j = 0
 
-    random.seed(seed)
+    random_state = numpy.random.RandomState(seed)
     for file_name in os.listdir (folder):
         if file_name.endswith(".json"):
             # Read JSON file line by line and retain stats about number of clusters and order of objects
             full_file_name = os.path.join(folder, file_name)
 
             with open(full_file_name,'r') as dataFile:
-                if random.random() > 0.2:
+                if random_state.random_sample() > 0.2:
                     for line in dataFile:
                         parsedData = json.loads(fix_escapes(line))
                         clusters.add(parsedData["cluster_id"])
