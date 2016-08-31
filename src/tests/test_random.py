@@ -89,4 +89,3 @@ def test_random_resampling():
     sampled_data = label_sample(data, 'key', random_state=get_state(41))
     sampled_data2 = label_sample(data, 'key', random_state=get_state(41))
     assert sampled_data == sampled_data2
-    raise Exception
