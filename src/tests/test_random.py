@@ -8,7 +8,6 @@ def test_random():
                     XGB=True,
                     LDA_APPEND=True,
                     BOW_APPEND=True,
-                    W2V_APPEND=True,
                     RESAMPLING=False)
     run1 = pipeline_main(args)
     run2 = pipeline_main(args)
@@ -64,16 +63,6 @@ def test_random_lda():
     run1 = pipeline_main(args)
     run2 = pipeline_main(args)
     assert run1 == run2
-
-def test_random_w2vappend():
-    args = get_args(SEED=41,
-                    directory='data/stackexchange/anime',
-                    LOG_REG=True,
-                    W2V_APPEND=True,
-                    RESAMPLING=False)
-    run1 = pipeline_main(args)
-    run2 = pipeline_main(args)
-    assert run1==run2
 
 def test_random_resampling():
     data = [ { 'key': True, 'data': 123 },
