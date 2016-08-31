@@ -2,7 +2,6 @@ import numpy as np
 from src.pipelines.master_pipeline import get_args, main as pipeline_main
 from src.utils.sampling  import label_sample
 
-#FIXME: Should make so many of these for different arguments
 def test_random():
     args = get_args(SEED=41, 
                     directory='data/stackexchange/anime', 
@@ -15,18 +14,30 @@ def test_random():
     run2 = pipeline_main(args)
     assert run1==run2
         
-#def test_random_logreg():
-#    args = get_args(SEED=41, 
-#                    directory='data/stackexchange/anime', 
-#                    XGB=False,
-#                    LOG_REG=True,
-#                    LDA_APPEND=False,
-#                    BOW_APPEND=True,
-#                    W2V_APPEND=False,
-#                    RESAMPLING=False)
-#    run1 = pipeline_main(args)
-#    run2 = pipeline_main(args)
-#    assert run1==run2
+def test_random_logreg():
+    args = get_args(SEED=41, 
+                    directory='data/stackexchange/anime', 
+                    XGB=False,
+                    LOG_REG=True,
+                    LDA_APPEND=False,
+                    BOW_APPEND=True,
+                    W2V_APPEND=False,
+                    RESAMPLING=False)
+    run1 = pipeline_main(args)
+    run2 = pipeline_main(args)
+    assert run1==run2
+
+def test_random_xgboost():
+    args = get_args(SEED=41,
+                    directory='data/stackexchange/anime',
+                    XGB=True,
+                    LDA_APPEND=False,
+                    BOW_APPEND=True,
+                    W2V_APPEND=False,
+                    RESAMPLING=False)
+    run1 = pipeline_main(args)
+    run2 = pipeline_main(args)
+    assert run1==run2
 
 def test_random_svm():
     args = get_args(SEED=41, 
@@ -53,6 +64,16 @@ def test_random_lda():
     run1 = pipeline_main(args)
     run2 = pipeline_main(args)
     assert run1 == run2
+
+def test_random_w2vappend():
+    args = get_args(SEED=41,
+                    directory='data/stackexchange/anime',
+                    LOG_REG=True,
+                    W2V_APPEND=True,
+                    RESAMPLING=False)
+    run1 = pipeline_main(args)
+    run2 = pipeline_main(args)
+    assert run1==run2
 
 def test_random_resampling():
     data = [ { 'key': True, 'data': 123 },
