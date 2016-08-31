@@ -56,7 +56,7 @@ def test_random_lda():
     args = get_args(SEED=41, 
                     directory='data/stackexchange/anime', 
                     XGB=False,
-                    SVM=True,
+                    LOG_REG=True,
                     LDA_APPEND=True,
                     BOW_APPEND=False,
                     W2V_APPEND=False,
