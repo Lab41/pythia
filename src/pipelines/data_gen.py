@@ -522,7 +522,7 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
 
     return doc_input, doc_questions, doc_masks
 
-def gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model, random_state=np.random):
+def gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
 
@@ -558,6 +558,9 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     punkt = ['.','?','!']
 
     corpus_unprocessed = list()
+
+    # Create random state
+    random_state = np.random.RandomState(parameters['seed'])
 
     # Iterate through clusters found in JSON file, generate observations
     # pairing data and label

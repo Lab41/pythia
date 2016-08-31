@@ -11,7 +11,8 @@ def sample(data, key, novelToNotNovelRatio = 1.0, over = False, replacement = Fa
 
         Args:
             data (list of dicts): The data to be sampled. Should be a list of dictionaries.
-            key (str): The key in the dictionaries that shows which class the observation belongs. data[n][key] should equal "True" or "False" 
+            key (str): The key in the dictionaries that shows which class the observation belongs. 
+		data[n][key] should equal "True" or "False" 
             novelToNotNovelRatio (double): Ratio of novel observations to non-novel observations. Defaults to 1.0
             over (bool): Boolean parameter of whether to over-sample (True) or under-sample (False). Defaults to False
             replacement (bool): Boolean parameter of whether to use replacement when sampling the data. Defaults to False. Note: replacement WILL be used to make the ratio if over-sampling is True

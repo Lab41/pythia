@@ -2,7 +2,6 @@
 '''
 Parses Pythia-style JSON files and inventories most frequent words in the corpus.
 '''
-import random
 import sys
 import json
 import os.path
@@ -40,14 +39,14 @@ def parse_json(folder, seed=1, **kwargs):
     test_order = defaultdict(set)
     j = 0
 
-    random.seed(seed)
+    random_state = numpy.random.RandomState(seed)
     for file_name in os.listdir (folder):
         if file_name.endswith(".json"):
             # Read JSON file line by line and retain stats about number of clusters and order of objects
             full_file_name = os.path.join(folder, file_name)
 
             with open(full_file_name,'r') as dataFile:
-                if random.random() > 0.2:
+                if random_state.random_sample() > 0.2:
                     for line in dataFile:
                         parsedData = json.loads(fix_escapes(line))
                         clusters.add(parsedData["cluster_id"])
@@ -111,28 +110,23 @@ def order_vocab(tokencount):
     for idx, sidx in enumerate(sorted_idx): wordorder[words[sidx]] = idx+2
     return wordorder
 
-def main(argv):
+def main(folder, parameters):
 
     print("parsing json files...",file=sys.stderr)
     
-    folder, parameters = argv
+    #folder, parameters = argv
     
     # Parse JSON file that was supplied in command line argument
     clusters, order, data, test_clusters, test_order, test_data, wordcount = parse_json(folder, **parameters)
 
     # Determine descending order for words based on count
-    wordorder = order_vocab(wordcount)
+    rawwords = [i[0] for i in sorted(wordcount.items(), key=lambda x: (x[1], x[0]), reverse=True)]
 
-    # Create a corpus dictionary of named tuples with count and unique ids
-    corpusdict = OrderedDict()
-    corpusTuple = namedtuple('corpusTuple','count, id')
-    for word in wordorder:
-        corpusdict[word] = corpusTuple(wordcount[word], wordorder[word])
-
-    return clusters, order, data, test_clusters, test_order, test_data, corpusdict
+    return clusters, order, data, test_clusters, test_order, test_data, rawwords
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("Usage: parse_json.py dir1\n\nparses data from JSON files defined in directory (dir1)")
     else:
-        main(sys.argv[1:])
+        #FIXME: does this work?
+        main(*sys.argv[1:])

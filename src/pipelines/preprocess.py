@@ -1,16 +1,19 @@
-from src.utils.normalize import normalize_and_remove_stop_words, xml_normalize
-from src.featurizers.skipthoughts import skipthoughts
-from src.featurizers import tensorflow_cnn
-from sklearn.decomposition import LatentDirichletAllocation
-from sklearn.feature_extraction.text import CountVectorizer
-import gensim
-from src.utils import tokenize
-import errno
 import os
 import sys
 import gzip
 import shutil
 import logging
+import errno
+
+import numpy as np
+import gensim
+
+from src.utils.normalize import normalize_and_remove_stop_words, xml_normalize
+from src.featurizers.skipthoughts import skipthoughts
+from src.featurizers import tensorflow_cnn
+from sklearn.decomposition import LatentDirichletAllocation
+from sklearn.feature_extraction.text import CountVectorizer
+from src.utils import tokenize
 
 def gen_vocab(corpus_dict, vocab=1000, stem=False, **kwargs):
     '''
@@ -75,7 +78,7 @@ def gen_full_vocab(corpus_dict, full_vocab_type='word', full_vocab_size=1000, st
 
     return vocabdict
 
-def build_lda(trainingdata, vocabdict, topics=40, **kwargs):
+def build_lda(trainingdata, vocabdict, topics=40, random_state=0, **kwargs):
     '''
     Fits a LDA topic model based on the corpus vocabulary.
 
@@ -83,6 +86,7 @@ def build_lda(trainingdata, vocabdict, topics=40, **kwargs):
         trainingdata (list): A list containing the corpus as parsed JSON text
         vocabdict (dict): A dictionary containing the vocabulary to be used in the LDA model
         topics (int): the number of topics to be used in the LDA model
+        random_state (int or np.random.RandomState): seed value or random number generator state
 
     Returns:
         LatentDirichletAllocation: A LDA model fit to the training data and corpus vocabulary
@@ -94,7 +98,7 @@ def build_lda(trainingdata, vocabdict, topics=40, **kwargs):
     for entry in trainingdata: trainingdocs.append(entry['body_text'])
     trainingvectors = vectorizer.transform(trainingdocs)
 
-    lda_model = LatentDirichletAllocation(n_topics=topics, random_state=0)
+    lda_model = LatentDirichletAllocation(n_topics=topics, random_state=random_state)
     lda_model.fit(trainingvectors)
     return lda_model
 
@@ -136,9 +140,12 @@ def build_w2v(trainingdata, min_count=5, window=5, size=100, workers=3, pretrain
             with gzip.open(os.path.join(path_to_models, "GoogleNews-vectors-negative300.bin.gz"), 'rb') as f_in:
                 with open(os.path.join(path_to_models, "GoogleNews-vectors-negative300.bin"), 'wb') as f_out:
                     shutil.copyfileobj(f_in, f_out)
-            w2v_model = gensim.models.Word2Vec.load_word2vec_format(os.path.join(path_to_models, "GoogleNews-vectors-negative300.bin"), binary=True)
+            w2v_model = gensim.models.Word2Vec.load_word2vec_format(
+                os.path.join(path_to_models, "GoogleNews-vectors-negative300.bin"), binary=True)
         else:
-            print("Error: Google's pretrained Word2Vec model GoogleNews-vectors-negative300.bin was not found in %s \nSet 'pretrained=False' or download/unzip GoogleNews-vectors-negative300.bin.gz from https://code.google.com/archive/p/word2vec/ into %s" % (path_to_models,path_to_models), file=sys.stderr)
+            print("""Error: Google's pretrained Word2Vec model GoogleNews-vectors-negative300.bin was not found in %s
+Set 'pretrained=False' or download/unzip GoogleNews-vectors-negative300.bin.gz 
+from https://code.google.com/archive/p/word2vec/ into %s""" % (path_to_models,path_to_models), file=sys.stderr)
             quit()
 
     # Train a Word2Vec model with the corpus
@@ -154,18 +161,18 @@ def build_w2v(trainingdata, min_count=5, window=5, size=100, workers=3, pretrain
 
     return w2v_model
 
-def main(argv):
+def main(features, parameters, corpus_dict, trainingdata):
     '''
     Controls the preprocessing of the corpus, including building vocabulary and model creation.
 
     Args:
-        argv (list): contains a list of the command line features, a dictionary of all tokens in the corpus, an array of parsed JSON documents, a list of the command line parameters
+        argv (list): contains a list of the command line features, a dictionary of all 
+        tokens in the corpus, an array of parsed JSON documents, a list of the command line parameters
 
     Returns:
         multiple: dictionary of the corpus vocabulary, skipthoughts encoder_decoder, trained LDA model
     '''
 
-    features, parameters, corpus_dict, trainingdata = argv
     encoder_decoder = None
     vocab= None
     lda_model = None
@@ -183,9 +190,10 @@ def main(argv):
         features['cnn']['vocab'] = full_vocab
         tf_session = tensorflow_cnn.tensorflow_cnn(trainingdata, **features['cnn'])
 
-    if 'lda' in features:
+    if 'lda' in features: 
         features['lda']['vocab'] = vocab
-        lda_model = build_lda(trainingdata, vocab, **features['lda'])
+        lda_model = build_lda(trainingdata, vocab, 
+            random_state=parameters['seed'], **features['lda'])
 
     if 'w2v' in features: w2v_model = build_w2v(trainingdata, **features['w2v'])
 
