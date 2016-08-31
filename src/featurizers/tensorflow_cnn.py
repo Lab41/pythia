@@ -3,24 +3,23 @@ from src.pipelines import parse_json
 from src.pipelines import data_gen
 import numpy as np
 import random
+import sys
 
 
 class tensorflow_cnn:
 
-    def __init__(self, trainingdata, vocab_type = "character", vocab=list("abcdefghijklmnopqrstuvwxyz0123456789"), doc_length=1000, batch_size=32, rand_seed = 41, \
-                 hidden_layer_len = 32, connected_layer_len = 600, learning_rate = 0.001, num_steps=1000, print_step=100, **kwargs):
+    def __init__(self, trainingdata, vocab={}, doc_length=500, batch_size=32, rand_seed = 41, \
+                 hidden_layer_len = 32, connected_layer_len = 600, learning_rate = 0.001, num_steps=100, print_step=10, **kwargs):
         self.trainingdata = trainingdata
-        self.vocab_type = vocab_type
+        if len(vocab)==0:
+            print("Error: Must pass in a vocabulary with at least one entry", file=sys.stderr)
+            quit()
+        elif len(vocab)%2!=0:
+            # We are going to add a bottom item as Tensorflow requires an even array
+            # This doesn't need to be a real word, in fact it is better that it is not
+            vocab['rwehwerohfaiuhfrahoiraehwiu'] = len(vocab)
 
-        if type(vocab) != dict:
-            self.vocab_dict = {}
-            i=0
-            for c in vocab:
-                self.vocab_dict[c] = i
-                i += 1
-        else:
-            self.vocab_dict = vocab
-
+        self.vocab_dict = vocab
         self.doc_length = doc_length
         print("starting to train the CNN")
 
@@ -36,7 +35,7 @@ class tensorflow_cnn:
         learning_rate = learning_rate
         num_steps = num_steps
         print_step = print_step
-        connected_layer_dim1 = int(n_characters/4.0*n_char_length/4.0*n_hidden)
+        connected_layer_dim1 = int(n_characters/2.0*n_char_length/2.0*n_hidden)
         batch_size = batch_size
         random.seed(rand_seed)
 
@@ -48,9 +47,6 @@ class tensorflow_cnn:
         #weights and biases for the layers
         W_1 = tf.Variable(tf.truncated_normal(shape=[n_characters, 5, 1,n_hidden]))
         b_1 = tf.Variable(tf.constant(0.1, shape=[n_hidden]))
-
-        W_2 = tf.Variable(tf.truncated_normal(shape=[n_half_characters, 5, n_hidden, n_hidden]))
-        b_2 = tf.Variable(tf.constant(0.1, shape=[n_hidden]))
 
         W_connect = tf.Variable(tf.truncated_normal(shape=[connected_layer_dim1,n_hidden_full]))
         b_connect  = tf.Variable(tf.constant(0.1, shape=[n_hidden_full]))
@@ -69,17 +65,13 @@ class tensorflow_cnn:
             pool1 = tf.nn.max_pool(hidden1, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME', name="pool1")
             #print(pool1)
 
-            lay2 = tf.nn.conv2d(pool1, W_2, strides = [1,1,1,1], padding='SAME', name="conv2")
-            hidden2 = tf.nn.relu(lay2+b_2)
-            pool2 = tf.nn.max_pool(hidden2, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME', name="pool2")
-
-            pool1_flat = tf.reshape(pool2, [-1, connected_layer_dim1]) #TODO get the shape in here better :)
+            pool1_flat = tf.reshape(pool1, [-1, connected_layer_dim1]) #TODO get the shape in here better :)
             #print(pool1_flat)
             connected = tf.nn.relu(tf.matmul(pool1_flat, W_connect) + b_connect, name="connected")
             #print(connected)
 
             out_layer = tf.matmul(connected,W_out) + b_out
-            print(out_layer)
+            #print(out_layer)
             return out_layer, connected
 
         pred, self.connected_layer = build_cnn(self.x)
@@ -98,7 +90,7 @@ class tensorflow_cnn:
         sess = tf.Session()
         sess.run(init)
         step = 1
-        print("CNN built")
+        print("Building Tensorflow CNN")
 
         while step < num_steps:
 
@@ -116,7 +108,7 @@ class tensorflow_cnn:
             step += 1
 
         self.session = sess
-        print("CNN trained")
+        print("Tensorflow CNN trained")
 
 
     def transform_doc(self, doc, corpus):

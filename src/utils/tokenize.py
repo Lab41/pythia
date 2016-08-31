@@ -11,5 +11,8 @@ word_punct_tokenizer = WordPunctTokenizer()
 def punkt_sentences(text):
     return punkter.tokenize(text)
 
+def punkt_sentence_span(text):
+    return punkter.span_tokenize(text)
+
 def word_punct_tokens(text):
     return word_punct_tokenizer.tokenize(text)

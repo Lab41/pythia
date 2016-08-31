@@ -29,10 +29,11 @@ def config_variables():
 
     # DIRECTORY
     directory = 'data/stackexchange/anime'
+    #directory = 'stack_exchange_data/corpus/scifi'
 
     # FEATURES
     # bag of words
-    BOW_APPEND = True
+    BOW_APPEND = False
     BOW_DIFFERENCE = False
     BOW_PRODUCT = False
     BOW_COS = False
@@ -50,6 +51,17 @@ def config_variables():
     LDA_PRODUCT = False
     LDA_COS = False
     LDA_TOPICS = 50
+    
+    #Mem_nets
+    MEM_NET = False
+    MEM_VOCAB = 50
+    MEM_TYPE = 'dmn_basic'
+    MEM_BATCH = 1
+    MEM_EPOCHS = 5
+    MEM_MASK_MODE = 'word'
+    MEM_EMBED_MODE = 'word2vec'
+    MEM_ONEHOT_MIN_LEN = 140
+    MEM_ONEHOT_MAX_LEN = 1000
 
     #word2vec
     W2V_APPEND = False
@@ -63,14 +75,11 @@ def config_variables():
     W2V_WORKERS = 3
 
     #one-hot CNN layer
+    #The one-hot CNN will use the full_vocab parameters
     CNN_APPEND = False
     CNN_DIFFERENCE = False
     CNN_PRODUCT = False
     CNN_COS = False
-    #The vocabulary can either be character or word
-    #If words, WORDONEHOT_VOCAB will be used as the vocab length
-    CNN_VOCAB_TYPE = "character"
-    CNN_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789"
 
     # wordonehot (will not play nicely with other featurization methods b/c not
     # vector)
@@ -92,7 +101,7 @@ def config_variables():
     SVM_GAMMA = 'auto'
 
     # xgboost
-    XGB = True
+    XGB = False
     XGB_LEARNRATE = 0.1
     XGB_MAXDEPTH = 3
     XGB_MINCHILDWEIGHT = 1
@@ -112,6 +121,9 @@ def config_variables():
     #vocabulary
     VOCAB_SIZE = 10000
     STEM = False
+    FULL_VOCAB_SIZE = 1000
+    FULL_VOCAB_TYPE = 'character'
+    FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}"
 
     SEED = None
 
@@ -144,8 +156,6 @@ def run_experiment(directory,
             CNN_DIFFERENCE,
             CNN_PRODUCT,
             CNN_COS,
-            CNN_VOCAB_TYPE,
-            CNN_CHAR_VOCAB,
             WORDONEHOT,
             WORDONEHOT_VOCAB,
             LOG_REG,
@@ -161,6 +171,15 @@ def run_experiment(directory,
             XGB_MAXDEPTH,
             XGB_MINCHILDWEIGHT,
             XGB_COLSAMPLEBYTREE,
+            MEM_NET,
+            MEM_VOCAB,
+            MEM_TYPE,
+            MEM_BATCH,
+            MEM_EPOCHS,
+            MEM_MASK_MODE,
+            MEM_EMBED_MODE,
+            MEM_ONEHOT_MIN_LEN,
+            MEM_ONEHOT_MAX_LEN,
             RESAMPLING,
             NOVEL_RATIO,
             OVERSAMPLING,
@@ -169,6 +188,9 @@ def run_experiment(directory,
             EXPERIMENTDATAFILE,
             VOCAB_SIZE,
             STEM,
+            FULL_VOCAB_SIZE,
+            FULL_VOCAB_TYPE,
+            FULL_CHAR_VOCAB,
             SEED):
     return pythia_main(
         get_args(
@@ -200,8 +222,6 @@ def run_experiment(directory,
             CNN_DIFFERENCE,
             CNN_PRODUCT,
             CNN_COS,
-            CNN_VOCAB_TYPE,
-            CNN_CHAR_VOCAB,
             WORDONEHOT,
             WORDONEHOT_VOCAB,
             LOG_REG,
@@ -217,6 +237,15 @@ def run_experiment(directory,
             XGB_MAXDEPTH,
             XGB_MINCHILDWEIGHT,
             XGB_COLSAMPLEBYTREE,
+            MEM_NET,
+            MEM_VOCAB,
+            MEM_TYPE,
+            MEM_BATCH,
+            MEM_EPOCHS,
+            MEM_MASK_MODE,
+            MEM_EMBED_MODE,
+            MEM_ONEHOT_MIN_LEN,
+            MEM_ONEHOT_MAX_LEN,
             RESAMPLING,
             NOVEL_RATIO,
             OVERSAMPLING,
@@ -225,5 +254,8 @@ def run_experiment(directory,
             EXPERIMENTDATAFILE,
             VOCAB_SIZE,
             STEM,
+            FULL_VOCAB_SIZE,
+            FULL_VOCAB_TYPE,
+            FULL_CHAR_VOCAB,
             SEED)
     )

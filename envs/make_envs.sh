@@ -97,6 +97,10 @@ set -e
     # install theano and keras
     pip install -q nose-parameterized==0.5.0 Theano==0.8.2 keras==1.0.7
 
+    # install Lasagne
+    pip install -r https://raw.githubusercontent.com/Lasagne/Lasagne/master/requirements.txt
+    pip install https://github.com/Lasagne/Lasagne/archive/master.zip
+
     # install bleeding-edge pylzma (for Stack Exchange)
     pip install -q git+https://github.com/fancycode/pylzma@996570e
 
