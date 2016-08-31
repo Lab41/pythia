@@ -120,15 +120,9 @@ def main(folder, parameters):
     clusters, order, data, test_clusters, test_order, test_data, wordcount = parse_json(folder, **parameters)
 
     # Determine descending order for words based on count
-    wordorder = order_vocab(wordcount)
+    rawwords = [i[0] for i in sorted(wordcount.items(), key=lambda x: (x[1], x[0]), reverse=True)]
 
-    # Create a corpus dictionary of named tuples with count and unique ids
-    corpusdict = OrderedDict()
-    corpusTuple = namedtuple('corpusTuple','count, id')
-    for word in wordorder:
-        corpusdict[word] = corpusTuple(wordcount[word], wordorder[word])
-
-    return clusters, order, data, test_clusters, test_order, test_data, corpusdict
+    return clusters, order, data, test_clusters, test_order, test_data, rawwords
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

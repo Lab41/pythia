@@ -151,7 +151,7 @@ def get_args(
 
     #PARAMETERS
     #resampling
-    RESAMPLING = True,
+    RESAMPLING = False,
     NOVEL_RATIO = None,
     OVERSAMPLING = False,
     REPLACEMENT = False,
@@ -161,9 +161,9 @@ def get_args(
     EXPERIMENTDATAFILE='data/experimentdatafile.pkl',
 
     #vocabulary
-    VOCAB_SIZE = 1000,
+    VOCAB_SIZE = 10000,
     STEM = False,
-    FULL_VOCAB_SIZE = 1000,
+    FULL_VOCAB_SIZE = 10000,
     FULL_VOCAB_TYPE = 'character',
     FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}",
 
