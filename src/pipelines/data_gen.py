@@ -695,7 +695,7 @@ def add_to_hdf5(h5, data, label,dtype=np.float32):
         data_h5.resize(data_h5_size, axis=0)
         data_h5[-len(data):] = data
 
-def main(argv):
+def main(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model, hdf5_path=None, hdf5_save_frequency=100):
     '''
     Controls the generation of observations with the specified features.
 
