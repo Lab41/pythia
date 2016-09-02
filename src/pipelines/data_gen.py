@@ -6,6 +6,7 @@ from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.preprocessing import OneHotEncoder
 
+import h5py
 import numpy as np
 from scipy import spatial
 
@@ -522,7 +523,7 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
 
     return doc_input, doc_questions, doc_masks
 
-def gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model):
+def gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model, hdf5_path=None, hdf5_save_frequency=100):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
 
@@ -558,6 +559,8 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     punkt = ['.','?','!']
 
     corpus_unprocessed = list()
+    if hdf5_path is not None:
+        open(hdf5_path, 'w').close()
 
     # Create random state
     random_state = np.random.RandomState(parameters['seed'])
@@ -653,6 +656,23 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
             labels.append(1)
         else:
             labels.append(0)
+        
+        # save to HDF5 if desired
+        if hdf5_path is not None and len(data) % hdf5_save_frequency == 0:
+            with h5py.File(hdf5_path, 'a') as h5:
+                data_np = np.array(data)
+                labels_np = np.reshape(np.array(labels), (-1, 1))
+                add_to_hdf5(h5, data_np, 'data')
+                add_to_hdf5(h5, labels_np, 'labels')
+                labels = list()
+                data = list()
+
+    if hdf5_path is not None and len(data) > 0:
+        with h5py.File(hdf5_path, 'a') as h5:
+            data_np = np.array(data)
+            labels_np = np.reshape(np.array(labels), (-1, 1))
+            add_to_hdf5(h5, data_np, 'data')
+            add_to_hdf5(h5, labels_np, 'labels', np.uint8)
 
     mem_net_features['inputs'] = inputs
     mem_net_features['questions'] = questions
@@ -661,9 +681,19 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
 
     if 'mem_net' in features:
         return mem_net_features, labels
+    if hdf5_path is not None:
+        return None, None
     else:
         return data, labels
 
+def add_to_hdf5(h5, data, label,dtype=np.float32):
+    if label not in h5.keys():
+        data_h5 = h5.create_dataset(label, data=data, maxshape=(None, data.shape[1]), dtype=dtype, compression='gzip')
+    else:
+        data_h5 = h5[label]
+        data_h5_size = data_h5.shape[0] + data.shape[0]
+        data_h5.resize(data_h5_size, axis=0)
+        data_h5[-len(data):] = data
 
 def main(argv):
     '''
@@ -675,7 +705,6 @@ def main(argv):
     Returns:
         list: contains for each obeservation
     '''
-    all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model = argv
-    data, labels = gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model)
+    data, labels = gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model, hdf5_path, hdf5_save_frequency)
 
     return data, labels
