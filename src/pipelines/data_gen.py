@@ -532,7 +532,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
         lookup_order (dict): document arrival order
         document_data (array): parsed JSON documents
         features (dict): the specified features to be calculated
-        parameters (???): data structure with run parameters
+        parameters (dict): data structure with run parameters
         vocab (dict): the vocabulary of the data set
         full_vocab (dict_: to vocabulary of the data set including stop wrods and punctuation
         encoder_decoder (???): the encoder/decoder for skipthoughts vectors
