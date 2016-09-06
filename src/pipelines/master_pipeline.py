@@ -37,7 +37,7 @@ def main(argv):
     train_data, train_target = data_gen.gen_observations(clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model, hdf5_path="./train.h5", hdf5_save_frequency=10)
     test_data, test_target = data_gen.gen_observations(test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model, hdf5_path="./test.h5", hdf5_save_frequency=10)
 
-    raise Exception("Byee")
+#    raise Exception("Byee")
     # save training data for separate experimentation and hyperparameter optimization
     if 'saveexperimentdata' in parameters:
         lunchbox = dict()
