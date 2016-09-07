@@ -606,7 +606,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
         case_docs_normalized = [ normalize.normalize_and_remove_stop_words(body_text) for body_text in case_docs_raw ]
         # Pull out query documents
         doc_raw = case_docs_raw[-1]
-        doc_normalized = case_docs_raw[-1]
+        doc_normalized = case_docs_normalized[-1]
         # Create lists of background documents
         bkgd_docs_raw = case_docs_raw[:-1]
         bkgd_docs_normalized = case_docs_normalized[:-1]
