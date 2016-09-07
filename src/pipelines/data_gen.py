@@ -562,7 +562,11 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     punkt = ['.','?','!']
 
     corpus_unprocessed = list()
+    # HDF5-related parameters
     hdf5_save_frequency=parameters['hdf5_save_frequency']
+    data_key = 'data'
+    labels_key = 'labels'
+    # Truncate any existing files at save location
     if hdf5_path is not None:
         open(hdf5_path, 'w').close()
 
@@ -667,17 +671,17 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
             with h5py.File(hdf5_path, 'a') as h5:
                 data_np = np.array(data)
                 labels_np = np.reshape(np.array(labels), (-1, 1))
-                add_to_hdf5(h5, data_np, 'data')
-                add_to_hdf5(h5, labels_np, 'labels')
+                add_to_hdf5(h5, data_np, data_key)
+                add_to_hdf5(h5, labels_np, labels_key, np.uint8)
                 labels = list()
                 data = list()
-
+    # Save off any remainder
     if hdf5_path is not None and len(data) > 0:
         with h5py.File(hdf5_path, 'a') as h5:
             data_np = np.array(data)
             labels_np = np.reshape(np.array(labels), (-1, 1))
-            add_to_hdf5(h5, data_np, 'data')
-            add_to_hdf5(h5, labels_np, 'labels', np.uint8)
+            add_to_hdf5(h5, data_np, data_key)
+            add_to_hdf5(h5, labels_np, labels_key, np.uint8)
 
     mem_net_features['inputs'] = inputs
     mem_net_features['questions'] = questions
