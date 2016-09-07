@@ -5,7 +5,7 @@ from src.utils import normalize, tokenize, sampling
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.preprocessing import OneHotEncoder
-
+from memory_profiler import profile
 import h5py
 import numpy as np
 from scipy import spatial

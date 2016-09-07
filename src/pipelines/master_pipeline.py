@@ -6,15 +6,19 @@ This module regulates the features and algorithms used in order to detect novelt
 then adminstrates the implementation of the given specifications. It requires a 
 directory full of JSON files, where each file contains a cluster of documents.
 '''
+import pdb 
 import sys
+import pickle
 import argparse
 from collections import namedtuple
 import numpy as np
+from memory_profiler import profile
 from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict
 from src.utils.sampling import sample
 from src.mem_net import main_mem_net
-import pickle
 
+
+@profile
 def main(argv):
     '''
     controls the over-arching implmentation of the algorithms
