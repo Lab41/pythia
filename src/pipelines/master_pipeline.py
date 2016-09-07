@@ -34,10 +34,12 @@ def main(argv):
 
     #featurization
     print("generating training and testing data...",file=sys.stderr)
-    train_data, train_target = data_gen.gen_observations(clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model, hdf5_path="./train.h5", hdf5_save_frequency=10)
-    test_data, test_target = data_gen.gen_observations(test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model, hdf5_path="./test.h5", hdf5_save_frequency=10)
+    hdf5_path_train=parameters['hdf5_path_train']
+    hdf5_path_test=parameters['hdf5_path_test']
+    train_data, train_target = data_gen.gen_observations(clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model, hdf5_path_train)
+    test_data, test_target = data_gen.gen_observations(test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model, hdf5_path_test)
+    pdb.set_trace()
 
-#    raise Exception("Byee")
     # save training data for separate experimentation and hyperparameter optimization
     if 'saveexperimentdata' in parameters:
         lunchbox = dict()
@@ -168,7 +170,11 @@ def get_args(
     FULL_VOCAB_TYPE = 'character',
     FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}",
 
-    SEED = None):
+    SEED = None,
+    
+    HDF5_PATH_TRAIN = None,
+    HDF5_PATH_TEST = None,
+    HDF5_SAVE_FREQUENCY = 100):
     """ Return a parameters data structure with information on how to
     run an experiment. Argument list should match experiments/experiments.py
     """
@@ -334,6 +340,10 @@ def get_args(
     if FULL_VOCAB_SIZE: parameters['full_vocab_size'] = FULL_VOCAB_SIZE
     if FULL_VOCAB_TYPE: parameters['full_vocab_type'] = FULL_VOCAB_TYPE
     if FULL_CHAR_VOCAB: parameters['full_char_vocab'] = FULL_CHAR_VOCAB
+
+    parameters['hdf5_path_test'] = HDF5_PATH_TEST
+    parameters['hdf5_path_train'] = HDF5_PATH_TRAIN
+    parameters['hdf5_save_frequency'] = HDF5_SAVE_FREQUENCY
 
     return directory, features, algorithms, parameters
 

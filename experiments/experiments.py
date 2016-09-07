@@ -126,6 +126,10 @@ def config_variables():
     FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}"
 
     SEED = None
+    
+    HDF5_PATH_TRAIN=None
+    HDF5_PATH_TEST=None
+    HDF5_SAVE_FREQUENCY=100
 
 @xp.automain
 def run_experiment(directory,
@@ -191,7 +195,10 @@ def run_experiment(directory,
             FULL_VOCAB_SIZE,
             FULL_VOCAB_TYPE,
             FULL_CHAR_VOCAB,
-            SEED):
+            SEED,
+            HDF5_PATH_TRAIN,
+            HDF5_PATH_TEST,
+            HDF5_SAVE_FREQUENCY):
     return pythia_main(
         get_args(
             directory,
@@ -257,5 +264,9 @@ def run_experiment(directory,
             FULL_VOCAB_SIZE,
             FULL_VOCAB_TYPE,
             FULL_CHAR_VOCAB,
-            SEED)
+            SEED,
+            HDF5_PATH_TRAIN,
+            HDF5_PATH_TEST,
+            HDF5_SAVE_FREQUENCY
+            )
     )

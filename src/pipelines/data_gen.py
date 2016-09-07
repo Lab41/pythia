@@ -523,7 +523,8 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
 
     return doc_input, doc_questions, doc_masks
 
-def gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model, hdf5_path=None, hdf5_save_frequency=100):
+@profile
+def gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model, hdf5_path=None, dtype=np.float32):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
 
@@ -559,6 +560,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     punkt = ['.','?','!']
 
     corpus_unprocessed = list()
+    hdf5_save_frequency=parameters['hdf5_save_frequency']
     if hdf5_path is not None:
         open(hdf5_path, 'w').close()
 
@@ -682,7 +684,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     if 'mem_net' in features:
         return mem_net_features, labels
     if hdf5_path is not None:
-        return None, None
+        return hdf5_path, hdf5_path
     else:
         return data, labels
 
