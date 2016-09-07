@@ -344,9 +344,9 @@ def get_args(
         resampling = dict()
         if NOVEL_RATIO: 
             resampling['novelToNotNovelRatio'] = NOVEL_RATIO
-            print("NOVEL_RATIO specified but not supported", file=sys.stderr)
-        if OVERSAMPLING: resampling['over'] = OVERSAMPLING
-        if REPLACEMENT: resampling['replacement'] = REPLACEMENT
+            logger.warn("NOVEL_RATIO specified but not supported")
+        resampling['over'] = OVERSAMPLING
+        resampling['replacement'] = REPLACEMENT
 
     saveexperimentdata = None
     if SAVEEXPERIMENTDATA:

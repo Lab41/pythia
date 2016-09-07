@@ -589,15 +589,17 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     # If -oversampling, sample down to 
     # smaller class size for both classes with or w/o replacement
     if 'resampling' in parameters:
-        if 'over' in parameters:
+        resampling_parameters = parameters['resampling']
+        if 'over' in resampling_parameters:
             desired_size = None
-            parameters['replacement'] = True
+            resampling_parameters['replacement'] = True
         else:
             desired_size = -np.Inf
-        if 'replacement' in parameters:
+        if 'replacement' in resampling_parameters:
             replacement = True
         else:
             replacement = False
+        logger.debug("Replacement: {}, Desired size: {}".format(replacement, desired_size))
         corpus = sampling.label_sample(corpus_unprocessed, "novelty", replacement, desired_size, random_state)  
     else:
         corpus = corpus_unprocessed
