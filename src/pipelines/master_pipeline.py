@@ -318,11 +318,7 @@ def get_args(
     if log_reg: algorithms['log_reg'] = log_reg
     if svm: algorithms['svm'] = svm
     if xgb: algorithms['xgb'] = xgb
-    #add the memory_net parameters to algorithms as well
     if mem_net:
-        if len(algorithms)>0:
-            print("Error:  The memory network algorithm must be run alone")
-            quit()
         algorithms['mem_net']=mem_net
     if sgd:
         algorithms['sgd'] = sgd
@@ -331,11 +327,12 @@ def get_args(
 
     # Enforce requirement and limitation of one algorithm per run
     if len(algorithms) == 0:
-        print("Error: An algorithm (LOG_REG, SVM, XGB) must be requested per run.", file=sys.stderr)
+        print("Error: At least one algorithm (LOG_REG, SVM, XGB) must be requested per run.", file=sys.stderr)
         quit()
     elif len(algorithms) > 1:
         print("Error: Only one algorithm (LOG_REG, SVM, XGB) can be requested per run.", file=sys.stderr)
         quit()
+
 
     #get parameters
     resampling = None
