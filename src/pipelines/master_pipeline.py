@@ -186,7 +186,7 @@ def get_args(
     FULL_VOCAB_TYPE = 'character',
     FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}",
 
-    SEED = None,
+    SEED = 41,
     
     HDF5_PATH_TRAIN = None,
     HDF5_PATH_TEST = None,
@@ -315,6 +315,7 @@ def get_args(
         sgd['loss'] = SGD_LOSS
         sgd['penalty'] = SGD_PENALTY
         sgd['num_epochs'] = SGD_EPOCHS
+        sgd['seed'] = SEED
         assert HDF5_PATH_TRAIN is not None, "SGD-based methods should be used with HDF5"
 
     algorithms = dict()    

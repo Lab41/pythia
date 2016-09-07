@@ -130,7 +130,7 @@ def config_variables():
     FULL_VOCAB_TYPE = 'character'
     FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}"
 
-    SEED = None
+    SEED = 41
     
     HDF5_PATH_TRAIN=None
     HDF5_PATH_TEST=None
