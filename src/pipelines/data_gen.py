@@ -652,7 +652,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
                 feature_vectors = wordonehot(doc_raw, bkgd_text_raw, full_vocab, features['wordonehot'], feature_vectors)
 
             # Save features and label
-            feature_vectors = np.concatenate(feature_vectors, axis=0)
+            feature_vectors = np.concatenate(feature_vectors, axis=0).astype(dtype)
             data.append(feature_vectors)
         if case["novelty"]:
             labels.append(1)
