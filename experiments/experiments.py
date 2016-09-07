@@ -100,6 +100,11 @@ def config_variables():
     SVM_KERNEL = 'linear'
     SVM_GAMMA = 'auto'
 
+    SGD = False
+    SGD_LOSS = 'log'
+    SGD_ALPHA = 0.0001
+    SGD_PENALTY = 'l2'
+
     # xgboost
     XGB = False
     XGB_LEARNRATE = 0.1
@@ -175,6 +180,11 @@ def run_experiment(directory,
             XGB_MAXDEPTH,
             XGB_MINCHILDWEIGHT,
             XGB_COLSAMPLEBYTREE,
+            SGD,
+            SGD_LOSS,
+            SGD_ALPHA,
+            SGD_PENALTY,
+            SGD_EPOCHS,
             MEM_NET,
             MEM_VOCAB,
             MEM_TYPE,
@@ -244,6 +254,11 @@ def run_experiment(directory,
             XGB_MAXDEPTH,
             XGB_MINCHILDWEIGHT,
             XGB_COLSAMPLEBYTREE,
+            SGD,
+            SGD_LOSS,
+            SGD_ALPHA,
+            SGD_PENALTY,
+            SGD_EPOCHS,
             MEM_NET,
             MEM_VOCAB,
             MEM_TYPE,

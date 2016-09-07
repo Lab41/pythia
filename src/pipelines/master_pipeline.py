@@ -143,6 +143,13 @@ def get_args(
     XGB_MAXDEPTH = 3,
     XGB_MINCHILDWEIGHT = 1,
     XGB_COLSAMPLEBYTREE = 1,
+    
+    # SGD Logistic regression
+    SGD = False,
+    SGD_LOSS = 'log',
+    SGD_ALPHA = 0.0001,
+    SGD_PENALTY = 'l2',
+    SGD_EPOCHS = 10,
 
     #memory network
     MEM_NET = False,
@@ -278,6 +285,7 @@ def get_args(
     log_reg = None
     svm = None
     xgb = None
+    sgd = None
 
     
     if LOG_REG:
@@ -296,6 +304,13 @@ def get_args(
         if XGB_MAXDEPTH: xgb['x_max_depth'] = XGB_MAXDEPTH
         if XGB_COLSAMPLEBYTREE: xgb['svm_gamma'] = XGB_COLSAMPLEBYTREE
         if XGB_MINCHILDWEIGHT: xgb['svm_gamma'] = XGB_MINCHILDWEIGHT
+    if SGD:
+        sgd = dict()
+        sgd['alpha'] = SGD_ALPHA
+        sgd['loss'] = SGD_LOSS
+        sgd['penalty'] = SGD_PENALTY
+        sgd['num_epochs'] = SGD_EPOCHS
+        assert HDF5_PATH_TRAIN is not None, "SGD-based methods should be used with HDF5"
 
     algorithms = dict()    
     if log_reg: algorithms['log_reg'] = log_reg
@@ -307,6 +322,10 @@ def get_args(
             print("Error:  The memory network algorithm must be run alone")
             quit()
         algorithms['mem_net']=mem_net
+    if sgd:
+        algorithms['sgd'] = sgd
+
+    logger.debug("Algorithms structure: {}".format(algorithms))
 
     # Enforce requirement and limitation of one algorithm per run
     if len(algorithms) == 0:
