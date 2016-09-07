@@ -20,7 +20,6 @@ from src.mem_net import main_mem_net
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.DEBUG)
 
 def main(argv):
     '''
@@ -367,6 +366,7 @@ def get_args(
     if FULL_VOCAB_TYPE: parameters['full_vocab_type'] = FULL_VOCAB_TYPE
     if FULL_CHAR_VOCAB: parameters['full_char_vocab'] = FULL_CHAR_VOCAB
 
+    assert (HDF5_PATH_TRAIN and SGD) or (not HDF5_PATH_TRAIN and not SGD)
     parameters['hdf5_path_test'] = HDF5_PATH_TEST
     parameters['hdf5_path_train'] = HDF5_PATH_TRAIN
     parameters['hdf5_save_frequency'] = HDF5_SAVE_FREQUENCY

@@ -12,7 +12,6 @@ from src.utils import normalize, tokenize, sampling
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.DEBUG)
 
 def gen_feature(new_vectors, request_parameters, feature_vector):
     """Take newly generated feature vectors, look up which
