@@ -653,6 +653,8 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
 
             # Save features and label
             feature_vectors = np.concatenate(feature_vectors, axis=0).astype(dtype)
+            # Fail catastrphically on zero vector (not sure if we need this)
+            assert not (feature_vectors < 0.0001).all() 
             data.append(feature_vectors)
         if case["novelty"]:
             labels.append(1)
