@@ -1,14 +1,18 @@
 import copy
-
-from src.featurizers.skipthoughts import skipthoughts as sk
-from src.utils import normalize, tokenize, sampling
+import logging
+import h5py
+import numpy as np
+from memory_profiler import profile
+from scipy import spatial
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.preprocessing import OneHotEncoder
-from memory_profiler import profile
-import h5py
-import numpy as np
-from scipy import spatial
+from src.featurizers.skipthoughts import skipthoughts as sk
+from src.utils import normalize, tokenize, sampling
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.DEBUG)
 
 def gen_feature(new_vectors, request_parameters, feature_vector):
     """Take newly generated feature vectors, look up which
@@ -523,7 +527,6 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
 
     return doc_input, doc_questions, doc_masks
 
-@profile
 def gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model, hdf5_path=None, dtype=np.float32):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
@@ -571,11 +574,8 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     # pairing data and label
     for cluster in all_clusters:
         # Determine arrival order in this cluster
-#
         sorted_entries = [x[1] for x in sorted(lookup_order[cluster], key=lambda x: x[0])]
-
         observations = [document_data[sorted_entries[0]]]
-
         for index in sorted_entries[1:]:
             next_doc = document_data[index]
             observations.append(next_doc)

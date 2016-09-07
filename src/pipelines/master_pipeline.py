@@ -10,15 +10,18 @@ import pdb
 import sys
 import pickle
 import argparse
+import logging
 from collections import namedtuple
 import numpy as np
 from memory_profiler import profile
-from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict
+from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict, sgd
 from src.utils.sampling import sample
 from src.mem_net import main_mem_net
 
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.DEBUG)
 
-@profile
 def main(argv):
     '''
     controls the over-arching implmentation of the algorithms
@@ -42,7 +45,6 @@ def main(argv):
     hdf5_path_test=parameters['hdf5_path_test']
     train_data, train_target = data_gen.gen_observations(clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model, hdf5_path_train)
     test_data, test_target = data_gen.gen_observations(test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model, hdf5_path_test)
-    pdb.set_trace()
 
     # save training data for separate experimentation and hyperparameter optimization
     if 'saveexperimentdata' in parameters:
@@ -371,7 +373,6 @@ def get_args(
     return directory, features, algorithms, parameters
 
 if __name__ == '__main__':
-    #args = parse_args()
     args = get_args()
     print("Algorithm details and Results:", file=sys.stderr)
     print(main(args), file=sys.stdout)
