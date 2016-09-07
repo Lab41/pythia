@@ -63,13 +63,16 @@ def main(argv):
     print("running algorithms...",file=sys.stderr)
     if 'log_reg' in algorithms:
         logreg_model = log_reg.main([train_data, train_target, algorithms['log_reg']])
-        predicted_labels, perform_results = predict.main([logreg_model, test_data, test_target])
+        predicted_labels, perform_results = predict.predicter(logreg_model, test_data, test_target)
     if 'svm' in algorithms:
         svm_model = svm.main([train_data, train_target, algorithms['svm']])
-        predicted_labels, perform_results = predict.main([svm_model, test_data, test_target])
+        predicted_labels, perform_results = predict.predicter(svm_model, test_data, test_target)
     if 'xgb' in algorithms:
         xgb_model = xgb.main([train_data, train_target, algorithms['xgb']])
-        predicted_labels, perform_results = predict.main([xgb_model, test_data, test_target])
+        predicted_labels, perform_results = predict.predicter(xgb_model, test_data, test_target)
+    if 'sgd' in algorithms:
+        sgd_model = sgd.main(hdf5_path_train, "/data", "/labels", **algorithms['sgd'])
+        predicted_labels, perform_results = predict.predicter(sgd_model, test_data, test_target)
     if 'mem_net' in algorithms:
         mem_net_model, model_name = main_mem_net.run_mem_net(train_data, test_data, corpusdict, **algorithms['mem_net'])
         predicted_labels, perform_results = main_mem_net.test_mem_network(mem_net_model, model_name, **algorithms['mem_net'])
