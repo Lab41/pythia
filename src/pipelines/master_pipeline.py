@@ -154,6 +154,7 @@ def get_args(
     SGD_ALPHA = 0.0001,
     SGD_PENALTY = 'l2',
     SGD_EPOCHS = 10,
+    SGD_BATCH_SIZE = 128,
 
     #memory network
     MEM_NET = False,
@@ -314,6 +315,7 @@ def get_args(
         sgd['loss'] = SGD_LOSS
         sgd['penalty'] = SGD_PENALTY
         sgd['num_epochs'] = SGD_EPOCHS
+        sgd['batch_size'] = SGD_BATCH_SIZE
         sgd['seed'] = SEED
         assert HDF5_PATH_TRAIN is not None, "SGD-based methods should be used with HDF5"
 

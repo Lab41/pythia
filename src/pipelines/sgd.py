@@ -8,7 +8,7 @@ import numpy as np
 from sklearn import linear_model
 from src.utils.hdf5_minibatch import Hdf5BatchIterator
 
-def run_model(train_data_path, data_path="/data", labels_path="/labels", loss='log', penalty='l2', alpha=0.0001, num_epochs=10, seed=None):
+def run_model(train_data_path, data_path="/data", labels_path="/labels", loss='log', penalty='l2', alpha=0.0001, num_epochs=10, seed=None, batch_size=128):
     ''' SGD-based training for classifiers. Allows out-of-core compute
     Args:
         train_data_path: path to HDF5 file on disk
@@ -24,8 +24,8 @@ def run_model(train_data_path, data_path="/data", labels_path="/labels", loss='l
     # we create an instance of SGDClassifier and fit the data.
     sgd_classifier = linear_model.SGDClassifier(loss=loss, penalty=penalty, alpha=alpha, n_iter=1, random_state=seed)
     for epoch_i in range(num_epochs):
-        data = Hdf5BatchIterator(train_data_path, data_path)
-        labels = Hdf5BatchIterator(train_data_path, labels_path)
+        data = Hdf5BatchIterator(train_data_path, data_path, batch_size=batch_size)
+        labels = Hdf5BatchIterator(train_data_path, labels_path, batch_size=batch_size)
         for mb_data, mb_labels in zip(data, labels):
             sgd_classifier.partial_fit(mb_data, mb_labels.ravel(), np.array([0, 1]))
 

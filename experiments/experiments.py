@@ -104,6 +104,7 @@ def config_variables():
     SGD_LOSS = 'log'
     SGD_ALPHA = 0.0001
     SGD_PENALTY = 'l2'
+    SGD_BATCH_SIZE = 128
 
     # xgboost
     XGB = False
@@ -185,6 +186,7 @@ def run_experiment(directory,
             SGD_ALPHA,
             SGD_PENALTY,
             SGD_EPOCHS,
+            SGD_BATCH_SIZE,
             MEM_NET,
             MEM_VOCAB,
             MEM_TYPE,
@@ -259,6 +261,7 @@ def run_experiment(directory,
             SGD_ALPHA,
             SGD_PENALTY,
             SGD_EPOCHS,
+            SGD_BATCH_SIZE,
             MEM_NET,
             MEM_VOCAB,
             MEM_TYPE,
