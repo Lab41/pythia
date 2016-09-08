@@ -7,13 +7,24 @@ then adminstrates the implementation of the given specifications. It requires a
 directory full of JSON files, where each file contains a cluster of documents.
 '''
 import sys
+import os
 import argparse
+import logging
+import pickle
 from collections import namedtuple
 import numpy as np
 from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict
+from src.utils import hashing
 from src.utils.sampling import sample
 from src.mem_net import main_mem_net
-import pickle
+
+cache_pickle = "{}.pkl"
+cache_dir = ".cache-pythia"
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.DEBUG)
 
 def main(argv):
     '''
@@ -26,7 +37,24 @@ def main(argv):
 
     #parsing
     print("parsing json data...",file=sys.stderr)
-    clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main(directory, parameters)
+    if parameters['use_cache']:
+        dir_hash = hashing.dir_hash(directory)
+        pickle_path = os.path.join(cache_dir, cache_pickle.format(dir_hash))
+        try:
+            logger.debug("Trying to use cache")
+            with open(pickle_path, 'rb') as f:
+                parsed_data = pickle.load(f)
+                logger.debug("Using existing cache")
+        except:
+            # parse and write to cache
+            logger.debug("Parsing and writing to cache")
+            parsed_data = parse_json.main(directory, parameters)
+            os.makedirs(cache_dir, exist_ok=True)
+            with open(pickle_path, 'wb') as f:
+                pickle.dump(parsed_data, f) 
+    else:
+        parsed_data = parse_json.main(directory, parameters)
+    clusters, order, data, test_clusters, test_order, test_data, corpusdict = parsed_data
 
     #preprocessing
     print("preprocessing...",file=sys.stderr)
