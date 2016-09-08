@@ -66,15 +66,6 @@ set -e
             touch $envloc/etc/conda/activate.d/env_vars.sh
             touch $envloc/etc/conda/deactivate.d/env_vars.sh
 
-            # Search PYTHIA_CONFIG's JSON format for the PYTHIA_MONGO_DB_URI property and return PYTHIA_MONGO_DB_URI's value
-            dbval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MONGO_DB_URI'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
-            # Due to the colon (:) delimiter, go back to PYTHIA_MONGO_DB_URI's value in PYTHIA_CONFIG's JSON and extract the port from the next string
-            dbport=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MONGO_DB_URI'\042/){print $(i+2)}}}' | cut -d'"' -f1 ) )
-            if [ "$dbval" != "" ]; then
-                echo "export PYTHIA_MONGO_DB_URI=$dbval:$dbport" >> $envloc/etc/conda/activate.d/env_vars.sh
-                echo "unset PYTHIA_MONGO_DB_URI" >> $envloc/etc/conda/deactivate.d/env_vars.sh
-            fi
-
             # Search PYTHIA_CONFIG's JSON format for the PYTHIA_MODELS_PATH property and return PYTHIA_MODELS_PATH's value
             modelval=$( (echo $PYTHIA_CONFIG) | (awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'PYTHIA_MODELS_PATH'\042/){print $(i+1)}}}' | tr -d '"' | tr -d '[[:space:]]') )
             if [ "$modelval" != "" ]; then
@@ -97,8 +88,18 @@ set -e
     # Install XGBoost classifier
     pip install -q xgboost==0.4a30
 
+    # Install auto-sklearn (Linux only) and dependencies for experimentation and hyperparameter optimization
+    # http://automl.github.io/auto-sklearn/stable/index.html
+    pip install -q Cython==0.24.1
+    pip install -q -r https://raw.githubusercontent.com/automl/auto-sklearn/master/requirements.txt
+    pip install auto-sklearn==0.0.1
+
     # install theano and keras
     pip install -q nose-parameterized==0.5.0 Theano==0.8.2 keras==1.0.7
+
+    # install Lasagne
+    pip install -r https://raw.githubusercontent.com/Lasagne/Lasagne/master/requirements.txt
+    pip install https://github.com/Lasagne/Lasagne/archive/master.zip
 
     # install bleeding-edge pylzma (for Stack Exchange)
     pip install -q git+https://github.com/fancycode/pylzma@996570e

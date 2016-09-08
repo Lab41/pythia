@@ -10,6 +10,7 @@ import json
 from bs4 import BeautifulSoup as bsoup
 import argparse
 import logging
+from datetime import datetime,timedelta
 logger = logging.getLogger("tdt_parse")
 logger.setLevel(logging.DEBUG)
 # create console handler and set level to debug
@@ -76,7 +77,7 @@ def parse_tdt_by_topic(src_dir, doc_type, limit = 0, lang = None):
                 doc_date = tdt_fileid.split('_')[0]
                 doc_src = "_".join(tdt_fileid.split('_')[-2:])
                 # If a language was specified, limit to sources in the given language
-                if lang is not  None:
+                if lang is not None:
                     if 'ENG' == lang and (doc_src not in ENGLISH_SRCS):
                         logger.debug("Skipping non-English source document.")
                         continue
@@ -105,7 +106,7 @@ def parse_tdt_by_topic(src_dir, doc_type, limit = 0, lang = None):
                 cluster[post_id] = post
                 clusters[cluster_id] = cluster
 #                 logger.debug("Doc:")
-#                 logger.debug(cluster[post_id])     
+#                 logger.debug(cluster[post_id])
     return clusters
 
 def extract_doc_text(src_dir, file_id, doc_id):
@@ -144,7 +145,9 @@ def write_all(clusters, dest_dir):
     for cluster_id, cluster in clusters.items():
         logger.debug(cluster_id)
         dest_file = '{dir}{fname}.json'.format(dir=dest_dir,fname=cluster_id)
-        write_json(dest_file, cluster)
+        # Only write out clusters that contain more than one document
+        if len(cluster.values()) > 1:
+            write_json(dest_file, cluster)
 
 def write_json(dest_file, docs):
     """
@@ -155,6 +158,69 @@ def write_json(dest_file, docs):
             json.dump(doc, fout)
             fout.write('\n')
     return
+
+""" Defines a novelty label for the parsed clusters. For a given cluster, finds a new document on the same topic
+that occurred some number of days later. Marks the new document as novel and merges it with original cluster.
+
+Args:
+ clusters (dict): - TDT news stories grouped by topic and date
+ mindays (int): - Minimum number of days between cluster and new document
+ maxdays (int): Maximum number of days between cluster and new document
+ lang (str): Filter for document language (English or Mandarin)
+Output:
+ newclusters(dict) - TDT news stories grouped by topic and date with one new document from later date
+"""
+def define_novelty(clusters, mindays, maxdays, lang):
+    newclusters = dict()
+
+    for cluster in clusters:
+
+        # Only keep original clusters with more than one story
+        post_id = clusters[cluster]
+        post_id_length = len(post_id.values())
+        if len(post_id.values()) == 1:
+            continue
+
+        # Determine cluster topic and date. Cluster is formatted as topicid_YYYYMMDD
+        topic, firstdatestring = cluster.split("_")
+        firstdate = datetime.strptime(firstdatestring,'%Y%m%d')
+
+        # Iterate over date range supplied at command line
+        for numdays in range(mindays, maxdays+1):
+
+            # Determine future date and look for matching file in clusters
+            seconddate = firstdate + timedelta(days=numdays)
+            seconddatestring = str(seconddate.strftime('%Y%m%d'))
+            try:
+                futurecluster = clusters[topic+"_"+ seconddatestring]
+            except KeyError:
+                continue
+
+            # Make a new cluster from original cluster elements and new future story marked as novel
+            suffix = 1
+            for entry in futurecluster:
+
+                # Set new cluster label as topicid_YYYYMMDD_YYYYMMDD_lang_iteration
+                newclusterlabel = cluster + "_" + seconddatestring + "_" + lang + "_" + str(suffix).zfill(4)
+                newclusters[newclusterlabel] = dict()
+
+                # Add existing cluster documents and update cluster label
+                for item in post_id:
+                    newclusters[newclusterlabel][item] = dict(post_id[item])
+                    newclusters[newclusterlabel][item]['cluster_id'] = newclusterlabel
+
+                # Add future document
+                newclusters[newclusterlabel][entry] = dict(futurecluster[entry])
+                # Set new document to end of new cluster order
+                newclusters[newclusterlabel][entry]['order'] = post_id_length
+                # Set new document novelty to True
+                newclusters[newclusterlabel][entry]['novelty'] = True
+                # Update cluster label for new document
+                newclusters[newclusterlabel][entry]['cluster_id'] = newclusterlabel
+
+                suffix +=1
+
+    return newclusters
 
 def main(args):
     """
@@ -188,7 +254,8 @@ def main(args):
         lang = args.lang
     logger.debug("tdt2_parse translating TDT2 data from %s to JSON formatted Pythia data in %s.", src_dir, dest_dir)
     clusters = parse_tdt_by_topic(src_dir, doc_type, limit, lang)
-    write_all(clusters, dest_dir)
+    newclusters = define_novelty(clusters, args.mindays, args.maxdays, args.lang)
+    write_all(newclusters, dest_dir)
     return
 
 
@@ -198,7 +265,12 @@ if __name__ == '__main__':
     parser.add_argument("--destdir", help="Directory to store Pythia JSON formatted files. Default is ./pythia_tdt/")
     parser.add_argument("--doctype", help="Only convert documents of the given DOCTYPE. Currently only supports parsing NEWS, which is the default value")
     parser.add_argument("--limit", type=int, help="Limit the number of files that are processed.")
-    parser.add_argument('--lang', help="Limit parsed documents to language, either ENG for english or MAN for Mandarin Chinese.")
+    parser.add_argument('--lang', default='ENG', help="Limit parsed documents to language, either ENG for english or MAN for Mandarin Chinese (default is 'ENG').")
+    parser.add_argument('--mindays', type=int, default=7, help="Minimum number of days of separation between a topic cluster and a new document on the same topic (default is 5). This is used for novelty labeling.")
+    parser.add_argument('--maxdays', type=int, default=10, help="Maximum number of days of separation between a topic cluster and a new document on the same topic (default is 10). This is used for novelty labeling.")
     args = parser.parse_args()
+    if args.lang not in {'ENG','MAN'}:
+        logger.error("Language parameter (--lang) must be 'ENG' (English) or 'MAN' (Mandarin)")
+        quit()
     main(args)
     parser.exit(status=0, message=None)

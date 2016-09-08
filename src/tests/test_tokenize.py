@@ -1,6 +1,4 @@
-import py.test
 from src.utils import tokenize
-
 
 def test_punkt():
     """Test sentence tokenization"""
