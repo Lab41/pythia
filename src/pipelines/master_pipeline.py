@@ -167,7 +167,9 @@ def get_args(
     FULL_VOCAB_TYPE = 'character',
     FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}",
 
-    SEED = None):
+    SEED = None,
+    
+    USE_CACHE = False):
     """ Return a parameters data structure with information on how to
     run an experiment. Argument list should match experiments/experiments.py
     """
@@ -333,6 +335,8 @@ def get_args(
     if FULL_VOCAB_SIZE: parameters['full_vocab_size'] = FULL_VOCAB_SIZE
     if FULL_VOCAB_TYPE: parameters['full_vocab_type'] = FULL_VOCAB_TYPE
     if FULL_CHAR_VOCAB: parameters['full_char_vocab'] = FULL_CHAR_VOCAB
+
+    parameters['use_cache'] = USE_CACHE
 
     return directory, features, algorithms, parameters
 
