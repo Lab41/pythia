@@ -1,17 +1,18 @@
-# http://akiscode.com/articles/sha-1directoryhash.shtml
-# Copyright (c) 2009 Stephen Akiki
-# MIT License (Means you can do whatever you want with this)
-#  See http://www.opensource.org/licenses/mit-license.php
-# Error Codes:
-#   -1 -> Directory does not exist
-#   -2 -> General error (see stack traceback)
+
+import hashlib, os
+import logging
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 def dir_hash(directory, verbose=0):
-    import hashlib, os
-    import logging
-    logging.basicConfig()
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
+    """# http://akiscode.com/articles/sha-1directoryhash.shtml
+    # Copyright (c) 2009 Stephen Akiki
+    # MIT License (Means you can do whatever you want with this)
+    #  See http://www.opensource.org/licenses/mit-license.php
+    # Error Codes:
+    #   -1 -> Directory does not exist
+    #   -2 -> General error (see stack traceback)"""
     SHAhash = hashlib.sha1()
     if not os.path.exists (directory):
         return -1
@@ -48,4 +49,5 @@ def dir_hash(directory, verbose=0):
     return SHAhash.hexdigest()
 
 def feature_hash(features):
+    """Experimental"""
     return json.dumps(features, sort_keys=True)
