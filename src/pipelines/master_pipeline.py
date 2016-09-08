@@ -190,7 +190,8 @@ def get_args(
     
     HDF5_PATH_TRAIN = None,
     HDF5_PATH_TEST = None,
-    HDF5_SAVE_FREQUENCY = 100):
+    HDF5_SAVE_FREQUENCY = 100,
+    HDF5_USE_EXISTING = True):
     """ Return a parameters data structure with information on how to
     run an experiment. Argument list should match experiments/experiments.py
     """
@@ -372,6 +373,7 @@ def get_args(
     parameters['hdf5_path_test'] = HDF5_PATH_TEST
     parameters['hdf5_path_train'] = HDF5_PATH_TRAIN
     parameters['hdf5_save_frequency'] = HDF5_SAVE_FREQUENCY
+    parameters['hdf5_use_existing'] = HDF5_USE_EXISTING
 
     return directory, features, algorithms, parameters
 

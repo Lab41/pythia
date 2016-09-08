@@ -137,6 +137,7 @@ def config_variables():
     HDF5_PATH_TRAIN=None
     HDF5_PATH_TEST=None
     HDF5_SAVE_FREQUENCY=100
+    HDF5_USE_EXISTING=False
 
 @xp.automain
 def run_experiment(directory,
@@ -211,7 +212,8 @@ def run_experiment(directory,
             SEED,
             HDF5_PATH_TRAIN,
             HDF5_PATH_TEST,
-            HDF5_SAVE_FREQUENCY):
+            HDF5_SAVE_FREQUENCY,
+            HDF5_USE_EXISTING):
     return pythia_main(
         get_args(
             directory,
@@ -286,6 +288,7 @@ def run_experiment(directory,
             SEED,
             HDF5_PATH_TRAIN,
             HDF5_PATH_TEST,
-            HDF5_SAVE_FREQUENCY
+            HDF5_SAVE_FREQUENCY,
+            HDF5_USE_EXISTING
             )
     )

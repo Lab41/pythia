@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 import sys
+import logging
 import numpy as np
 import numpy.random
 from collections import defaultdict, namedtuple, OrderedDict
 from src.pipelines.parse_json import count_vocab, order_vocab
 
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.DEBUG)
 def sample(data, key, novelToNotNovelRatio = 1.0, over = False, replacement = False, random_state = numpy.random):
     '''
         This function samples a set of data with two classes based on a ratio.
@@ -118,7 +122,8 @@ def label_sample(observations, label_key, replacement=False, desired_size=None, 
     for case in observations:
         response_key = case[label_key]
         sorted_by_label.setdefault(response_key, []).append(case)
-    
+    logger.debug("Size of response key set {}".format(len(sorted_by_label)))
+    logger.debug("Size of observations set {}".format(len(observations)))
     # What should sizes of eventual classes be?
     sizes = { key: len(x) for key, x in sorted_by_label.items() }
     min_size = np.min(list(sizes.values()))

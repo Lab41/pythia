@@ -1,3 +1,4 @@
+import os
 import copy
 import logging
 import h5py
@@ -12,6 +13,7 @@ from src.utils import normalize, tokenize, sampling
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.DEBUG)
 
 def gen_feature(new_vectors, request_parameters, feature_vector):
     """Take newly generated feature vectors, look up which
@@ -566,8 +568,11 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     hdf5_save_frequency=parameters['hdf5_save_frequency']
     data_key = 'data'
     labels_key = 'labels'
-    # Truncate any existing files at save location
+    # Truncate any existing files at save location, or return early if 
+    # using existing files
     if hdf5_path is not None:
+        if parameters['hdf5_use_existing'] and os.path.isfile(hdf5_path):
+            return hdf5_path, hdf5_path
         open(hdf5_path, 'w').close()
 
     # Create random state
@@ -603,6 +608,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
         else:
             replacement = False
         logger.debug("Replacement: {}, Desired size: {}".format(replacement, desired_size))
+        logger.debug("Size of data: {}, Number of clusters: {}".format(len(corpus_unprocessed), len(all_clusters)))
         corpus = sampling.label_sample(corpus_unprocessed, "novelty", replacement, desired_size, random_state)  
     else:
         corpus = corpus_unprocessed
