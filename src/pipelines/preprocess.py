@@ -9,8 +9,8 @@ import numpy as np
 import gensim
 
 from src.utils.normalize import normalize_and_remove_stop_words, xml_normalize
-from src.featurizers.skipthoughts import skipthoughts
-from src.featurizers import tensorflow_cnn
+#from src.featurizers.skipthoughts import skipthoughts
+#from src.featurizers import tensorflow_cnn
 from sklearn.decomposition import LatentDirichletAllocation
 from sklearn.feature_extraction.text import CountVectorizer
 from src.utils import tokenize
@@ -180,12 +180,15 @@ def main(features, parameters, corpus_dict, trainingdata):
     w2v_model = None
     full_vocab = None
 
-    if 'st' in features: encoder_decoder = skipthoughts.load_model()
+    if 'st' in features:
+        from src.featurizers.skipthoughts import skipthoughts
+        encoder_decoder = skipthoughts.load_model()
 
     if 'bow' in features or 'lda' in features:
         vocab = gen_vocab(corpus_dict, **parameters)
 
     if 'cnn' in features:
+        from src.featurizers import tensorflow_cnn
         full_vocab = gen_full_vocab(corpus_dict, **parameters)
         features['cnn']['vocab'] = full_vocab
         tf_session = tensorflow_cnn.tensorflow_cnn(trainingdata, **features['cnn'])
@@ -205,6 +208,7 @@ def main(features, parameters, corpus_dict, trainingdata):
             embed_mode = features['mem_net']['embed_mode']
         else: embed_mode = 'word2vec'
         if embed_mode=='skip_thought' and not encoder_decoder:
+            from src.featurizers.skipthoughts import skipthoughts
             encoder_decoder = skipthoughts.load_model()
         if embed_mode=="onehot" and not full_vocab:
             full_vocab = gen_full_vocab(corpus_dict, **parameters)

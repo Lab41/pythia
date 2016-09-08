@@ -1,6 +1,6 @@
 import copy
 
-from src.featurizers.skipthoughts import skipthoughts as sk
+#from src.featurizers.skipthoughts import skipthoughts as sk
 from src.utils import normalize, tokenize, sampling
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
@@ -103,6 +103,7 @@ def skipthoughts_vectors(doc, sentences, encoder_decoder):
     Returns:
         array: the concatenation of the corpus skipthoughts vector (the average of each indivdual skipthoughts vector) and the document skipthoughts vector (the average of the first and last sentence's skipthoughts vector)
     '''
+    from src.featurizers.skipthoughts import skipthoughts as sk
     corpus_vectors = sk.encode(encoder_decoder, sentences)
     corpus_vector = np.mean(corpus_vectors, axis = 0)
     doc_vector = np.mean(sk.encode(encoder_decoder, get_first_and_last_sentence(doc)), axis=0)
@@ -462,6 +463,7 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
     else: embed_mode = 'word2vec'
 
     if embed_mode == 'skip_thought':
+        from src.featurizers.skipthoughts import skipthoughts as sk
         doc_sentences = tokenize.punkt_sentences(raw_doc)
 
         # Ensure that the document and corpus are long enough and if not make them be long enough
