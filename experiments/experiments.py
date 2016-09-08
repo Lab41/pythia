@@ -105,6 +105,7 @@ def config_variables():
     SGD_ALPHA = 0.0001
     SGD_PENALTY = 'l2'
     SGD_BATCH_SIZE = 128
+    SGD_EPOCHS = 10
 
     # xgboost
     XGB = False
