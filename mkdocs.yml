@@ -1,0 +1,5 @@
+site_name: Pythia
+pages:
+- main: index.md
+theme: readthedocs
+
