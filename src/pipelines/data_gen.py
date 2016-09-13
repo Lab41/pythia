@@ -252,7 +252,7 @@ def run_w2v_matrix(w2v_model, doc, w2v_params, mask_mode):
                 wordvector_ = w2v_model[word]
                 wordvector = [float(w) for w in wordvector_]
             except:
-                wordvector = np.random.uniform(0.0,1.0,(w2v_params['size'],))
+                wordvector = w2v_model.seeded_vector(np.random.rand())
             if wordvector is not None:
                 wordvectorarray.append(wordvector)
 
