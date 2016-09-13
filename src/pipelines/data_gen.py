@@ -1,5 +1,5 @@
 import copy
-
+import math
 from src.featurizers.skipthoughts import skipthoughts as sk
 from src.utils import normalize, tokenize, sampling
 from sklearn.feature_extraction import DictVectorizer
@@ -122,6 +122,14 @@ def get_first_and_last_sentence(doc):
     sentences = tokenize.punkt_sentences(doc)
     first = normalize.xml_normalize(sentences[0])
     last = normalize.xml_normalize(sentences[-1])
+
+    # Protect against scenario where last sentence is mistakenly returned by parser as empty list
+    if len(last)==0:
+        i = -2
+        while len(last)==0:
+            last = normalize.xml_normalize(sentences[i])
+            i-=1
+
     first_and_last = [first, last]
     return first_and_last
 
@@ -166,11 +174,97 @@ def w2v(doc, corpus, w2v_model, w2v, feature):
          feature: List of features extracted from text
      '''
 
-    docw2v = run_w2v(w2v_model, doc, w2v)
-    corpusw2v = run_w2v(w2v_model, corpus, w2v)
-    vectors = [docw2v, corpusw2v]
-    feature = gen_feature(vectors, w2v, feature)
+    if w2v.get('avg', False):
+        docw2v = run_w2v(w2v_model, doc, w2v)
+        corpusw2v = run_w2v(w2v_model, corpus, w2v)
+        vectors = [docw2v, corpusw2v]
+        feature = gen_feature(vectors, w2v, feature)
+
+    vectormath = []
+    if w2v.get('max', False): vectormath.append('max')
+    if w2v.get('min', False): vectormath.append('min')
+    if w2v.get('abs', False): vectormath.append('abs')
+    for operation in vectormath:
+        docw2v = run_w2v_elemwise(w2v_model, doc, w2v, operation)
+        corpusw2v = run_w2v_elemwise(w2v_model, corpus, w2v, operation)
+        vectors = [docw2v,corpusw2v]
+        feature = gen_feature(vectors, w2v, feature)
+
     return feature
+
+def run_w2v_elemwise(w2v_model, doc, w2v, operation):
+    '''
+      Calculates Word2Vec vectors for a document using the first and last sentences of the document
+      Examines vector elements and retains maximum, minimum or absolute value for each vector element
+
+      Args:
+          w2v_model (gensim.Word2Vec): Trained Word2Vec model
+          doc (str): the text of the document
+          w2v (dict): Dictionary of Word2Vec parameters as set in master_pipeline. The dictionary
+           will include keys for the model building parameters min_count, window, size, workers and pretrained.
+           The dict may also have optional boolean keys for the feature operations append, difference, product and cos.
+          operation (str): element wise operation of max, min or abs
+      Returns:
+          documentvector (list): Word2Vec vectors with min/max/abs element values for a sentence, which are then
+          concatenated across sentences
+      '''
+    # Get first and last sentences of document, break down sentences into words and remove stop words
+
+    sentences = get_first_and_last_sentence(doc)
+    normalizedsentences = []
+
+    for sentence in sentences:
+        words = normalize.remove_stop_words(tokenize.word_punct_tokens(sentence))
+        normalizedsentences.append(words)
+
+    sentencevectorarray = []
+
+    # Look up word vectors in trained Word2Vec model and build array of word vectors and sentence vectors
+    for phrase in normalizedsentences:
+
+        # Set up comparison vector based on requested operation
+        if operation == 'max':
+            vectorlist = np.full(w2v['size'], -np.inf)
+        elif operation == 'min':
+            vectorlist = np.full(w2v['size'], np.inf)
+        elif operation == 'abs':
+            vectorlist = np.zeros(w2v['size'])
+
+        # Determine word vector and evaluate elements against comparison vector
+        for word in phrase:
+            try:
+                wordvector = w2v_model[word]
+            except KeyError:
+                continue
+            if operation == 'max':
+                for i in range(0,w2v['size']):
+                    if wordvector[i] > vectorlist[i]:
+                        vectorlist[i] = wordvector[i]
+            elif operation == 'min':
+                for j in range(0, w2v['size']):
+                    if wordvector[j] < vectorlist[j]:
+                        vectorlist[j] = wordvector[j]
+            elif operation == 'abs':
+                for k in range(0, w2v['size']):
+                    if abs(wordvector[k]) > vectorlist[k]:
+                        vectorlist[k] = abs(wordvector[k])
+
+        # Remove any infinity values from special cases (ex: 1 word sentence and word not in word2vec model)
+        if any(np.isinf(vectorlist)):
+            if all(np.isinf(vectorlist)):
+                vectorlist = np.zeros(w2v['size'])
+            else:
+                for m in range(0,len(vectorlist)):
+                    if math.isinf(vectorlist[m]):
+                        vectorlist[m] = 0
+
+        sentencevectorarray.append(vectorlist)
+
+    if len(sentencevectorarray) > 0:
+        documentvector = np.concatenate(sentencevectorarray)
+    else:
+        documentvector = np.zeros(w2v['size'])
+    return documentvector
 
 def run_w2v(w2v_model, doc, w2v):
     '''
@@ -184,7 +278,7 @@ def run_w2v(w2v_model, doc, w2v):
            The dict may also have optional boolean keys for the feature operations append, difference, product and cos.
 
       Returns:
-          documentvector (list): List of Word2Vec vectors averaged across sentences
+          documentvector (list): List of Word2Vec vectors averaged across words and concatenated across sentences
       '''
 
     # Get first and last sentences of document, break down sentences into words and remove stop words
@@ -201,12 +295,11 @@ def run_w2v(w2v_model, doc, w2v):
     # Look up word vectors in trained Word2Vec model and build array of word vectors and sentence vectors
     for phrase in normalizedsentences:
         for word in phrase:
-            wordvector = None
             try:
                 wordvector = w2v_model[word]
-            except:
-                pass
-            if wordvector is not None: wordvectorarray.append(wordvector)
+            except KeyError:
+                continue
+            wordvectorarray.append(wordvector)
 
         # Only calculate mean and append to sentence vector array if one or more word vectors were found
         if len(wordvectorarray) > 0:
@@ -214,7 +307,7 @@ def run_w2v(w2v_model, doc, w2v):
 
     # Only calculate mean if one or more sentences were added to sentence vector array, otherwise return array of zeroes
     if len(sentencevectorarray) > 0:
-        documentvector =  np.mean(sentencevectorarray, axis=0)
+        documentvector =  np.concatenate(sentencevectorarray)
     else:
         documentvector = np.zeros(w2v['size'])
     return documentvector
@@ -631,7 +724,10 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
                 feature_vectors = bow(doc_normalized, bkgd_text_raw, bkgd_docs_normalized, vocab, features['bow'], feature_vectors)
 
             if 'st' in features:
-                sentences = [ get_first_and_last_sentence(doc) for doc in bkgd_docs_raw ]
+                sentences = []
+                for doc in bkgd_docs_raw:
+                    for item in get_first_and_last_sentence(doc):
+                        sentences.append(item)
                 feature_vectors = st(doc_raw, sentences, encoder_decoder, features['st'], feature_vectors)
 
             if 'lda' in features:

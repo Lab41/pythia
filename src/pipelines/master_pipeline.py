@@ -122,6 +122,12 @@ def get_args(
     LDA_TOPICS = 40,
 
     #word2vec
+    # If AVG, MAX, MIN or ABS are selected, APPEND, DIFFERENCE, PRODUCT or COS must be selected
+    W2V_AVG = False,
+    W2V_MAX = False,
+    W2V_MIN = False,
+    W2V_ABS = False,
+    # If APPEND, DIFFERENCE, PRODUCT or COS are selected AVG, MAX, MIN or ABS must be selected
     W2V_APPEND = False,
     W2V_DIFFERENCE = False,
     W2V_PRODUCT = False,
@@ -129,7 +135,8 @@ def get_args(
     W2V_PRETRAINED=False,
     W2V_MIN_COUNT = 5,
     W2V_WINDOW = 5,
-    W2V_SIZE = 100,
+    # W2V_SIZE should be set to 300 if using the Google News pretrained word2vec model
+    W2V_SIZE = 300,
     W2V_WORKERS = 3,
 
     #one-hot CNN layer
@@ -233,6 +240,10 @@ def get_args(
         if LDA_TOPICS: lda['topics'] = LDA_TOPICS
     if W2V_APPEND or W2V_DIFFERENCE or W2V_PRODUCT or W2V_COS:
         w2v = dict()
+        if W2V_AVG: w2v['avg'] = W2V_AVG
+        if W2V_MAX: w2v['max'] = W2V_MAX
+        if W2V_MIN: w2v['min'] = W2V_MIN
+        if W2V_ABS: w2v['abs'] = W2V_ABS
         if W2V_APPEND: w2v['append'] = W2V_APPEND
         if W2V_DIFFERENCE: w2v['difference'] = W2V_DIFFERENCE
         if W2V_PRODUCT: w2v['product'] = W2V_PRODUCT
@@ -292,6 +303,14 @@ def get_args(
     if len(features) == 0:
         print("Error: At least one feature (ex: Bag of Words, LDA, etc.) must be requested per run.", file=sys.stderr)
         quit()
+    w2v_types = [W2V_AVG,W2V_MAX,W2V_MIN,W2V_ABS]
+    w2v_ops = [W2V_APPEND,W2V_DIFFERENCE,W2V_PRODUCT,W2V_COS]
+    if any(w2v_ops) and not any(w2v_types):
+        print("Caution!!  A Word2Vec vector type must be selected. Default will be set to average (W2V_AVG)")
+        features['w2v']['avg'] = True
+    if any(w2v_types) and not any(w2v_ops):
+        print("Caution!!  A Word2Vec vector operation must be selected. Default will be set to append (W2V_APPEND)")
+        features['w2v']['append'] = True
 
     #get algorithms
     log_reg = None
