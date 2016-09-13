@@ -667,7 +667,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     mem_net_features['input_masks'] = input_masks
     mem_net_features['answers'] = labels
     
-    ids = ["C" + str(clusterid]) + "_P" + str(postid) for clusterid, postid in zip(clusterids,postids)]
+    ids = ["C" + str(clusterid) + "_P" + str(postid) for clusterid, postid in zip(clusterids,postids)]
 
    
     if 'mem_net' in features:
