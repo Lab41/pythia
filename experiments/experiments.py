@@ -127,6 +127,8 @@ def config_variables():
 
     SEED = None
 
+    USE_CACHE = False
+
 @xp.automain
 def run_experiment(directory,
             BOW_APPEND,
@@ -191,7 +193,8 @@ def run_experiment(directory,
             FULL_VOCAB_SIZE,
             FULL_VOCAB_TYPE,
             FULL_CHAR_VOCAB,
-            SEED):
+            SEED,
+            USE_CACHE):
     return pythia_main(
         get_args(
             directory,
@@ -257,5 +260,6 @@ def run_experiment(directory,
             FULL_VOCAB_SIZE,
             FULL_VOCAB_TYPE,
             FULL_CHAR_VOCAB,
-            SEED)
+            SEED,
+            USE_CACHE)
     )
