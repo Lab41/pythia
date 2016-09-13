@@ -61,8 +61,9 @@ def main(argv):
     vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model = preprocess.main(features, parameters, corpusdict, data)
 
     #featurization
-    print("generating training and testing data...",file=sys.stderr)
+    print("generating training data...",file=sys.stderr)
     train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
+    print("generating testing data...",file=sys.stderr)
     test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
 
     # save training data for separate experimentation and hyperparameter optimization
@@ -306,10 +307,10 @@ def get_args(
     w2v_types = [W2V_AVG,W2V_MAX,W2V_MIN,W2V_ABS]
     w2v_ops = [W2V_APPEND,W2V_DIFFERENCE,W2V_PRODUCT,W2V_COS]
     if any(w2v_ops) and not any(w2v_types):
-        print("Caution!!  A Word2Vec vector type must be selected. Default will be set to average (W2V_AVG)")
+        print("Caution!!  A Word2Vec vector type must be selected. Default will be set to average (W2V_AVG)", file=sys.stderr)
         features['w2v']['avg'] = True
     if any(w2v_types) and not any(w2v_ops):
-        print("Caution!!  A Word2Vec vector operation must be selected. Default will be set to append (W2V_APPEND)")
+        print("Caution!!  A Word2Vec vector operation must be selected. Default will be set to append (W2V_APPEND)", file=sys.stderr)
         features['w2v']['append'] = True
 
     #get algorithms
