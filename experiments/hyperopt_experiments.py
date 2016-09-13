@@ -1,6 +1,8 @@
 import sys
 import argparse
 from collections import namedtuple
+import os
+os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=gpu,floatX=float32,allow_gc=True,lib.cnmem=0"  # Sets flags for use of GPU
 from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict, master_pipeline
 from src.utils.sampling import sample
 from src.mem_net import main_mem_net
@@ -14,7 +16,7 @@ from sklearn.metrics import precision_recall_fscore_support
 import hyperopt
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 
-directory_base = '/data/fs4/datasets/se_posts/anime'
+directory_base = '/data/stackexchange/anime'
 features = {}
 algorithms = {}
 parameters = {}
@@ -78,7 +80,7 @@ def objective(args):
         return np.mean(f_score)
 
     except:
-        return -1
+        raise
 
 def args_to_dicts(args):
 
@@ -188,4 +190,11 @@ def run_pythia_hyperopt():
     }
     trials = Trials()
     best = fmin(objective, space, algo=tpe.suggest, max_evals=100, trials = trials)
+    print("Best run ", best)
     return trials, best
+
+if __name__ == '__main__':
+
+    trial_results, best = run_pythia_hyperopt()
+    with open( "pythia_hyperopt_results" + '.pkl', 'wb') as f:
+        pickle.dump(trial_results, f, pickle.HIGHEST_PROTOCOL)
