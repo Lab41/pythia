@@ -239,7 +239,7 @@ def get_args(
         if LDA_PRODUCT: lda['product'] = LDA_PRODUCT
         if LDA_COS: lda['cos'] = LDA_COS
         if LDA_TOPICS: lda['topics'] = LDA_TOPICS
-    if W2V_APPEND or W2V_DIFFERENCE or W2V_PRODUCT or W2V_COS:
+    if any(W2V_APPEND,W2V_DIFFERENCE,W2V_PRODUCT,W2V_COS) or any(W2V_AVG,W2V_MAX,W2V_MIN,W2V_ABS):
         w2v = dict()
         if W2V_AVG: w2v['avg'] = W2V_AVG
         if W2V_MAX: w2v['max'] = W2V_MAX
