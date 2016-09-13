@@ -600,18 +600,19 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     # Featurize each observation
     # Some duplication of effort here bc docs will appear multiple times 
     # across observations
+    
     clusterids = []
     postids = []
     for case in corpus:
         
         # Create raw and normalized document arrays
         case_docs_raw = [ record['body_text'] for record in case['data'] ]
+        case_docs_normalized = [ normalize.normalize_and_remove_stop_words(body_text) for body_text in case_docs_raw ]
         #create ids for individual data points
-        postid = [ record['post_id'] for record in case['data'] ][-1]
+        postid = [record['post_id'] for record in case['data'] ][-1]
         postids.append(postid)
         clusterid = [ record['cluster_id'] for record in case['data'] ][0]
         clusterids.append(clusterid)
-        case_docs_normalized = [ normalize.normalize_and_remove_stop_words(body_text) for body_text in case_docs_raw ]
         # Pull out query documents
         doc_raw = case_docs_raw[-1]
         doc_normalized = case_docs_normalized[-1]
@@ -666,7 +667,8 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     mem_net_features['input_masks'] = input_masks
     mem_net_features['answers'] = labels
     
-    ids = ["C" + str(i[0]) + "_P" + str(i[1]) for i in zip(clusterids,postids)] 
+    ids = ["C" + str(clusterid]) + "_P" + str(postid) for clusterid, postid in zip(clusterids,postids)]
+
    
     if 'mem_net' in features:
         return mem_net_features, labels, ids
