@@ -7,13 +7,24 @@ then adminstrates the implementation of the given specifications. It requires a
 directory full of JSON files, where each file contains a cluster of documents.
 '''
 import sys
+import os
 import argparse
+import logging
+import pickle
 from collections import namedtuple
 import numpy as np
 from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict
+from src.utils import hashing
 from src.utils.sampling import sample
 from src.mem_net import main_mem_net
-import pickle
+
+cache_pickle = "{}.pkl"
+cache_dir = ".cache-pythia"
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.DEBUG)
 
 
 def main(argv):
@@ -27,7 +38,28 @@ def main(argv):
 
     #parsing
     print("parsing json data...",file=sys.stderr)
-    clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main(directory, parameters)
+
+
+
+    if parameters['use_cache']:
+        dir_hash = hashing.dir_hash(directory)
+        pickle_path = os.path.join(cache_dir, cache_pickle.format(dir_hash))
+        try:
+            logger.debug("Trying to use cache")
+            with open(pickle_path, 'rb') as f:
+                parsed_data = pickle.load(f)
+                logger.debug("Using existing cache")
+        except:
+            # parse and write to cache
+            logger.debug("Parsing and writing to cache")
+            parsed_data = parse_json.main(directory, parameters)
+            os.makedirs(cache_dir, exist_ok=True)
+            with open(pickle_path, 'wb') as f:
+                pickle.dump(parsed_data, f) 
+    else:
+        parsed_data = parse_json.main(directory, parameters)
+    clusters, order, data, test_clusters, test_order, test_data, corpusdict = parsed_data
+
     #preprocessing
     print("preprocessing...",file=sys.stderr)
     vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model = preprocess.main(features, parameters, corpusdict, data)
@@ -171,7 +203,9 @@ def get_args(
     FULL_VOCAB_TYPE = 'character',
     FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}",
 
-    SEED = None):
+    SEED = None,
+    
+    USE_CACHE = False):
     """ Return a parameters data structure with information on how to
     run an experiment. Argument list should match experiments/experiments.py
     """
@@ -338,6 +372,8 @@ def get_args(
     if FULL_VOCAB_SIZE: parameters['full_vocab_size'] = FULL_VOCAB_SIZE
     if FULL_VOCAB_TYPE: parameters['full_vocab_type'] = FULL_VOCAB_TYPE
     if FULL_CHAR_VOCAB: parameters['full_char_vocab'] = FULL_CHAR_VOCAB
+
+    parameters['use_cache'] = USE_CACHE
 
     return directory, features, algorithms, parameters
 
