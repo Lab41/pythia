@@ -237,26 +237,14 @@ def run_w2v_elemwise(w2v_model, doc, w2v, operation):
             except KeyError:
                 continue
             if operation == 'max':
-                for i in range(0,w2v['size']):
-                    if wordvector[i] > vectorlist[i]:
-                        vectorlist[i] = wordvector[i]
+                vectorlist = np.where(wordvector > vectorlist, wordvector, vectorlist)
             elif operation == 'min':
-                for j in range(0, w2v['size']):
-                    if wordvector[j] < vectorlist[j]:
-                        vectorlist[j] = wordvector[j]
+                vectorlist = np.where(wordvector < vectorlist, wordvector, vectorlist)
             elif operation == 'abs':
-                for k in range(0, w2v['size']):
-                    if abs(wordvector[k]) > vectorlist[k]:
-                        vectorlist[k] = abs(wordvector[k])
+                vectorlist = np.where(abs(wordvector) > vectorlist, abs(wordvector), vectorlist)
 
         # Remove any infinity values from special cases (ex: 1 word sentence and word not in word2vec model)
-        if any(np.isinf(vectorlist)):
-            if all(np.isinf(vectorlist)):
-                vectorlist = np.zeros(w2v['size'])
-            else:
-                for m in range(0,len(vectorlist)):
-                    if math.isinf(vectorlist[m]):
-                        vectorlist[m] = 0
+        vectorlist = np.where(np.isinf(vectorlist), 0, vectorlist)
 
         sentencevectorarray.append(vectorlist)
 
