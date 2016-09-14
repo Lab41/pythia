@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.DEBUG)
 
+
 def main(argv):
     '''
     controls the over-arching implmentation of the algorithms
@@ -37,6 +38,9 @@ def main(argv):
 
     #parsing
     print("parsing json data...",file=sys.stderr)
+
+
+
     if parameters['use_cache']:
         dir_hash = hashing.dir_hash(directory)
         pickle_path = os.path.join(cache_dir, cache_pickle.format(dir_hash))
@@ -62,9 +66,8 @@ def main(argv):
 
     #featurization
     print("generating training and testing data...",file=sys.stderr)
-    train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
-    test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
-
+    train_data, train_target, train_ids = data_gen.main([clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
+    test_data, test_target, test_ids = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
     # save training data for separate experimentation and hyperparameter optimization
     if 'saveexperimentdata' in parameters:
         lunchbox = dict()
@@ -92,8 +95,12 @@ def main(argv):
     if 'mem_net' in algorithms:
         mem_net_model, model_name = main_mem_net.run_mem_net(train_data, test_data, corpusdict, **algorithms['mem_net'])
         predicted_labels, perform_results = main_mem_net.test_mem_network(mem_net_model, model_name, **algorithms['mem_net'])
-
     #results
+    if "save_results" in parameters:
+        perform_results.update({"id":test_ids})
+        perform_results.update({"predicted_label":predicted_labels.tolist()})
+        perform_results.update({"novelty":test_target})
+    
     return perform_results
 
 def get_args(
@@ -190,6 +197,7 @@ def get_args(
     NOVEL_RATIO = None,
     OVERSAMPLING = False,
     REPLACEMENT = False,
+    SAVE_RESULTS = False,
 
     #save training data for experimentation and hyperparameter grid search
     SAVEEXPERIMENTDATA = False,
@@ -372,6 +380,7 @@ def get_args(
 
     parameters = dict()
     if RESAMPLING: parameters['resampling'] = resampling
+    if SAVE_RESULTS: parameters['save_results'] = SAVE_RESULTS
     if SAVEEXPERIMENTDATA: parameters['saveexperimentdata'] = saveexperimentdata
     if VOCAB_SIZE: parameters['vocab'] = VOCAB_SIZE
     if STEM: parameters['stem'] = STEM

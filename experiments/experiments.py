@@ -120,6 +120,7 @@ def config_variables():
     NOVEL_RATIO = None
     OVERSAMPLING = False
     REPLACEMENT = False
+    SAVE_RESULTS = False
 
     #save training data for experimentation and hyperparameter grid search
     SAVEEXPERIMENTDATA = False
@@ -131,7 +132,6 @@ def config_variables():
     FULL_VOCAB_SIZE = 1000
     FULL_VOCAB_TYPE = 'character'
     FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}"
-
     SEED = None
 
     USE_CACHE = False
@@ -197,6 +197,7 @@ def run_experiment(directory,
             NOVEL_RATIO,
             OVERSAMPLING,
             REPLACEMENT,
+            SAVE_RESULTS,
             SAVEEXPERIMENTDATA,
             EXPERIMENTDATAFILE,
             VOCAB_SIZE,
@@ -268,6 +269,7 @@ def run_experiment(directory,
             NOVEL_RATIO,
             OVERSAMPLING,
             REPLACEMENT,
+            SAVE_RESULTS,
             SAVEEXPERIMENTDATA,
             EXPERIMENTDATAFILE,
             VOCAB_SIZE,
