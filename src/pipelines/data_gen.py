@@ -600,10 +600,19 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     # Featurize each observation
     # Some duplication of effort here bc docs will appear multiple times 
     # across observations
+    
+    clusterids = []
+    postids = []
     for case in corpus:
+        
         # Create raw and normalized document arrays
         case_docs_raw = [ record['body_text'] for record in case['data'] ]
         case_docs_normalized = [ normalize.normalize_and_remove_stop_words(body_text) for body_text in case_docs_raw ]
+        #create ids for individual data points
+        postid = [record['post_id'] for record in case['data'] ][-1]
+        postids.append(postid)
+        clusterid = [ record['cluster_id'] for record in case['data'] ][0]
+        clusterids.append(clusterid)
         # Pull out query documents
         doc_raw = case_docs_raw[-1]
         doc_normalized = case_docs_normalized[-1]
@@ -611,8 +620,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
         bkgd_docs_raw = case_docs_raw[:-1]
         bkgd_docs_normalized = case_docs_normalized[:-1]
         bkgd_text_raw = '\n'.join(bkgd_docs_raw)
-        bkgd_text_normalized = '\n'.join(bkgd_docs_normalized)
-
+        bkgd_text_normalized = '\n'.join(bkgd_docs_normalized) 
         feature_vectors = list()
 
         if 'mem_net' in features:
@@ -658,11 +666,14 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     mem_net_features['questions'] = questions
     mem_net_features['input_masks'] = input_masks
     mem_net_features['answers'] = labels
+    
+    ids = ["C" + str(clusterid) + "_P" + str(postid) for clusterid, postid in zip(clusterids,postids)]
 
+   
     if 'mem_net' in features:
-        return mem_net_features, labels
+        return mem_net_features, labels, ids
     else:
-        return data, labels
+        return data, labels, ids
 
 
 def main(argv):
@@ -676,6 +687,6 @@ def main(argv):
         list: contains for each obeservation
     '''
     all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model = argv
-    data, labels = gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model)
+    data, labels, ids = gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model)
 
-    return data, labels
+    return data, labels, ids
