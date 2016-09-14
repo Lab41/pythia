@@ -8,18 +8,28 @@ directory full of JSON files, where each file contains a cluster of documents.
 '''
 import pdb 
 import sys
+import os
 import pickle
 import argparse
 import logging
 from collections import namedtuple
 import numpy as np
+os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=gpu,floatX=float32,allow_gc=True"  # Sets flags for use of GPU
 from memory_profiler import profile
 from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict, sgd
 from src.utils.sampling import sample
 from src.mem_net import main_mem_net
+from src.utils import hashing
+from src.utils.sampling import sample
 
+cache_pickle = "{}.pkl"
+cache_dir = ".cache-pythia"
+
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.DEBUG)
+
 
 def main(argv):
     '''
@@ -32,18 +42,39 @@ def main(argv):
 
     #parsing
     print("parsing json data...",file=sys.stderr)
-    clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main(directory, parameters)
+
+
+
+    if parameters['use_cache']:
+        dir_hash = hashing.dir_hash(directory)
+        pickle_path = os.path.join(cache_dir, cache_pickle.format(dir_hash))
+        try:
+            logger.debug("Trying to use cache")
+            with open(pickle_path, 'rb') as f:
+                parsed_data = pickle.load(f)
+                logger.debug("Using existing cache")
+        except:
+            # parse and write to cache
+            logger.debug("Parsing and writing to cache")
+            parsed_data = parse_json.main(directory, parameters)
+            os.makedirs(cache_dir, exist_ok=True)
+            with open(pickle_path, 'wb') as f:
+                pickle.dump(parsed_data, f) 
+    else:
+        parsed_data = parse_json.main(directory, parameters)
+    clusters, order, data, test_clusters, test_order, test_data, corpusdict = parsed_data
 
     #preprocessing
     print("preprocessing...",file=sys.stderr)
     vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model = preprocess.main(features, parameters, corpusdict, data)
 
     #featurization
-    print("generating training and testing data...",file=sys.stderr)
     hdf5_path_train=parameters['hdf5_path_train']
     hdf5_path_test=parameters['hdf5_path_test']
-    train_data, train_target = data_gen.gen_observations(clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model, hdf5_path_train)
-    test_data, test_target = data_gen.gen_observations(test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model, hdf5_path_test)
+    print("generating training data...",file=sys.stderr)
+    train_data, train_target, train_ids = data_gen.gen_observations(clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model, hdf5_path_train)
+    print("generating testing data...",file=sys.stderr)
+    test_data, test_target, test_ids = data_gen.gen_observations(test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model, hdf5_path_test)
 
     # save training data for separate experimentation and hyperparameter optimization
     if 'saveexperimentdata' in parameters:
@@ -73,10 +104,15 @@ def main(argv):
         sgd_model = sgd.main(hdf5_path_train, "/data", "/labels", **algorithms['sgd'])
         predicted_labels, perform_results = predict.predicter(sgd_model, test_data, test_target)
     if 'mem_net' in algorithms:
+        from src.mem_net import main_mem_net
         mem_net_model, model_name = main_mem_net.run_mem_net(train_data, test_data, corpusdict, **algorithms['mem_net'])
         predicted_labels, perform_results = main_mem_net.test_mem_network(mem_net_model, model_name, **algorithms['mem_net'])
-
     #results
+    if "save_results" in parameters:
+        perform_results.update({"id":test_ids})
+        perform_results.update({"predicted_label":predicted_labels.tolist()})
+        perform_results.update({"novelty":test_target})
+    
     return perform_results
 
 def get_args(
@@ -105,6 +141,12 @@ def get_args(
     LDA_TOPICS = 40,
 
     #word2vec
+    # If AVG, MAX, MIN or ABS are selected, APPEND, DIFFERENCE, PRODUCT or COS must be selected
+    W2V_AVG = False,
+    W2V_MAX = False,
+    W2V_MIN = False,
+    W2V_ABS = False,
+    # If APPEND, DIFFERENCE, PRODUCT or COS are selected AVG, MAX, MIN or ABS must be selected
     W2V_APPEND = False,
     W2V_DIFFERENCE = False,
     W2V_PRODUCT = False,
@@ -112,7 +154,8 @@ def get_args(
     W2V_PRETRAINED=False,
     W2V_MIN_COUNT = 5,
     W2V_WINDOW = 5,
-    W2V_SIZE = 100,
+    # W2V_SIZE should be set to 300 if using the Google News pretrained word2vec model
+    W2V_SIZE = 300,
     W2V_WORKERS = 3,
 
     #one-hot CNN layer
@@ -174,6 +217,7 @@ def get_args(
     NOVEL_RATIO = None,
     OVERSAMPLING = False,
     REPLACEMENT = False,
+    SAVE_RESULTS = False,
 
     #save training data for experimentation and hyperparameter grid search
     SAVEEXPERIMENTDATA = False,
@@ -191,7 +235,9 @@ def get_args(
     HDF5_PATH_TRAIN = None,
     HDF5_PATH_TEST = None,
     HDF5_SAVE_FREQUENCY = 100,
-    HDF5_USE_EXISTING = True):
+    HDF5_USE_EXISTING = True,
+    
+    USE_CACHE = False):
     """ Return a parameters data structure with information on how to
     run an experiment. Argument list should match experiments/experiments.py
     """
@@ -225,8 +271,12 @@ def get_args(
         if LDA_PRODUCT: lda['product'] = LDA_PRODUCT
         if LDA_COS: lda['cos'] = LDA_COS
         if LDA_TOPICS: lda['topics'] = LDA_TOPICS
-    if W2V_APPEND or W2V_DIFFERENCE or W2V_PRODUCT or W2V_COS:
+    if any([W2V_APPEND,W2V_DIFFERENCE,W2V_PRODUCT,W2V_COS]) or any([W2V_AVG,W2V_MAX,W2V_MIN,W2V_ABS]):
         w2v = dict()
+        if W2V_AVG: w2v['avg'] = W2V_AVG
+        if W2V_MAX: w2v['max'] = W2V_MAX
+        if W2V_MIN: w2v['min'] = W2V_MIN
+        if W2V_ABS: w2v['abs'] = W2V_ABS
         if W2V_APPEND: w2v['append'] = W2V_APPEND
         if W2V_DIFFERENCE: w2v['difference'] = W2V_DIFFERENCE
         if W2V_PRODUCT: w2v['product'] = W2V_PRODUCT
@@ -286,6 +336,14 @@ def get_args(
     if len(features) == 0:
         print("Error: At least one feature (ex: Bag of Words, LDA, etc.) must be requested per run.", file=sys.stderr)
         quit()
+    w2v_types = [W2V_AVG,W2V_MAX,W2V_MIN,W2V_ABS]
+    w2v_ops = [W2V_APPEND,W2V_DIFFERENCE,W2V_PRODUCT,W2V_COS]
+    if any(w2v_ops) and not any(w2v_types):
+        print("Caution!!  A Word2Vec vector type must be selected. Default will be set to average (W2V_AVG)", file=sys.stderr)
+        features['w2v']['avg'] = True
+    if any(w2v_types) and not any(w2v_ops):
+        print("Caution!!  A Word2Vec vector operation must be selected. Default will be set to append (W2V_APPEND)", file=sys.stderr)
+        features['w2v']['append'] = True
 
     #get algorithms
     log_reg = None
@@ -358,6 +416,7 @@ def get_args(
 
     parameters = dict()
     if RESAMPLING: parameters['resampling'] = resampling
+    if SAVE_RESULTS: parameters['save_results'] = SAVE_RESULTS
     if SAVEEXPERIMENTDATA: parameters['saveexperimentdata'] = saveexperimentdata
     if VOCAB_SIZE: parameters['vocab'] = VOCAB_SIZE
     if STEM: parameters['stem'] = STEM
@@ -374,6 +433,7 @@ def get_args(
     parameters['hdf5_path_train'] = HDF5_PATH_TRAIN
     parameters['hdf5_save_frequency'] = HDF5_SAVE_FREQUENCY
     parameters['hdf5_use_existing'] = HDF5_USE_EXISTING
+    parameters['use_cache'] = USE_CACHE
 
     return directory, features, algorithms, parameters
 
