@@ -8,15 +8,15 @@ directory full of JSON files, where each file contains a cluster of documents.
 '''
 import sys
 import os
-import argparse
+os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=gpu,floatX=float32,allow_gc=True"  # Sets flags for use of GPU
 import logging
 import pickle
+import argparse
 from collections import namedtuple
 import numpy as np
 from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict
 from src.utils import hashing
 from src.utils.sampling import sample
-from src.mem_net import main_mem_net
 
 cache_pickle = "{}.pkl"
 cache_dir = ".cache-pythia"
@@ -95,6 +95,7 @@ def main(argv):
         xgb_model = xgb.main([train_data, train_target, algorithms['xgb']])
         predicted_labels, perform_results = predict.main([xgb_model, test_data, test_target])
     if 'mem_net' in algorithms:
+        from src.mem_net import main_mem_net
         mem_net_model, model_name = main_mem_net.run_mem_net(train_data, test_data, corpusdict, **algorithms['mem_net'])
         predicted_labels, perform_results = main_mem_net.test_mem_network(mem_net_model, model_name, **algorithms['mem_net'])
     #results
