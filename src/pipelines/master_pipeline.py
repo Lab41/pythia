@@ -314,8 +314,8 @@ def get_args(
         xgb = dict()
         if XGB_LEARNRATE: xgb['x_learning_rate'] = XGB_LEARNRATE
         if XGB_MAXDEPTH: xgb['x_max_depth'] = XGB_MAXDEPTH
-        if XGB_COLSAMPLEBYTREE: xgb['svm_gamma'] = XGB_COLSAMPLEBYTREE
-        if XGB_MINCHILDWEIGHT: xgb['svm_gamma'] = XGB_MINCHILDWEIGHT
+        if XGB_COLSAMPLEBYTREE: xgb['x_colsample_bytree'] = XGB_COLSAMPLEBYTREE
+        if XGB_MINCHILDWEIGHT: xgb['x_colsample_bylevel'] = XGB_MINCHILDWEIGHT
 
     algorithms = dict()    
     if log_reg: algorithms['log_reg'] = log_reg
