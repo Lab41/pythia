@@ -64,6 +64,12 @@ def config_variables():
     MEM_ONEHOT_MAX_LEN = 1000
 
     #word2vec
+    # If AVG, MAX, MIN or ABS are selected, APPEND, DIFFERENCE, PRODUCT or COS must be selected
+    W2V_AVG = False
+    W2V_MAX = False
+    W2V_MIN = False
+    W2V_ABS = False
+    # If APPEND, DIFFERENCE, PRODUCT or COS are selected AVG, MAX, MIN or ABS must be selected
     W2V_APPEND = False
     W2V_DIFFERENCE = False
     W2V_PRODUCT = False
@@ -71,7 +77,8 @@ def config_variables():
     W2V_PRETRAINED = False
     W2V_MIN_COUNT = 5
     W2V_WINDOW = 5
-    W2V_SIZE = 100
+    # W2V_SIZE should be set to 300 if using the Google News pretrained word2vec model
+    W2V_SIZE = 300
     W2V_WORKERS = 3
 
     #one-hot CNN layer
@@ -113,6 +120,7 @@ def config_variables():
     NOVEL_RATIO = None
     OVERSAMPLING = False
     REPLACEMENT = False
+    SAVE_RESULTS = False
 
     #save training data for experimentation and hyperparameter grid search
     SAVEEXPERIMENTDATA = False
@@ -124,7 +132,6 @@ def config_variables():
     FULL_VOCAB_SIZE = 1000
     FULL_VOCAB_TYPE = 'character'
     FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}"
-
     SEED = None
 
     USE_CACHE = False
@@ -145,6 +152,10 @@ def run_experiment(directory,
             LDA_PRODUCT,
             LDA_COS,
             LDA_TOPICS,
+            W2V_AVG,
+            W2V_MAX,
+            W2V_MIN,
+            W2V_ABS,
             W2V_APPEND,
             W2V_DIFFERENCE,
             W2V_PRODUCT,
@@ -186,6 +197,7 @@ def run_experiment(directory,
             NOVEL_RATIO,
             OVERSAMPLING,
             REPLACEMENT,
+            SAVE_RESULTS,
             SAVEEXPERIMENTDATA,
             EXPERIMENTDATAFILE,
             VOCAB_SIZE,
@@ -212,6 +224,10 @@ def run_experiment(directory,
             LDA_PRODUCT,
             LDA_COS,
             LDA_TOPICS,
+            W2V_AVG,
+            W2V_MAX,
+            W2V_MIN,
+            W2V_ABS,
             W2V_APPEND,
             W2V_DIFFERENCE,
             W2V_PRODUCT,
@@ -253,6 +269,7 @@ def run_experiment(directory,
             NOVEL_RATIO,
             OVERSAMPLING,
             REPLACEMENT,
+            SAVE_RESULTS,
             SAVEEXPERIMENTDATA,
             EXPERIMENTDATAFILE,
             VOCAB_SIZE,

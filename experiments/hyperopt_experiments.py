@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 import argparse
 import os
@@ -6,6 +8,7 @@ from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, p
 import pickle
 import src.pipelines.master_pipeline as mp
 import numpy as np
+import copy
 from src.pipelines.master_pipeline import main as pythia_main
 from sklearn.metrics import precision_recall_fscore_support
 from sacred import Experiment
@@ -14,47 +17,6 @@ from sacred.initialize import Scaffold
 
 import hyperopt
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
-
-
-def objective_no_sacred(args):
-    print(args)
-    print(type(args))
-
-    try:
-        directory, features, algorithm_type, parameters = args_to_dicts(args)
-
-        print(algorithm_type)
-        print(features)
-
-        #parsing
-        print("parsing json data...",file=sys.stderr)
-        clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main(directory, parameters)
-
-        #preprocessing
-        print("preprocessing...",file=sys.stderr)
-        vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model = preprocess.main(features, parameters, corpusdict, data)
-
-        #featurization
-        print("generating training and testing data...",file=sys.stderr)
-        train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
-        test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
-
-        if 'log_reg' in algorithm_type:
-            model = log_reg.main([train_data, train_target, algorithm_type['log_reg']])
-        if 'svm' in algorithm_type:
-            model = svm.main([train_data, train_target, algorithm_type['svm']])
-        if 'xgb' in algorithm_type:
-            model = xgb.main([train_data, train_target, algorithm_type['xgb']])
-
-        predicted_labels, perform_results = predict.main([model, test_data, test_target])
-
-        prfs = precision_recall_fscore_support(test_target, predicted_labels)
-        f_score = prfs[2].tolist()
-        print(np.mean(f_score))
-
-        return np.mean(f_score)
-    except:
-        raise
 
 def objective(args_):
 
@@ -73,6 +35,7 @@ def objective(args_):
         return result
 
     except:
+        raise
         #If we somehow cannot get to the MongoDB server, then continue with the experiment
         print("Running without Sacred")
         run_with_global_args()
@@ -83,46 +46,17 @@ def run_with_global_args():
     global args
     global result
     try:
-        directory, features, algorithm_type, parameters = args_to_dicts(args)
-
-        print(algorithm_type)
-        print(features)
-
-        #parsing
-        print("parsing json data...",file=sys.stderr)
-        clusters, order, data, test_clusters, test_order, test_data, corpusdict = parse_json.main(directory, parameters)
-
-        #preprocessing
-        print("preprocessing...",file=sys.stderr)
-        vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model = preprocess.main(features, parameters, corpusdict, data)
-
-        #featurization
-        print("generating training and testing data...",file=sys.stderr)
-        train_data, train_target = data_gen.main([clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
-        test_data, test_target = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
-
-        if 'log_reg' in algorithm_type:
-            model = log_reg.main([train_data, train_target, algorithm_type['log_reg']])
-        if 'svm' in algorithm_type:
-            model = svm.main([train_data, train_target, algorithm_type['svm']])
-        if 'xgb' in algorithm_type:
-            model = xgb.main([train_data, train_target, algorithm_type['xgb']])
-
-        predicted_labels, perform_results = predict.main([model, test_data, test_target])
-
-        prfs = precision_recall_fscore_support(test_target, predicted_labels)
-        f_score = prfs[2].tolist()
-        print(np.mean(f_score))
-
-        result = np.mean(f_score)
+        all_results = master_pipeline.main(args_to_dicts(args))
+        result = np.mean(all_results['f score'])
         return result
     except:
         # Currently errors do not occur too frequently, so skip by returning a zero score
+        #raise
         return 0.0
 
 def args_to_dicts(args):
     global parse_args
-
+    print(args)
     algorithm= args['algorithm_type']
     algorithm_type = algorithm['type']
     #print(algorithm_type)
@@ -140,15 +74,15 @@ def args_to_dicts(args):
         _XGB = True
         algorithms['xgb'] = algorithm
 
-
-    args.pop('algorithm_type')
-    args['RESAMPLING']=True
-    args['USE_CACHE']=True
-    args['W2V_PRETRAINED']=True
+    passed_args = copy.deepcopy(args)
+    passed_args.pop('algorithm_type')
+    passed_args['RESAMPLING']=True
+    passed_args['USE_CACHE']=True
+    passed_args['W2V_PRETRAINED']=True
     #print(_LOG_REG, _SVM, _XGB)
     # Because the algoritm is above we don't actually need it to be set here
     directory, features, _, parameters = mp.get_args(
-            directory=parse_args.directory_base, LOG_REG=_LOG_REG, SVM=_SVM, XGB=_XGB, **args)
+            directory=parse_args.directory_base, LOG_REG=_LOG_REG, SVM=_SVM, XGB=_XGB, **passed_args)
 
     return directory, features, algorithms, parameters
 
@@ -195,6 +129,10 @@ def run_pythia_hyperopt():
         "W2V_DIFFERENCE":hp.choice('W2V_DIFFERENCE', [True, False]),
         "W2V_PRODUCT":hp.choice('W2V_PRODUCT', [True, False]),
         "W2V_COS":hp.choice('W2V_COS', [True, False]),
+        "W2V_AVG":hp.choice('W2V_AVG', [True, False]),
+        "W2V_MAX":hp.choice('W2V_MAX', [True, False]),
+        "W2V_MIN":hp.choice('W2V_MIN', [True, False]),
+        "W2V_ABS":hp.choice('W2V_ABS', [True, False]),
         # This can also be set...but in order for it to go faster W2V_PRETRAINED is set to True above
     #     "W2V_PRETRAINED",
     #     "W2V_MIN_COUNT",
@@ -222,9 +160,10 @@ def run_pythia_hyperopt():
     #     "FULL_CHAR_VOCAB",
     #     "SEED",
     #     'USE_CACHE'
+        'SAVE_RESULTS': hp.choice('SAVE_RESULTS', [True])
     }
     trials = Trials()
-    best = fmin(objective, space, algo=tpe.suggest, max_evals=int(parse_args.num_runs))
+    best = fmin(objective, space, algo=tpe.suggest, max_evals=int(parse_args.num_runs), trials=trials)
     print("Best run ", best)
     return trials, best
 
@@ -232,10 +171,8 @@ if __name__ == '__main__':
     """
     Runs a series of test using Hyperopt to determine which parameters are most important
     All tests will be logged using Sacred - if the sacred database is set up correctly, otherwise it will simply run
-
     To run pass in the number of hyperopt runs, the mongo db address and name, as well as the directory of files to test
-    For example:
-
+    For example for 10 tests:
     python experiments/hyperopt_experiments.py 10 db_server:00000 pythia data/stackexchange/anime
     """
 
