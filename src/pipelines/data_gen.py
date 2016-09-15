@@ -250,10 +250,13 @@ def run_w2v_elemwise(w2v_model, doc, w2v, operation):
 
         sentencevectorarray.append(vectorlist)
 
-    if len(sentencevectorarray) > 0:
+    # Only concatenate if both sentences were added to sentence vector array, otherwise append array of zeroes
+    if len(sentencevectorarray) == 2:
         documentvector = np.concatenate(sentencevectorarray)
+    elif len(sentencevectorarray) == 1:
+        documentvector = np.concatenate((sentencevectorarray[0], np.zeros(w2v['size'])))
     else:
-        documentvector = np.zeros(w2v['size'])
+        documentvector = np.zeros(w2v['size']*2)
     return documentvector
 
 def run_w2v(w2v_model, doc, w2v):
@@ -295,11 +298,13 @@ def run_w2v(w2v_model, doc, w2v):
         if len(wordvectorarray) > 0:
             sentencevectorarray.append(np.mean(wordvectorarray, axis=0))
 
-    # Only calculate mean if one or more sentences were added to sentence vector array, otherwise return array of zeroes
-    if len(sentencevectorarray) > 0:
+    # Only concatenate if both sentences were added to sentence vector array, otherwise append array of zeroes
+    if len(sentencevectorarray) == 2:
         documentvector =  np.concatenate(sentencevectorarray)
+    elif len(sentencevectorarray) == 1:
+        documentvector =  np.concatenate((sentencevectorarray[0], np.zeros(w2v['size'])))
     else:
-        documentvector = np.zeros(w2v['size'])
+        documentvector = np.zeros(w2v['size']*2)
     return documentvector
 
 def run_w2v_matrix(w2v_model, doc, w2v_params, mask_mode):
