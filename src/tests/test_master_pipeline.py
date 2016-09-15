@@ -38,7 +38,7 @@ def test_variable_list():
     experiment_args = experiments.experiments.run_experiment.__code__.co_varnames[:experiment_argcount]
     # remove Sacred-specific arg if present
     try:
-        del experiment_args[experiment_args.index('_run')]
+        experiment_args = tuple(experiment_args[:experiment_args.index('_run')] + experiment_args[experiment_args.index('_run') + 1:])
     except:
         pass
     assert pipeline_args == experiment_args
