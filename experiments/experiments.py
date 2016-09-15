@@ -149,6 +149,8 @@ def config_variables():
 
     USE_CACHE = False
 
+
+
 @xp.automain
 def run_experiment(directory,
             BOW_APPEND,
@@ -229,7 +231,12 @@ def run_experiment(directory,
             HDF5_PATH_TEST,
             HDF5_SAVE_FREQUENCY,
             HDF5_USE_EXISTING,
-            USE_CACHE):
+            USE_CACHE,
+            _run):
+    # store default metadata
+    USER = os.environ.get('USER', 'unknown user')
+    _run.info = { 'user': USER }
+
     return pythia_main(
         get_args(
             directory,
