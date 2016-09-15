@@ -136,6 +136,8 @@ def config_variables():
 
     USE_CACHE = False
 
+
+
 @xp.automain
 def run_experiment(directory,
             BOW_APPEND,
@@ -206,7 +208,12 @@ def run_experiment(directory,
             FULL_VOCAB_TYPE,
             FULL_CHAR_VOCAB,
             SEED,
-            USE_CACHE):
+            USE_CACHE,
+            _run):
+    # store default metadata
+    USER = os.environ.get('USER', 'unknown user')
+    _run.info = { 'user': USER }
+
     return pythia_main(
         get_args(
             directory,
