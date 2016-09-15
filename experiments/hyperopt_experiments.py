@@ -41,18 +41,18 @@ def objective(args_):
         run_with_global_args()
 
 args = None
-result = -1
+result = 100
 def run_with_global_args():
     global args
     global result
     try:
         all_results = master_pipeline.main(args_to_dicts(args))
-        result = np.mean(all_results['f score'])
+        result = -np.mean(all_results['f score'])
         return result
     except:
         # Currently errors do not occur too frequently, so skip by returning a zero score
         #raise
-        return 0.0
+        return 100.0
 
 def args_to_dicts(args):
     global parse_args
@@ -124,7 +124,7 @@ def run_pythia_hyperopt():
         "LDA_DIFFERENCE":hp.choice('LDA_DIFFERENCE', [True, False]),
         "LDA_PRODUCT":hp.choice('LDA_PRODUCT', [True, False]),
         "LDA_COS":hp.choice('LDA_COS', [True, False]),
-        "LDA_TOPICS":hp.choice('LDA_TOPICS', [True, False]),
+        "LDA_TOPICS":hp.choice('LDA_TOPICS', [20, 40, 100, 150, 200]),
         "W2V_APPEND":hp.choice('W2V_APPEND', [True, False]),
         "W2V_DIFFERENCE":hp.choice('W2V_DIFFERENCE', [True, False]),
         "W2V_PRODUCT":hp.choice('W2V_PRODUCT', [True, False]),
