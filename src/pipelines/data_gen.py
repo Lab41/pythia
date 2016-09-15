@@ -76,11 +76,14 @@ def tfidf_sum(doc, corpus_array, vocab, feature):
     '''
     doc_array = tokenize.word_punct_tokens(doc)
     doc_length = len(doc_array)
-    vectorizer = TfidfVectorizer(norm=None, vocabulary = vocab)
-    tfidf = vectorizer.fit_transform(corpus_array)
-    vector_values = tfidf.toarray()
-    tfidf_score = np.sum(vector_values[-1])/doc_length
-    feature.append(np.array([tfidf_score]))
+    if doc_length != 0:
+        vectorizer = TfidfVectorizer(norm=None, vocabulary = vocab)
+        tfidf = vectorizer.fit_transform(corpus_array)
+        vector_values = tfidf.toarray()
+        tfidf_score = np.sum(vector_values[-1])/doc_length
+        feature.append(np.array([tfidf_score]))
+    else:
+        feature.append(np.zeros(1))
     return feature
 
 
@@ -726,7 +729,6 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
 
             if 'bow' in features:
                 feature_vectors = bow(doc_normalized, bkgd_text_raw, bkgd_docs_normalized, vocab, features['bow'], feature_vectors)
-
             if 'st' in features:
                 sentences = []
                 for doc in bkgd_docs_raw:
