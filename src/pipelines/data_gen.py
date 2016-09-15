@@ -550,10 +550,10 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
 
         # Ensure that the document and corpus are long enough and if not make them be long enough
         if len(sentences_full)==1:
-            print("short corpus")
+            #print("short corpus")
             sentences_full.extend(sentences_full)
         if len(doc_sentences)==1:
-            print("short doc")
+            #print("short doc")
             doc_sentences.extend(doc_sentences)
         corpus_vectors = sk.encode(encoder_decoder, sentences_full)
         doc_vectors = sk.encode(encoder_decoder, doc_sentences)

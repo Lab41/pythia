@@ -116,6 +116,9 @@ set -e
     python setup.py install
     cd "$save_dir"
 
+    # Install Hyperopt
+    pip install git+https://github.com/Lab41/hyperopt.git
+
     # install Jupyter kernel, preserving PYTHONPATH and adding Pythia
     pip install -q ipykernel==4.3.1
 
