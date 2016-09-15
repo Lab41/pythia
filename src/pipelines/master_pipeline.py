@@ -391,10 +391,10 @@ def get_args(
 
     # Enforce requirement and limitation of one algorithm per run
     if len(algorithms) == 0:
-        print("Error: At least one algorithm (LOG_REG, SVM, XGB) must be requested per run.", file=sys.stderr)
+        print("Error: One classification algorithm must be requested per run.", file=sys.stderr)
         quit()
     elif len(algorithms) > 1:
-        print("Error: Only one algorithm (LOG_REG, SVM, XGB) can be requested per run.", file=sys.stderr)
+        print("Error: Only one classification can be requested per run.", file=sys.stderr)
         quit()
 
 
