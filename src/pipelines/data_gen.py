@@ -257,10 +257,13 @@ def run_w2v_elemwise(w2v_model, doc, w2v, operation):
 
         sentencevectorarray.append(vectorlist)
 
-    if len(sentencevectorarray) > 0:
+    # Only concatenate if both sentences were added to sentence vector array, otherwise append array of zeroes
+    if len(sentencevectorarray) == 2:
         documentvector = np.concatenate(sentencevectorarray)
+    elif len(sentencevectorarray) == 1:
+        documentvector = np.concatenate((sentencevectorarray[0], np.zeros(w2v['size'])))
     else:
-        documentvector = np.zeros(w2v['size'])
+        documentvector = np.zeros(w2v['size']*2)
     return documentvector
 
 def run_w2v(w2v_model, doc, w2v):
@@ -302,11 +305,13 @@ def run_w2v(w2v_model, doc, w2v):
         if len(wordvectorarray) > 0:
             sentencevectorarray.append(np.mean(wordvectorarray, axis=0))
 
-    # Only calculate mean if one or more sentences were added to sentence vector array, otherwise return array of zeroes
-    if len(sentencevectorarray) > 0:
+    # Only concatenate if both sentences were added to sentence vector array, otherwise append array of zeroes
+    if len(sentencevectorarray) == 2:
         documentvector =  np.concatenate(sentencevectorarray)
+    elif len(sentencevectorarray) == 1:
+        documentvector =  np.concatenate((sentencevectorarray[0], np.zeros(w2v['size'])))
     else:
-        documentvector = np.zeros(w2v['size'])
+        documentvector = np.zeros(w2v['size']*2)
     return documentvector
 
 def run_w2v_matrix(w2v_model, doc, w2v_params, mask_mode):
@@ -557,10 +562,10 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
 
         # Ensure that the document and corpus are long enough and if not make them be long enough
         if len(sentences_full)==1:
-            print("short corpus")
+            #print("short corpus")
             sentences_full.extend(sentences_full)
         if len(doc_sentences)==1:
-            print("short doc")
+            #print("short doc")
             doc_sentences.extend(doc_sentences)
         corpus_vectors = sk.encode(encoder_decoder, sentences_full)
         doc_vectors = sk.encode(encoder_decoder, doc_sentences)
