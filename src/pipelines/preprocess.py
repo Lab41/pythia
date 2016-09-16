@@ -40,7 +40,7 @@ def gen_vocab(corpus_dict, vocab=1000, stem=False, **kwargs):
 
 def gen_full_vocab(corpus_dict, full_vocab_type='word', full_vocab_size=1000, stem=False, full_char_vocab="", token_include = {'.',',','!','?'}, **kwargs):
     '''
-    Generates a dictionary of words to be used as the vocabulary in features that utilize bag of words.
+    Generates a dictionary of mappings from words to indices.
     This vocab contains stop words and punctuation
 
     Args:
@@ -50,6 +50,10 @@ def gen_full_vocab(corpus_dict, full_vocab_type='word', full_vocab_size=1000, st
     Returns:
         dict: a dictionary of size vocab_size that contains the most frequent normalized and non-stop words in the corpus
     '''
+    
+    if stem:
+        logger.warn("Stemming set to true; full vocab won't be stemmed")
+        stem=False
 
     vocabdict = dict()
     if full_vocab_type=='char':
