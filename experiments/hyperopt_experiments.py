@@ -20,26 +20,36 @@ from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 import src.pipelines.master_pipeline as mp
 from src.pipelines.master_pipeline import main as pythia_main
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 def objective(args_):
 
+    # arguments to pass as config_updates dict
     global args
+    # result to pass to hyperopt
     global result
+    # command-line arguments 
     global parse_args
-    args=args_
 
     try:
         ex = Experiment('Hyperopt')
+        logger.debug("Adding observer for {}, DB {}".format(parse_args.mongo_db_address,parse_args.mongo_db_name))
         ex.observers.append(MongoObserver.create(url=parse_args.mongo_db_address, db_name=parse_args.mongo_db_name))
+        
+        pythia_args = make_args_for_pythia(args_)
+        args = mp.get_args(**pythia_args) 
         ex.main(run_with_global_args)
-        r = ex.run(config_updates=args)
-        logger.debug("Experiment result: {}\nReport to hyperopt: {}".format(r, result))
+        r = ex.run(config_updates=pythia_args)
+        logger.debug("Experiment result: {}\n"
+                     "Report to hyperopt: {}".format(r.result, result))
 
         return result
 
     except:
         raise
         #If we somehow cannot get to the MongoDB server, then continue with the experiment
-        print("Running without Sacred")
+        logger.warning("Running without Sacred")
         run_with_global_args()
 
 args = None
@@ -48,45 +58,23 @@ def run_with_global_args():
     global args
     global result
     try:
-        all_results = master_pipeline.main(args_to_dicts(args))
+        all_results = master_pipeline.main(args)
         result = -np.mean(all_results['f score'])
         return all_results
     except:
-        # Currently errors do not occur too frequently, so skip by returning a zero score
-        #raise
-        return 100.0
+        # Have Sacred log a null result
+        return None
 
-def args_to_dicts(args):
+def make_args_for_pythia(args):
     global parse_args
     print(args)
     algorithm= args['algorithm_type']
-    algorithm_type = algorithm['type']
-    #print(algorithm_type)
-    algorithms = {}
-    _LOG_REG = False
-    _XGB = False
-    _SVM = False
-    if algorithm_type=='logreg':
-        _LOG_REG = True
-        algorithms['log_reg'] = algorithm
-    elif algorithm_type== 'svm':
-        _SVM = True
-        algorithms['svm'] = algorithm
-    else:
-        _XGB = True
-        algorithms['xgb'] = algorithm
 
     passed_args = copy.deepcopy(args)
-    passed_args.pop('algorithm_type')
-    passed_args['RESAMPLING']=True
-    passed_args['USE_CACHE']=True
-    passed_args['W2V_PRETRAINED']=True
-    #print(_LOG_REG, _SVM, _XGB)
-    # Because the algoritm is above we don't actually need it to be set here
-    directory, features, _, parameters = mp.get_args(
-            directory=parse_args.directory_base, LOG_REG=_LOG_REG, SVM=_SVM, XGB=_XGB, **passed_args)
+    passed_args.update(algorithm)
+    del passed_args['algorithm_type']
 
-    return directory, features, algorithms, parameters
+    return passed_args
 
 
 def run_pythia_hyperopt():
