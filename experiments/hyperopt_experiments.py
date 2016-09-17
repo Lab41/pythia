@@ -84,21 +84,21 @@ def run_pythia_hyperopt():
     space = {
         "algorithm_type":hp.choice('algorithm_type', [
                 {
-                    'type': 'log_reg',
-                    'log_C': hp.choice('log_C', [1e-5, 1e-4, 1e-3, 1e-2, 1, 10]),
-                    'log_tol': hp.choice('log_tol', [1e-5, 1e-4, 1e-3, 1e-2, 1, 10]),
-                    'log_penalty': hp.choice('log_penalty', ["l1", "l2"])
+                    'LOG_REG': True,
+                    'LOG_C': hp.choice('log_C', [1e-5, 1e-4, 1e-3, 1e-2, 1, 10]),
+                    'LOG_TOL': hp.choice('log_tol', [1e-5, 1e-4, 1e-3, 1e-2, 1, 10]),
+                    'LOG_PENALTY': hp.choice('log_penalty', ["l1", "l2"])
                 }, {
-                    'type':'svm',
-                    'svm_C': hp.choice('svm_C', [2000, 1000]),
-                    'svm_kernel': hp.choice('svm_kernel', ['linear', 'poly', 'rbf', 'sigmoid']),
-                    'svm_gamma': hp.choice('svm_gamma', ['auto', 1000, 5000, 10000])
+                    'SVM': True,
+                    'SVM_C': hp.choice('svm_C', [2000, 1000]),
+                    'SVM_KERNEL': hp.choice('svm_kernel', ['linear', 'poly', 'rbf', 'sigmoid']),
+                    'SVM_GAMMA': hp.choice('svm_gamma', ['auto', 1000, 5000, 10000])
                 }, {
-                    'type': 'xgb',
-                    'x_learning_rate': hp.choice('x_learning_rate', [0.01, 0.1, 0.5, 1]),
-                    'x_max_depth': hp.choice('x_max_depth',[3,4,5,6]),
-                    'x_colsample_bytree': hp.choice('x_colsample_bytree', [0.25, 0.5, 0.75, 1]),
-                    'x_colsample_bylevel': hp.choice('x_colsample_bylevel', [0.25, 0.5, 0.75, 1])
+                    'XGB': True,
+                    'XGB_LEARNRATE': hp.choice('x_learning_rate', [0.01, 0.1, 0.5, 1]),
+                    'XGB_MAXDEPTH': hp.choice('x_max_depth',[3,4,5,6]),
+                    'XGB_COLSAMPLEBYTREE': hp.choice('x_colsample_bytree', [0.25, 0.5, 0.75, 1]),
+                    'XGB_MINCHILDWEIGHT': hp.choice('x_colsample_bylevel', [0.25, 0.5, 0.75, 1])
                 } ]),
 
         "BOW_APPEND":hp.choice('BOW_APPEND', [True, False]),
