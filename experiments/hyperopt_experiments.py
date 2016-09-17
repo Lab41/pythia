@@ -123,8 +123,8 @@ def run_pythia_hyperopt():
         "W2V_MAX":hp.choice('W2V_MAX', [True, False]),
         "W2V_MIN":hp.choice('W2V_MIN', [True, False]),
         "W2V_ABS":hp.choice('W2V_ABS', [True, False]),
-        # This can also be set...but in order for it to go faster W2V_PRETRAINED is set to True above
-    #     "W2V_PRETRAINED",
+        # Training parameters can also be set...but in order for it to go faster W2V_PRETRAINED is set to True
+        'W2V_PRETRAINED': True,
     #     "W2V_MIN_COUNT",
     #     "W2V_WINDOW",
     #     "W2V_SIZE",
@@ -137,20 +137,20 @@ def run_pythia_hyperopt():
         # Also mem nets aren't in here as they run on their own
     #     "WORDONEHOT",
     #     "WORDONEHOT_VOCAB",
-    #     "RESAMPLING",
     #     "NOVEL_RATIO",
-    #     "OVERSAMPLING",
     #     "REPLACEMENT",
     #     "SAVEEXPERIMENTDATA",
     #     "EXPERIMENTDATAFILE",
+        'directory': parse_args.directory_base,
+        'RESAMPLING': True,
+        "OVERSAMPLING": True,
+        'USE_CACHE': True,
         "VOCAB_SIZE": hp.choice('VOCAB_SIZE', [1000, 5000, 10000, 20000]),
         "STEM": hp.choice('STEM', [True, False]),
         "FULL_VOCAB_SIZE": hp.choice('FULL_VOCAB_SIZE', [1000, 5000, 10000, 20000]),
         "FULL_VOCAB_TYPE": hp.choice('FULL_VOCAB_TYPE', ['word', 'character']),
     #     "FULL_CHAR_VOCAB",
-    #     "SEED",
-    #     'USE_CACHE'
-        'SAVE_RESULTS': hp.choice('SAVE_RESULTS', [True])
+        'SAVE_RESULTS': True
     }
     trials = Trials()
     best = fmin(objective, space, algo=tpe.suggest, max_evals=int(parse_args.num_runs), trials=trials)
