@@ -30,9 +30,9 @@ def objective(args_):
     try:
         ex = Experiment('Hyperopt')
         ex.observers.append(MongoObserver.create(url=parse_args.mongo_db_address, db_name=parse_args.mongo_db_name))
-        ex.main(lambda: run_with_global_args())
+        ex.main(run_with_global_args)
         r = ex.run(config_updates=args)
-        print(r)
+        logger.debug("Experiment result: {}\nReport to hyperopt: {}".format(r, result))
 
         return result
 
@@ -43,14 +43,14 @@ def objective(args_):
         run_with_global_args()
 
 args = None
-result = 100
+result = 100.
 def run_with_global_args():
     global args
     global result
     try:
         all_results = master_pipeline.main(args_to_dicts(args))
         result = -np.mean(all_results['f score'])
-        return result
+        return all_results
     except:
         # Currently errors do not occur too frequently, so skip by returning a zero score
         #raise
