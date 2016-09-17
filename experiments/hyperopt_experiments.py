@@ -6,85 +6,75 @@ import os
 os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=gpu,floatX=float32,allow_gc=True,lib.cnmem=0"  # Sets flags for use of GPU
 from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict, master_pipeline
 import pickle
-import src.pipelines.master_pipeline as mp
-import numpy as np
+import logging
 import copy
-from src.pipelines.master_pipeline import main as pythia_main
+
+import numpy as np
 from sklearn.metrics import precision_recall_fscore_support
 from sacred import Experiment
 from sacred.observers import MongoObserver
 from sacred.initialize import Scaffold
-
 import hyperopt
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 
+import src.pipelines.master_pipeline as mp
+from src.pipelines.master_pipeline import main as pythia_main
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 def objective(args_):
 
+    # arguments to pass as config_updates dict
     global args
+    # result to pass to hyperopt
     global result
+    # command-line arguments 
     global parse_args
-    args=args_
 
     try:
         ex = Experiment('Hyperopt')
+        logger.debug("Adding observer for {}, DB {}".format(parse_args.mongo_db_address,parse_args.mongo_db_name))
         ex.observers.append(MongoObserver.create(url=parse_args.mongo_db_address, db_name=parse_args.mongo_db_name))
-        ex.main(lambda: run_with_global_args())
-        r = ex.run(config_updates=args)
-        print(r)
+        
+        pythia_args = make_args_for_pythia(args_)
+        args = mp.get_args(**pythia_args) 
+        ex.main(run_with_global_args)
+        r = ex.run(config_updates=pythia_args)
+        logger.debug("Experiment result: {}\n"
+                     "Report to hyperopt: {}".format(r.result, result))
 
         return result
 
     except:
         raise
         #If we somehow cannot get to the MongoDB server, then continue with the experiment
-        print("Running without Sacred")
+        logger.warning("Running without Sacred")
         run_with_global_args()
 
 args = None
-result = 100
+result = 100.
 def run_with_global_args():
     global args
     global result
     try:
-        all_results = master_pipeline.main(args_to_dicts(args))
+        all_results = master_pipeline.main(args)
         result = -np.mean(all_results['f score'])
-        return result
+        return all_results
     except:
-        # Currently errors do not occur too frequently, so skip by returning a zero score
-        #raise
-        return 100.0
+        # Have Sacred log a null result
+        return None
 
-def args_to_dicts(args):
+def make_args_for_pythia(args):
     global parse_args
     print(args)
     algorithm= args['algorithm_type']
-    algorithm_type = algorithm['type']
-    #print(algorithm_type)
-    algorithms = {}
-    _LOG_REG = False
-    _XGB = False
-    _SVM = False
-    if algorithm_type=='logreg':
-        _LOG_REG = True
-        algorithms['log_reg'] = algorithm
-    elif algorithm_type== 'svm':
-        _SVM = True
-        algorithms['svm'] = algorithm
-    else:
-        _XGB = True
-        algorithms['xgb'] = algorithm
 
     passed_args = copy.deepcopy(args)
-    passed_args.pop('algorithm_type')
-    passed_args['RESAMPLING']=True
-    passed_args['USE_CACHE']=True
-    passed_args['W2V_PRETRAINED']=True
-    #print(_LOG_REG, _SVM, _XGB)
-    # Because the algoritm is above we don't actually need it to be set here
-    directory, features, _, parameters = mp.get_args(
-            directory=parse_args.directory_base, LOG_REG=_LOG_REG, SVM=_SVM, XGB=_XGB, **passed_args)
+    passed_args.update(algorithm)
+    del passed_args['algorithm_type']
 
-    return directory, features, algorithms, parameters
+    return passed_args
 
 
 def run_pythia_hyperopt():
@@ -94,21 +84,21 @@ def run_pythia_hyperopt():
     space = {
         "algorithm_type":hp.choice('algorithm_type', [
                 {
-                    'type': 'log_reg',
-                    'log_C': hp.choice('log_C', [1e-5, 1e-4, 1e-3, 1e-2, 1, 10]),
-                    'log_tol': hp.choice('log_tol', [1e-5, 1e-4, 1e-3, 1e-2, 1, 10]),
-                    'log_penalty': hp.choice('log_penalty', ["l1", "l2"])
+                    'LOG_REG': True,
+                    'LOG_C': hp.choice('log_C', [1e-5, 1e-4, 1e-3, 1e-2, 1, 10]),
+                    'LOG_TOL': hp.choice('log_tol', [1e-5, 1e-4, 1e-3, 1e-2, 1, 10]),
+                    'LOG_PENALTY': hp.choice('log_penalty', ["l1", "l2"])
                 }, {
-                    'type':'svm',
-                    'svm_C': hp.choice('svm_C', [2000, 1000]),
-                    'svm_kernel': hp.choice('svm_kernel', ['linear', 'poly', 'rbf', 'sigmoid']),
-                    'svm_gamma': hp.choice('svm_gamma', ['auto', 1000, 5000, 10000])
+                    'SVM': True,
+                    'SVM_C': hp.choice('svm_C', [2000, 1000]),
+                    'SVM_KERNEL': hp.choice('svm_kernel', ['linear', 'poly', 'rbf', 'sigmoid']),
+                    'SVM_GAMMA': hp.choice('svm_gamma', ['auto', 1000, 5000, 10000])
                 }, {
-                    'type': 'xgb',
-                    'x_learning_rate': hp.choice('x_learning_rate', [0.01, 0.1, 0.5, 1]),
-                    'x_max_depth': hp.choice('x_max_depth',[3,4,5,6]),
-                    'x_colsample_bytree': hp.choice('x_colsample_bytree', [0.25, 0.5, 0.75, 1]),
-                    'x_colsample_bylevel': hp.choice('x_colsample_bylevel', [0.25, 0.5, 0.75, 1])
+                    'XGB': True,
+                    'XGB_LEARNRATE': hp.choice('x_learning_rate', [0.01, 0.1, 0.5, 1]),
+                    'XGB_MAXDEPTH': hp.choice('x_max_depth',[3,4,5,6]),
+                    'XGB_COLSAMPLEBYTREE': hp.choice('x_colsample_bytree', [0.25, 0.5, 0.75, 1]),
+                    'XGB_MINCHILDWEIGHT': hp.choice('x_colsample_bylevel', [0.25, 0.5, 0.75, 1])
                 } ]),
 
         "BOW_APPEND":hp.choice('BOW_APPEND', [True, False]),
@@ -133,8 +123,8 @@ def run_pythia_hyperopt():
         "W2V_MAX":hp.choice('W2V_MAX', [True, False]),
         "W2V_MIN":hp.choice('W2V_MIN', [True, False]),
         "W2V_ABS":hp.choice('W2V_ABS', [True, False]),
-        # This can also be set...but in order for it to go faster W2V_PRETRAINED is set to True above
-    #     "W2V_PRETRAINED",
+        # Training parameters can also be set...but in order for it to go faster W2V_PRETRAINED is set to True
+        'W2V_PRETRAINED': True,
     #     "W2V_MIN_COUNT",
     #     "W2V_WINDOW",
     #     "W2V_SIZE",
@@ -147,20 +137,20 @@ def run_pythia_hyperopt():
         # Also mem nets aren't in here as they run on their own
     #     "WORDONEHOT",
     #     "WORDONEHOT_VOCAB",
-    #     "RESAMPLING",
     #     "NOVEL_RATIO",
-    #     "OVERSAMPLING",
     #     "REPLACEMENT",
     #     "SAVEEXPERIMENTDATA",
     #     "EXPERIMENTDATAFILE",
+        'directory': parse_args.directory_base,
+        'RESAMPLING': True,
+        "OVERSAMPLING": True,
+        'USE_CACHE': True,
         "VOCAB_SIZE": hp.choice('VOCAB_SIZE', [1000, 5000, 10000, 20000]),
         "STEM": hp.choice('STEM', [True, False]),
         "FULL_VOCAB_SIZE": hp.choice('FULL_VOCAB_SIZE', [1000, 5000, 10000, 20000]),
         "FULL_VOCAB_TYPE": hp.choice('FULL_VOCAB_TYPE', ['word', 'character']),
     #     "FULL_CHAR_VOCAB",
-    #     "SEED",
-    #     'USE_CACHE'
-        'SAVE_RESULTS': hp.choice('SAVE_RESULTS', [True])
+        'SAVE_RESULTS': True
     }
     trials = Trials()
     best = fmin(objective, space, algo=tpe.suggest, max_evals=int(parse_args.num_runs), trials=trials)
