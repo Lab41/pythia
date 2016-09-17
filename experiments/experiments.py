@@ -107,6 +107,13 @@ def config_variables():
     SVM_KERNEL = 'linear'
     SVM_GAMMA = 'auto'
 
+    SGD = False
+    SGD_LOSS = 'log'
+    SGD_ALPHA = 0.0001
+    SGD_PENALTY = 'l2'
+    SGD_BATCH_SIZE = 128
+    SGD_EPOCHS = 10
+
     # xgboost
     XGB = False
     XGB_LEARNRATE = 0.1
@@ -132,7 +139,13 @@ def config_variables():
     FULL_VOCAB_SIZE = 1000
     FULL_VOCAB_TYPE = 'character'
     FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}"
-    SEED = None
+
+    SEED = 41
+    
+    HDF5_PATH_TRAIN=None
+    HDF5_PATH_TEST=None
+    HDF5_SAVE_FREQUENCY=100
+    HDF5_USE_EXISTING=False
 
     USE_CACHE = False
 
@@ -186,6 +199,12 @@ def run_experiment(directory,
             XGB_MAXDEPTH,
             XGB_MINCHILDWEIGHT,
             XGB_COLSAMPLEBYTREE,
+            SGD,
+            SGD_LOSS,
+            SGD_ALPHA,
+            SGD_PENALTY,
+            SGD_EPOCHS,
+            SGD_BATCH_SIZE,
             MEM_NET,
             MEM_VOCAB,
             MEM_TYPE,
@@ -208,6 +227,10 @@ def run_experiment(directory,
             FULL_VOCAB_TYPE,
             FULL_CHAR_VOCAB,
             SEED,
+            HDF5_PATH_TRAIN,
+            HDF5_PATH_TEST,
+            HDF5_SAVE_FREQUENCY,
+            HDF5_USE_EXISTING,
             USE_CACHE,
             _run):
     # store default metadata
@@ -263,6 +286,12 @@ def run_experiment(directory,
             XGB_MAXDEPTH,
             XGB_MINCHILDWEIGHT,
             XGB_COLSAMPLEBYTREE,
+            SGD,
+            SGD_LOSS,
+            SGD_ALPHA,
+            SGD_PENALTY,
+            SGD_EPOCHS,
+            SGD_BATCH_SIZE,
             MEM_NET,
             MEM_VOCAB,
             MEM_TYPE,
@@ -285,5 +314,9 @@ def run_experiment(directory,
             FULL_VOCAB_TYPE,
             FULL_CHAR_VOCAB,
             SEED,
+            HDF5_PATH_TRAIN,
+            HDF5_PATH_TEST,
+            HDF5_SAVE_FREQUENCY,
+            HDF5_USE_EXISTING,
             USE_CACHE)
     )

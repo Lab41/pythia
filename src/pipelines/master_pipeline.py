@@ -6,15 +6,19 @@ This module regulates the features and algorithms used in order to detect novelt
 then adminstrates the implementation of the given specifications. It requires a 
 directory full of JSON files, where each file contains a cluster of documents.
 '''
+import pdb 
 import sys
 import os
-os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=gpu,floatX=float32,allow_gc=True"  # Sets flags for use of GPU
-import logging
 import pickle
 import argparse
+import logging
 from collections import namedtuple
 import numpy as np
-from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict
+os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=gpu,floatX=float32,allow_gc=True"  # Sets flags for use of GPU
+from memory_profiler import profile
+from src.pipelines import parse_json, preprocess, data_gen, log_reg, svm, xgb, predict, sgd
+from src.utils.sampling import sample
+from src.mem_net import main_mem_net
 from src.utils import hashing
 from src.utils.sampling import sample
 
@@ -65,10 +69,12 @@ def main(argv):
     vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model = preprocess.main(features, parameters, corpusdict, data)
 
     #featurization
+    hdf5_path_train=parameters['hdf5_path_train']
+    hdf5_path_test=parameters['hdf5_path_test']
     print("generating training data...",file=sys.stderr)
-    train_data, train_target, train_ids = data_gen.main([clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
+    train_data, train_target, train_ids = data_gen.gen_observations(clusters, order, data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model, hdf5_path_train)
     print("generating testing data...",file=sys.stderr)
-    test_data, test_target, test_ids = data_gen.main([test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model])
+    test_data, test_target, test_ids = data_gen.gen_observations(test_clusters, test_order, test_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_model, w2v_model, hdf5_path_test)
 
     # save training data for separate experimentation and hyperparameter optimization
     if 'saveexperimentdata' in parameters:
@@ -87,13 +93,16 @@ def main(argv):
     print("running algorithms...",file=sys.stderr)
     if 'log_reg' in algorithms:
         logreg_model = log_reg.main([train_data, train_target, algorithms['log_reg']])
-        predicted_labels, perform_results = predict.main([logreg_model, test_data, test_target])
+        predicted_labels, perform_results = predict.predicter(logreg_model, test_data, test_target)
     if 'svm' in algorithms:
         svm_model = svm.main([train_data, train_target, algorithms['svm']])
-        predicted_labels, perform_results = predict.main([svm_model, test_data, test_target])
+        predicted_labels, perform_results = predict.predicter(svm_model, test_data, test_target)
     if 'xgb' in algorithms:
         xgb_model = xgb.main([train_data, train_target, algorithms['xgb']])
-        predicted_labels, perform_results = predict.main([xgb_model, test_data, test_target])
+        predicted_labels, perform_results = predict.predicter(xgb_model, test_data, test_target)
+    if 'sgd' in algorithms:
+        sgd_model = sgd.main(hdf5_path_train, "/data", "/labels", **algorithms['sgd'])
+        predicted_labels, perform_results = predict.predicter(sgd_model, test_data, test_target)
     if 'mem_net' in algorithms:
         from src.mem_net import main_mem_net
         mem_net_model, model_name = main_mem_net.run_mem_net(train_data, test_data, corpusdict, **algorithms['mem_net'])
@@ -181,6 +190,14 @@ def get_args(
     XGB_MAXDEPTH = 3,
     XGB_MINCHILDWEIGHT = 1,
     XGB_COLSAMPLEBYTREE = 1,
+    
+    # SGD Logistic regression
+    SGD = False,
+    SGD_LOSS = 'log',
+    SGD_ALPHA = 0.0001,
+    SGD_PENALTY = 'l2',
+    SGD_EPOCHS = 10,
+    SGD_BATCH_SIZE = 128,
 
     #memory network
     MEM_NET = False,
@@ -213,7 +230,12 @@ def get_args(
     FULL_VOCAB_TYPE = 'character',
     FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}",
 
-    SEED = None,
+    SEED = 41,
+    
+    HDF5_PATH_TRAIN = None,
+    HDF5_PATH_TEST = None,
+    HDF5_SAVE_FREQUENCY = 100,
+    HDF5_USE_EXISTING = True,
     
     USE_CACHE = False):
     """ Return a parameters data structure with information on how to
@@ -327,6 +349,7 @@ def get_args(
     log_reg = None
     svm = None
     xgb = None
+    sgd = None
 
     
     if LOG_REG:
@@ -345,25 +368,35 @@ def get_args(
         if XGB_MAXDEPTH: xgb['x_max_depth'] = XGB_MAXDEPTH
         if XGB_COLSAMPLEBYTREE: xgb['x_colsample_bytree'] = XGB_COLSAMPLEBYTREE
         if XGB_MINCHILDWEIGHT: xgb['x_colsample_bylevel'] = XGB_MINCHILDWEIGHT
+    if SGD:
+        sgd = dict()
+        sgd['alpha'] = SGD_ALPHA
+        sgd['loss'] = SGD_LOSS
+        sgd['penalty'] = SGD_PENALTY
+        sgd['num_epochs'] = SGD_EPOCHS
+        sgd['batch_size'] = SGD_BATCH_SIZE
+        sgd['seed'] = SEED
+        assert HDF5_PATH_TRAIN is not None, "SGD-based methods should be used with HDF5"
 
     algorithms = dict()    
     if log_reg: algorithms['log_reg'] = log_reg
     if svm: algorithms['svm'] = svm
     if xgb: algorithms['xgb'] = xgb
-    #add the memory_net parameters to algorithms as well
     if mem_net:
-        if len(algorithms)>0:
-            print("Error:  The memory network algorithm must be run alone")
-            quit()
         algorithms['mem_net']=mem_net
+    if sgd:
+        algorithms['sgd'] = sgd
+
+    logger.debug("Algorithms structure: {}".format(algorithms))
 
     # Enforce requirement and limitation of one algorithm per run
     if len(algorithms) == 0:
-        print("Error: An algorithm (LOG_REG, SVM, XGB) must be requested per run.", file=sys.stderr)
+        print("Error: One classification algorithm must be requested per run.", file=sys.stderr)
         quit()
     elif len(algorithms) > 1:
-        print("Error: Only one algorithm (LOG_REG, SVM, XGB) can be requested per run.", file=sys.stderr)
+        print("Error: Only one classification can be requested per run.", file=sys.stderr)
         quit()
+
 
     #get parameters
     resampling = None
@@ -372,9 +405,9 @@ def get_args(
         resampling = dict()
         if NOVEL_RATIO: 
             resampling['novelToNotNovelRatio'] = NOVEL_RATIO
-            print("NOVEL_RATIO specified but not supported", file=sys.stderr)
-        if OVERSAMPLING: resampling['over'] = OVERSAMPLING
-        if REPLACEMENT: resampling['replacement'] = REPLACEMENT
+            logger.warn("NOVEL_RATIO specified but not supported")
+        resampling['over'] = OVERSAMPLING
+        resampling['replacement'] = REPLACEMENT
 
     saveexperimentdata = None
     if SAVEEXPERIMENTDATA:
@@ -395,12 +428,16 @@ def get_args(
     if FULL_VOCAB_TYPE: parameters['full_vocab_type'] = FULL_VOCAB_TYPE
     if FULL_CHAR_VOCAB: parameters['full_char_vocab'] = FULL_CHAR_VOCAB
 
+    assert (HDF5_PATH_TRAIN and SGD) or (not HDF5_PATH_TRAIN and not SGD)
+    parameters['hdf5_path_test'] = HDF5_PATH_TEST
+    parameters['hdf5_path_train'] = HDF5_PATH_TRAIN
+    parameters['hdf5_save_frequency'] = HDF5_SAVE_FREQUENCY
+    parameters['hdf5_use_existing'] = HDF5_USE_EXISTING
     parameters['use_cache'] = USE_CACHE
 
     return directory, features, algorithms, parameters
 
 if __name__ == '__main__':
-    #args = parse_args()
     args = get_args()
     print("Algorithm details and Results:", file=sys.stderr)
     print(main(args), file=sys.stdout)
