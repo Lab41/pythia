@@ -28,7 +28,7 @@ def run_model(train_data, train_labels, log_penalty='l2', log_dual=False, log_to
                                              multi_class=log_multi_class, verbose=log_verbose, warm_start=log_warm_start,
                                              n_jobs=log_n_jobs)
 
-    # we create an instance of Neighbours Classifier and fit the data.
+    # we create an instance of logistic regression classifier and fit the data.
     logreg.fit(train_data, train_labels)
 
     return logreg

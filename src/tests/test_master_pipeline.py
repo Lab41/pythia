@@ -36,4 +36,9 @@ def test_variable_list():
     pipeline_args = master_pipeline.get_args.__code__.co_varnames[:pipeline_argcount]
     experiment_argcount = experiments.experiments.run_experiment.__code__.co_argcount
     experiment_args = experiments.experiments.run_experiment.__code__.co_varnames[:experiment_argcount]
+    # remove Sacred-specific arg if present
+    try:
+        experiment_args = tuple(experiment_args[:experiment_args.index('_run')] + experiment_args[experiment_args.index('_run') + 1:])
+    except:
+        pass
     assert pipeline_args == experiment_args

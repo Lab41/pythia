@@ -1,14 +1,21 @@
+import os
 import copy
+import logging
 import math
+import h5py
+import numpy as np
+from memory_profiler import profile
+from scipy import spatial
 
-#from src.featurizers.skipthoughts import skipthoughts as sk
-from src.utils import normalize, tokenize, sampling
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.preprocessing import OneHotEncoder
+#from src.featurizers.skipthoughts import skipthoughts as sk
+from src.utils import normalize, tokenize, sampling
 
-import numpy as np
-from scipy import spatial
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.DEBUG)
 
 def gen_feature(new_vectors, request_parameters, feature_vector):
     """Take newly generated feature vectors, look up which
@@ -76,11 +83,14 @@ def tfidf_sum(doc, corpus_array, vocab, feature):
     '''
     doc_array = tokenize.word_punct_tokens(doc)
     doc_length = len(doc_array)
-    vectorizer = TfidfVectorizer(norm=None, vocabulary = vocab)
-    tfidf = vectorizer.fit_transform(corpus_array)
-    vector_values = tfidf.toarray()
-    tfidf_score = np.sum(vector_values[-1])/doc_length
-    feature.append(np.array([tfidf_score]))
+    if doc_length != 0:
+        vectorizer = TfidfVectorizer(norm=None, vocabulary = vocab)
+        tfidf = vectorizer.fit_transform(corpus_array)
+        vector_values = tfidf.toarray()
+        tfidf_score = np.sum(vector_values[-1])/doc_length
+        feature.append(np.array([tfidf_score]))
+    else:
+        feature.append(np.zeros(1))
     return feature
 
 
@@ -250,10 +260,13 @@ def run_w2v_elemwise(w2v_model, doc, w2v, operation):
 
         sentencevectorarray.append(vectorlist)
 
-    if len(sentencevectorarray) > 0:
+    # Only concatenate if both sentences were added to sentence vector array, otherwise append array of zeroes
+    if len(sentencevectorarray) == 2:
         documentvector = np.concatenate(sentencevectorarray)
+    elif len(sentencevectorarray) == 1:
+        documentvector = np.concatenate((sentencevectorarray[0], np.zeros(w2v['size'])))
     else:
-        documentvector = np.zeros(w2v['size'])
+        documentvector = np.zeros(w2v['size']*2)
     return documentvector
 
 def run_w2v(w2v_model, doc, w2v):
@@ -295,11 +308,13 @@ def run_w2v(w2v_model, doc, w2v):
         if len(wordvectorarray) > 0:
             sentencevectorarray.append(np.mean(wordvectorarray, axis=0))
 
-    # Only calculate mean if one or more sentences were added to sentence vector array, otherwise return array of zeroes
-    if len(sentencevectorarray) > 0:
+    # Only concatenate if both sentences were added to sentence vector array, otherwise append array of zeroes
+    if len(sentencevectorarray) == 2:
         documentvector =  np.concatenate(sentencevectorarray)
+    elif len(sentencevectorarray) == 1:
+        documentvector =  np.concatenate((sentencevectorarray[0], np.zeros(w2v['size'])))
     else:
-        documentvector = np.zeros(w2v['size'])
+        documentvector = np.zeros(w2v['size']*2)
     return documentvector
 
 def run_w2v_matrix(w2v_model, doc, w2v_params, mask_mode):
@@ -606,7 +621,7 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
 
     return doc_input, doc_questions, doc_masks
 
-def gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model):
+def gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model, hdf5_path=None, dtype=np.float32):
     '''
     Generates observations for each cluster found in JSON file and calculates the specified features.
 
@@ -615,7 +630,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
         lookup_order (dict): document arrival order
         document_data (array): parsed JSON documents
         features (dict): the specified features to be calculated
-        parameters (???): data structure with run parameters
+        parameters (dict): data structure with run parameters
         vocab (dict): the vocabulary of the data set
         full_vocab (dict_: to vocabulary of the data set including stop wrods and punctuation
         encoder_decoder (???): the encoder/decoder for skipthoughts vectors
@@ -642,6 +657,16 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     punkt = ['.','?','!']
 
     corpus_unprocessed = list()
+    # HDF5-related parameters
+    hdf5_save_frequency=parameters['hdf5_save_frequency']
+    data_key = 'data'
+    labels_key = 'labels'
+    # Truncate any existing files at save location, or return early if 
+    # using existing files
+    if hdf5_path is not None:
+        if parameters['hdf5_use_existing'] and os.path.isfile(hdf5_path):
+            return hdf5_path, hdf5_path
+        open(hdf5_path, 'w').close()
 
     # Create random state
     random_state = np.random.RandomState(parameters['seed'])
@@ -650,11 +675,8 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     # pairing data and label
     for cluster in all_clusters:
         # Determine arrival order in this cluster
-#
         sorted_entries = [x[1] for x in sorted(lookup_order[cluster], key=lambda x: x[0])]
-
         observations = [document_data[sorted_entries[0]]]
-
         for index in sorted_entries[1:]:
             next_doc = document_data[index]
             observations.append(next_doc)
@@ -668,15 +690,18 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     # If -oversampling, sample down to 
     # smaller class size for both classes with or w/o replacement
     if 'resampling' in parameters:
-        if 'over' in parameters:
+        resampling_parameters = parameters['resampling']
+        if 'over' in resampling_parameters:
             desired_size = None
-            parameters['replacement'] = True
+            resampling_parameters['replacement'] = True
         else:
             desired_size = -np.Inf
-        if 'replacement' in parameters:
+        if 'replacement' in resampling_parameters:
             replacement = True
         else:
             replacement = False
+        logger.debug("Replacement: {}, Desired size: {}".format(replacement, desired_size))
+        logger.debug("Size of data: {}, Number of clusters: {}".format(len(corpus_unprocessed), len(all_clusters)))
         corpus = sampling.label_sample(corpus_unprocessed, "novelty", replacement, desired_size, random_state)  
     else:
         corpus = corpus_unprocessed
@@ -721,7 +746,6 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
 
             if 'bow' in features:
                 feature_vectors = bow(doc_normalized, bkgd_text_raw, bkgd_docs_normalized, vocab, features['bow'], feature_vectors)
-
             if 'st' in features:
                 sentences = []
                 for doc in bkgd_docs_raw:
@@ -742,12 +766,31 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
                 feature_vectors = wordonehot(doc_raw, bkgd_text_raw, full_vocab, features['wordonehot'], feature_vectors)
 
             # Save features and label
-            feature_vectors = np.concatenate(feature_vectors, axis=0)
+            feature_vectors = np.concatenate(feature_vectors, axis=0).astype(dtype)
+            # Fail catastrphically on zero vector (not sure if we need this)
+            assert not (feature_vectors < 0.0001).all() 
             data.append(feature_vectors)
         if case["novelty"]:
             labels.append(1)
         else:
             labels.append(0)
+        
+        # save to HDF5 if desired
+        if hdf5_path is not None and len(data) % hdf5_save_frequency == 0:
+            with h5py.File(hdf5_path, 'a') as h5:
+                data_np = np.array(data)
+                labels_np = np.reshape(np.array(labels), (-1, 1))
+                add_to_hdf5(h5, data_np, data_key)
+                add_to_hdf5(h5, labels_np, labels_key, np.uint8)
+                labels = list()
+                data = list()
+    # Save off any remainder
+    if hdf5_path is not None and len(data) > 0:
+        with h5py.File(hdf5_path, 'a') as h5:
+            data_np = np.array(data)
+            labels_np = np.reshape(np.array(labels), (-1, 1))
+            add_to_hdf5(h5, data_np, data_key)
+            add_to_hdf5(h5, labels_np, labels_key, np.uint8)
 
     mem_net_features['inputs'] = inputs
     mem_net_features['questions'] = questions
@@ -757,13 +800,23 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     ids = ["C" + str(clusterid) + "_P" + str(postid) for clusterid, postid in zip(clusterids,postids)]
 
    
-    if 'mem_net' in features:
+    if 'mem_net' in features: 
         return mem_net_features, labels, ids
+    if hdf5_path is not None:
+        return hdf5_path, hdf5_path, ids
     else:
         return data, labels, ids
 
+def add_to_hdf5(h5, data, label,dtype=np.float32):
+    if label not in h5.keys():
+        data_h5 = h5.create_dataset(label, data=data, maxshape=(None, data.shape[1]), dtype=dtype, compression='gzip')
+    else:
+        data_h5 = h5[label]
+        data_h5_size = data_h5.shape[0] + data.shape[0]
+        data_h5.resize(data_h5_size, axis=0)
+        data_h5[-len(data):] = data
 
-def main(argv):
+def main(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model, hdf5_path=None, hdf5_save_frequency=100):
     '''
     Controls the generation of observations with the specified features.
 
@@ -773,7 +826,6 @@ def main(argv):
     Returns:
         list: contains for each obeservation
     '''
-    all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model = argv
-    data, labels, ids = gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model)
+    data, labels, ids = gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model, hdf5_path, hdf5_save_frequency)
 
     return data, labels, ids
