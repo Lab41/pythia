@@ -126,6 +126,7 @@ def get_args(
     BOW_PRODUCT = False,
     BOW_COS = False,
     BOW_TFIDF = False,
+    BOW_BINARY = True,
 
     #skipthoughts
     ST_APPEND = False,
@@ -229,7 +230,7 @@ def get_args(
     FULL_VOCAB_SIZE = 10000,
     FULL_VOCAB_TYPE = 'character',
     FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}",
-
+    FULL_VOCAB_STEM = False,
     SEED = 41,
     
     HDF5_PATH_TRAIN = None,
@@ -258,6 +259,7 @@ def get_args(
         if BOW_PRODUCT: bow['product'] = BOW_PRODUCT
         if BOW_COS: bow['cos'] = BOW_COS
         if BOW_TFIDF: bow['tfidf'] = BOW_TFIDF
+        if BOW_BINARY: bow['binary'] = BOW_BINARY
     if ST_APPEND or ST_DIFFERENCE or ST_PRODUCT or ST_COS:
         st = dict()
         if ST_APPEND: st['append'] = ST_APPEND
@@ -427,6 +429,7 @@ def get_args(
     if FULL_VOCAB_SIZE: parameters['full_vocab_size'] = FULL_VOCAB_SIZE
     if FULL_VOCAB_TYPE: parameters['full_vocab_type'] = FULL_VOCAB_TYPE
     if FULL_CHAR_VOCAB: parameters['full_char_vocab'] = FULL_CHAR_VOCAB
+    if FULL_VOCAB_STEM: parameters['full_vocab_stem'] = FULL_VOCAB_STEM
 
     assert (HDF5_PATH_TRAIN and SGD) or (not HDF5_PATH_TRAIN and not SGD)
     parameters['hdf5_path_test'] = HDF5_PATH_TEST

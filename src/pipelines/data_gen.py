@@ -40,13 +40,16 @@ def gen_feature(new_vectors, request_parameters, feature_vector):
     return feature_vector
 
 def bow(doc, corpus, corpus_array, vocab, bow, feature):
-    vectors = bag_of_words_vectors(doc, corpus, vocab)
+    if bow.get('binary', False):
+        binary_bow= bow['binary']
+    else: binary_bow = False
+    vectors = bag_of_words_vectors(doc, corpus, vocab, binary_bow)
     feature = gen_feature(vectors, bow, feature)
     if 'tfidf' in bow:
         feature = tfidf_sum(doc, corpus_array, vocab, feature)
     return feature
 
-def bag_of_words_vectors(doc, corpus, vocab):
+def bag_of_words_vectors(doc, corpus, vocab, binary):
     '''
     Creates bag of words vectors for doc and corpus for a given vocabulary.
 
@@ -62,7 +65,7 @@ def bag_of_words_vectors(doc, corpus, vocab):
     # Initialize the "CountVectorizer" object, which is scikit-learn's bag of words tool.
     #http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
     vectorizer = CountVectorizer(analyzer = "word",  \
-                                 vocabulary = vocab)
+                                 vocabulary = vocab, binary=binary)
 
     # Combine Bag of Words dicts in vector format, calculate cosine similarity of resulting vectors
     bagwordsVectors = (vectorizer.transform([doc, corpus])).toarray()

@@ -38,7 +38,7 @@ def gen_vocab(corpus_dict, vocab=1000, stem=False, **kwargs):
         else: break
     return vocabdict
 
-def gen_full_vocab(corpus_dict, full_vocab_type='word', full_vocab_size=1000, stem=False, full_char_vocab="", token_include = {'.',',','!','?'}, **kwargs):
+def gen_full_vocab(corpus_dict, full_vocab_type='word', full_vocab_size=1000, full_vocab_stem=False, full_char_vocab="", token_include = {'.',',','!','?'}, **kwargs):
     '''
     Generates a dictionary of words to be used as the vocabulary in features that utilize bag of words.
     This vocab contains stop words and punctuation
@@ -52,7 +52,7 @@ def gen_full_vocab(corpus_dict, full_vocab_type='word', full_vocab_size=1000, st
     '''
 
     vocabdict = dict()
-    if full_vocab_type=='char':
+    if full_vocab_type=='character':
         index=0
         for c in full_char_vocab:
             vocabdict[c] = index
@@ -63,7 +63,7 @@ def gen_full_vocab(corpus_dict, full_vocab_type='word', full_vocab_size=1000, st
         vocabdict = dict()
         for word in corpus_dict:
             if len(vocabdict) < full_vocab_size:
-                cleantext = xml_normalize(word, stem)
+                cleantext = xml_normalize(word, full_vocab_stem)
                 if cleantext != '':
                     if not cleantext in vocabdict:
                         vocabdict[cleantext] = index
