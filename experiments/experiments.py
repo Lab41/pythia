@@ -38,6 +38,7 @@ def config_variables():
     BOW_PRODUCT = False
     BOW_COS = False
     BOW_TFIDF = False
+    BOW_BINARY = True
 
     # skipthoughts
     ST_APPEND = False
@@ -139,7 +140,7 @@ def config_variables():
     FULL_VOCAB_SIZE = 1000
     FULL_VOCAB_TYPE = 'character'
     FULL_CHAR_VOCAB = "abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&*~`+-=<>()[]{}"
-
+    FULL_VOCAB_STEM = False
     SEED = 41
     
     HDF5_PATH_TRAIN=None
@@ -158,6 +159,7 @@ def run_experiment(directory,
             BOW_PRODUCT,
             BOW_COS,
             BOW_TFIDF,
+            BOW_BINARY,
             ST_APPEND,
             ST_DIFFERENCE,
             ST_PRODUCT,
@@ -226,6 +228,7 @@ def run_experiment(directory,
             FULL_VOCAB_SIZE,
             FULL_VOCAB_TYPE,
             FULL_CHAR_VOCAB,
+            FULL_VOCAB_STEM,
             SEED,
             HDF5_PATH_TRAIN,
             HDF5_PATH_TEST,
@@ -245,6 +248,7 @@ def run_experiment(directory,
             BOW_PRODUCT,
             BOW_COS,
             BOW_TFIDF,
+            BOW_BINARY,
             ST_APPEND,
             ST_DIFFERENCE,
             ST_PRODUCT,
@@ -313,6 +317,7 @@ def run_experiment(directory,
             FULL_VOCAB_SIZE,
             FULL_VOCAB_TYPE,
             FULL_CHAR_VOCAB,
+            FULL_VOCAB_STEM,
             SEED,
             HDF5_PATH_TRAIN,
             HDF5_PATH_TEST,
