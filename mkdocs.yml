@@ -1,5 +1,10 @@
 site_name: Pythia
+markdown_extensions: 
+    - mdx_math:
+        enable_dollar_delimiter: True #for use of inline $..$
+extra_javascript: ['https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML']
 pages:
 - main: index.md
 theme: readthedocs
+site_dir: docs-html
 
