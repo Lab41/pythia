@@ -105,7 +105,7 @@ def main(argv):
         predicted_labels, perform_results = predict.predicter(sgd_model, test_data, test_target)
     if 'mem_net' in algorithms:
         from src.mem_net import main_mem_net
-        mem_net_model, model_name = main_mem_net.run_mem_net(train_data, test_data, corpusdict, **algorithms['mem_net'])
+        mem_net_model, model_name = main_mem_net.run_mem_net(train_data, test_data, **algorithms['mem_net'])
         predicted_labels, perform_results = main_mem_net.test_mem_network(mem_net_model, model_name, **algorithms['mem_net'])
     #results
     if "save_results" in parameters:
@@ -301,7 +301,7 @@ def get_args(
     if MEM_NET:
         mem_net = dict()
         if MEM_VOCAB: mem_net['word_vector_size'] = MEM_VOCAB
-        if SEED: mem_net['seed'] = SEED
+        #if SEED: mem_net['seed'] = SEED
         if MEM_TYPE: mem_net['network'] = MEM_TYPE
         if MEM_BATCH: mem_net['batch_size'] = MEM_BATCH
         if MEM_EPOCHS: mem_net['epochs'] = MEM_EPOCHS

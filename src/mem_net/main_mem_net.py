@@ -208,7 +208,7 @@ def test_mem_network(dmn, network_name, batch_size=10, log_every=4, **kwargs):
     json.dump(data, file, indent=2)
     avg_loss, skipped, perform_results, y_pred = do_epoch(dmn, 'test', 0, batch_size, log_every)
 
-    return y_pred, performance_metrics
+    return y_pred, perform_results
 
 
 def do_epoch(dmn, mode, epoch, batch_size, log_every, skipped=0):
@@ -271,8 +271,8 @@ def do_epoch(dmn, mode, epoch, batch_size, log_every, skipped=0):
 
         avg_loss /= batches_per_epoch
         print("\n  %s loss = %.5f" % (mode, avg_loss))
-        print("confusion matrix:")
-        print(metrics.confusion_matrix(y_true, y_pred))
+        #print("confusion matrix:")
+        #print(metrics.confusion_matrix(y_true, y_pred))
 
         perform_results = performance_metrics.get_perform_metrics(y_true, y_pred)
         print(perform_results)
