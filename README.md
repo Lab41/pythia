@@ -11,16 +11,23 @@
 Pythia is Lab41's exploration of approaches to novel content detection. We are interested in making it easier to tell when a document coming into a corpus has something new to say.
 We welcome your contributions (see our [contributor guidelines](CONTRIBUTING.md)) and attention.
 
-## Tests
+## Run a quick experiment
+
+You can get started very quickly on a system with [Docker](https://www.docker.com/) using the following commands
+to pull our publicly available image and train an XGBoost model on the sample data that comes with the 
+repository:
+
+```sh
+docker pull lab41/pythia
+docker run -it lab41/pythia experiments/experiments.py with XGB=True BOW_APPEND=True BOW_PRODUCT=True
+```
+
+
+
+## Tests and building
 
 ```sh
 docker build -t lab41/pythia .     # runs tests and builds project image
-```
-
-## Run a quick experiment
-
-```sh
-docker run -it lab41/pythia experiments/experiments.py with 'XGB=True' 'BOW_APPEND=True' 'BOW_PRODUCT=True'
 ```
 
 ## Prerequisites
