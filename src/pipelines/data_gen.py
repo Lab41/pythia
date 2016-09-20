@@ -1,6 +1,7 @@
 import copy
+import math
 
-from src.featurizers.skipthoughts import skipthoughts as sk
+#from src.featurizers.skipthoughts import skipthoughts as sk
 from src.utils import normalize, tokenize, sampling
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
@@ -103,6 +104,7 @@ def skipthoughts_vectors(doc, sentences, encoder_decoder):
     Returns:
         array: the concatenation of the corpus skipthoughts vector (the average of each indivdual skipthoughts vector) and the document skipthoughts vector (the average of the first and last sentence's skipthoughts vector)
     '''
+    from src.featurizers.skipthoughts import skipthoughts as sk
     corpus_vectors = sk.encode(encoder_decoder, sentences)
     corpus_vector = np.mean(corpus_vectors, axis = 0)
     doc_vector = np.mean(sk.encode(encoder_decoder, get_first_and_last_sentence(doc)), axis=0)
@@ -122,6 +124,14 @@ def get_first_and_last_sentence(doc):
     sentences = tokenize.punkt_sentences(doc)
     first = normalize.xml_normalize(sentences[0])
     last = normalize.xml_normalize(sentences[-1])
+
+    # Protect against scenario where last sentence is mistakenly returned by parser as empty list
+    if len(last)==0:
+        i = -2
+        while len(last)==0:
+            last = normalize.xml_normalize(sentences[i])
+            i-=1
+
     first_and_last = [first, last]
     return first_and_last
 
@@ -166,11 +176,88 @@ def w2v(doc, corpus, w2v_model, w2v, feature):
          feature: List of features extracted from text
      '''
 
-    docw2v = run_w2v(w2v_model, doc, w2v)
-    corpusw2v = run_w2v(w2v_model, corpus, w2v)
-    vectors = [docw2v, corpusw2v]
-    feature = gen_feature(vectors, w2v, feature)
+    if w2v.get('avg', False):
+        docw2v = run_w2v(w2v_model, doc, w2v)
+        corpusw2v = run_w2v(w2v_model, corpus, w2v)
+        vectors = [docw2v, corpusw2v]
+        feature = gen_feature(vectors, w2v, feature)
+
+    vectormath = []
+    if w2v.get('max', False): vectormath.append('max')
+    if w2v.get('min', False): vectormath.append('min')
+    if w2v.get('abs', False): vectormath.append('abs')
+    for operation in vectormath:
+        docw2v = run_w2v_elemwise(w2v_model, doc, w2v, operation)
+        corpusw2v = run_w2v_elemwise(w2v_model, corpus, w2v, operation)
+        vectors = [docw2v,corpusw2v]
+        feature = gen_feature(vectors, w2v, feature)
+
     return feature
+
+def run_w2v_elemwise(w2v_model, doc, w2v, operation):
+    '''
+      Calculates Word2Vec vectors for a document using the first and last sentences of the document
+      Examines vector elements and retains maximum, minimum or absolute value for each vector element
+
+      Args:
+          w2v_model (gensim.Word2Vec): Trained Word2Vec model
+          doc (str): the text of the document
+          w2v (dict): Dictionary of Word2Vec parameters as set in master_pipeline. The dictionary
+           will include keys for the model building parameters min_count, window, size, workers and pretrained.
+           The dict may also have optional boolean keys for the feature operations append, difference, product and cos.
+          operation (str): element wise operation of max, min or abs
+      Returns:
+          documentvector (list): Word2Vec vectors with min/max/abs element values for a sentence, which are then
+          concatenated across sentences
+      '''
+    # Get first and last sentences of document, break down sentences into words and remove stop words
+
+    sentences = get_first_and_last_sentence(doc)
+    normalizedsentences = []
+
+    for sentence in sentences:
+        words = normalize.remove_stop_words(tokenize.word_punct_tokens(sentence))
+        normalizedsentences.append(words)
+
+    sentencevectorarray = []
+
+    # Look up word vectors in trained Word2Vec model and build array of word vectors and sentence vectors
+    for phrase in normalizedsentences:
+
+        # Set up comparison vector based on requested operation
+        if operation == 'max':
+            vectorlist = np.full(w2v['size'], -np.inf)
+        elif operation == 'min':
+            vectorlist = np.full(w2v['size'], np.inf)
+        elif operation == 'abs':
+            vectorlist = np.zeros(w2v['size'])
+
+        # Determine word vector and evaluate elements against comparison vector
+        for word in phrase:
+            try:
+                wordvector = w2v_model[word]
+            except KeyError:
+                continue
+            if operation == 'max':
+                vectorlist = np.where(wordvector > vectorlist, wordvector, vectorlist)
+            elif operation == 'min':
+                vectorlist = np.where(wordvector < vectorlist, wordvector, vectorlist)
+            elif operation == 'abs':
+                vectorlist = np.where(abs(wordvector) > vectorlist, abs(wordvector), vectorlist)
+
+        # Remove any infinity values from special cases (ex: 1 word sentence and word not in word2vec model)
+        vectorlist = np.where(np.isinf(vectorlist), 0, vectorlist)
+
+        sentencevectorarray.append(vectorlist)
+
+    # Only concatenate if both sentences were added to sentence vector array, otherwise append array of zeroes
+    if len(sentencevectorarray) == 2:
+        documentvector = np.concatenate(sentencevectorarray)
+    elif len(sentencevectorarray) == 1:
+        documentvector = np.concatenate((sentencevectorarray[0], np.zeros(w2v['size'])))
+    else:
+        documentvector = np.zeros(w2v['size']*2)
+    return documentvector
 
 def run_w2v(w2v_model, doc, w2v):
     '''
@@ -184,7 +271,7 @@ def run_w2v(w2v_model, doc, w2v):
            The dict may also have optional boolean keys for the feature operations append, difference, product and cos.
 
       Returns:
-          documentvector (list): List of Word2Vec vectors averaged across sentences
+          documentvector (list): List of Word2Vec vectors averaged across words and concatenated across sentences
       '''
 
     # Get first and last sentences of document, break down sentences into words and remove stop words
@@ -201,22 +288,23 @@ def run_w2v(w2v_model, doc, w2v):
     # Look up word vectors in trained Word2Vec model and build array of word vectors and sentence vectors
     for phrase in normalizedsentences:
         for word in phrase:
-            wordvector = None
             try:
                 wordvector = w2v_model[word]
-            except:
-                pass
-            if wordvector is not None: wordvectorarray.append(wordvector)
+            except KeyError:
+                continue
+            wordvectorarray.append(wordvector)
 
         # Only calculate mean and append to sentence vector array if one or more word vectors were found
         if len(wordvectorarray) > 0:
             sentencevectorarray.append(np.mean(wordvectorarray, axis=0))
 
-    # Only calculate mean if one or more sentences were added to sentence vector array, otherwise return array of zeroes
-    if len(sentencevectorarray) > 0:
-        documentvector =  np.mean(sentencevectorarray, axis=0)
+    # Only concatenate if both sentences were added to sentence vector array, otherwise append array of zeroes
+    if len(sentencevectorarray) == 2:
+        documentvector =  np.concatenate(sentencevectorarray)
+    elif len(sentencevectorarray) == 1:
+        documentvector =  np.concatenate((sentencevectorarray[0], np.zeros(w2v['size'])))
     else:
-        documentvector = np.zeros(w2v['size'])
+        documentvector = np.zeros(w2v['size']*2)
     return documentvector
 
 def run_w2v_matrix(w2v_model, doc, w2v_params, mask_mode):
@@ -251,7 +339,7 @@ def run_w2v_matrix(w2v_model, doc, w2v_params, mask_mode):
                 wordvector_ = w2v_model[word]
                 wordvector = [float(w) for w in wordvector_]
             except:
-                wordvector = np.random.uniform(0.0,1.0,(w2v_params['size'],))
+                wordvector = w2v_model.seeded_vector(np.random.rand())
             if wordvector is not None:
                 wordvectorarray.append(wordvector)
 
@@ -462,14 +550,15 @@ def gen_mem_net_observations(raw_doc, raw_corpus, sentences_full, mem_net_params
     else: embed_mode = 'word2vec'
 
     if embed_mode == 'skip_thought':
+        from src.featurizers.skipthoughts import skipthoughts as sk
         doc_sentences = tokenize.punkt_sentences(raw_doc)
 
         # Ensure that the document and corpus are long enough and if not make them be long enough
         if len(sentences_full)==1:
-            print("short corpus")
+            #print("short corpus")
             sentences_full.extend(sentences_full)
         if len(doc_sentences)==1:
-            print("short doc")
+            #print("short doc")
             doc_sentences.extend(doc_sentences)
         corpus_vectors = sk.encode(encoder_decoder, sentences_full)
         doc_vectors = sk.encode(encoder_decoder, doc_sentences)
@@ -600,10 +689,19 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     # Featurize each observation
     # Some duplication of effort here bc docs will appear multiple times 
     # across observations
+    
+    clusterids = []
+    postids = []
     for case in corpus:
+        
         # Create raw and normalized document arrays
         case_docs_raw = [ record['body_text'] for record in case['data'] ]
         case_docs_normalized = [ normalize.normalize_and_remove_stop_words(body_text) for body_text in case_docs_raw ]
+        #create ids for individual data points
+        postid = [record['post_id'] for record in case['data'] ][-1]
+        postids.append(postid)
+        clusterid = [ record['cluster_id'] for record in case['data'] ][0]
+        clusterids.append(clusterid)
         # Pull out query documents
         doc_raw = case_docs_raw[-1]
         doc_normalized = case_docs_normalized[-1]
@@ -611,8 +709,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
         bkgd_docs_raw = case_docs_raw[:-1]
         bkgd_docs_normalized = case_docs_normalized[:-1]
         bkgd_text_raw = '\n'.join(bkgd_docs_raw)
-        bkgd_text_normalized = '\n'.join(bkgd_docs_normalized)
-
+        bkgd_text_normalized = '\n'.join(bkgd_docs_normalized) 
         feature_vectors = list()
 
         if 'mem_net' in features:
@@ -631,7 +728,10 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
                 feature_vectors = bow(doc_normalized, bkgd_text_raw, bkgd_docs_normalized, vocab, features['bow'], feature_vectors)
 
             if 'st' in features:
-                sentences = [ get_first_and_last_sentence(doc) for doc in bkgd_docs_raw ]
+                sentences = []
+                for doc in bkgd_docs_raw:
+                    for item in get_first_and_last_sentence(doc):
+                        sentences.append(item)
                 feature_vectors = st(doc_raw, sentences, encoder_decoder, features['st'], feature_vectors)
 
             if 'lda' in features:
@@ -658,11 +758,14 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     mem_net_features['questions'] = questions
     mem_net_features['input_masks'] = input_masks
     mem_net_features['answers'] = labels
+    
+    ids = ["C" + str(clusterid) + "_P" + str(postid) for clusterid, postid in zip(clusterids,postids)]
 
+   
     if 'mem_net' in features:
-        return mem_net_features, labels
+        return mem_net_features, labels, ids
     else:
-        return data, labels
+        return data, labels, ids
 
 
 def main(argv):
@@ -676,6 +779,6 @@ def main(argv):
         list: contains for each obeservation
     '''
     all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model = argv
-    data, labels = gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model)
+    data, labels, ids = gen_observations(all_clusters, lookup_order, document_data, features, parameters, vocab, full_vocab, encoder_decoder, lda_model, tf_session, w2v_model)
 
-    return data, labels
+    return data, labels, ids
