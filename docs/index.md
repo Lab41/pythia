@@ -2,18 +2,73 @@
 
 ## Detecting novelty and redundancy in text
 
-Pythia is Lab41's exploration of approaches to novel content detection.
+Pythia is Lab41's exploration of approaches to novel content detection. It adopts 
+a supervised machine learning approach to the problem, and provides an
+interface for processing data, training classification systems, and evaluating
+their performance.
 
 # Usage and Runtime Options
 
+A simple experiment can be kicked off with [experiments/experiments.py](https://github.com/lab41/pythia/blob/master/experiments/experiments.py).
+The basic syntax pairs the keyword `with` with a number of valid Python expressions setting
+the various run parameters:
+
 `experiments/experiments.py with OPTION=value OPTION_2=value_2 OPTION_3='value with spaces'`
 
-# Terminology
+A stock logistic regression on binary bag-of-words features would be specified like this:
+
+`experiments/experiments.py with BOW_APPEND=True LOG_REG=True`
+
+Runtime parameters are all documented below.
+
+## Terminology
+
+### corpus
+The whole collection of documents in a given experiment.
+### cluster
+One of a number of small, potentially overlapping groups of mutually relevant documents. 
+Pythia assumes documents have already been grouped with topically similar neighbors via some
+mechanism. Clusters should also have some kind of linear ordering, either in time of
+publication, time of ingest, or whatever is relevant to the data.
+### query
+A document of interest, which a classification system should decide is novel or redundant.
+### background
+The documents against which a query should be compared. In Pythia, these are the
+members of the query's cluster that come *before* it (hence the need for linear order)
+### observation, case
+A query, its background documents, and a novelty label (novel or redundant)
+
+# The pipeline
+
+```Raw data > Processed Data > Featurization > Training > Testing/Evaluation```
+
+## Data processing
+
+The user (you!) is responsible for converting data into the form Pythia consumes. [src/data/](https://github.com/Lab41/pythia/tree/master/src/data)
+has scripts for (acquiring and) processing two sources of data. The processed data should a folder of `.json` files, each one 
+with data on a cluster of documents. Each line of the cluster file is a JSON object whose form is 
+documented at [data/cluster_schema.json](https://github.com/Lab41/pythia/blob/master/data/cluster_schema.json)
+and and example cluster can be found at [data/SKNews.json](https://github.com/Lab41/pythia/blob/master/data/SKNews.json)
+
+A full sample corpus is contained at [data/stackexchange/anime](https://github.com/Lab41/pythia/tree/master/data/stackexchange/anime)
+
+Once you have supplied the data, Pythia generates observations pairing query documents with background documents.
+
+## Featurization
+
+Numerous methods for converting observations into feature vectors are available for experimentation.
+They are documented below. All Pythia experiments must use at least one featurization method.
+
+## Training, testing, evaluation
+
+Pythia does training, testing, and evaluation all in one fell swoop, since it is mostly
+an experimentation platform. Available learning methods are documented below. You must
+choose exactly one classifier for each experiment.
 
 # Usage and runtime options
-
 ## Data location
 ### directory ('data/stackexchange/anime')
+Path to a folder with `.json` files describing the clusters in a corpus.
 
 # Featurization techniques
 
@@ -93,7 +148,7 @@ natural language representations of background knowledge and natural language re
 a decoding function to provide an answer. In our adaptation of DMN, background documents are fed in to the background knowledge
 module, the query document is used as the query, and the possible responses are True (novel) or False.
 
-Original manuscript: [http://arxiv.org/abs/1506.07285](http://arxiv.org/abs/1506.07285) 
+Original manuscript: [http://arxiv.org/abs/1506.07285](http://arxiv.org/abs/1506.07285)  
 Basis implementation: [https://github.com/YerevaNN/Dynamic-memory-networks-in-Theano](https://github.com/YerevaNN/Dynamic-memory-networks-in-Theano)
 
 ### MEM_NET (False)
@@ -116,7 +171,7 @@ If `MEM_MASK_MODE` is `'word_onehot'`, set the minimum length of a one-hot-encod
 ### MEM_ONEHOT_MAX_LEN (1000)
 Maximum length of a one-hot-encoded document
 
-#word2vec
+## word2vec
 
 word2vec is a popular algorithm for learning 'distributed' vector representations of words. In practice,
 word2vec learns to represent each unique word in a corpus as a 50- to 300-dimensional vector of real
@@ -129,8 +184,8 @@ elementwise max, elementwise min, or absolute elementwise max. Once query and ba
 have been generated, they are combined using any of the customary aggregation techniques (see bag of words
 for discussion)
 
-Original paper: []()
-Implementation used: [](gensim)
+Original paper: [http://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf](http://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf)  
+Implementation used: [gensim](https://radimrehurek.com/gensim/models/word2vec.html)
 
 Aggregating query and background vectors:  
 ### W2V_APPEND (False)
@@ -146,7 +201,7 @@ Google News model is supported, so this should have the file name `GoogleNews-ve
 `GoogleNews-vectors-negative300.bin.gz`
 
 If `W2V_PRETRAINED` is False, Pythia will train a word2vec model based on your corpus (not recommended for small collections).
- THe following parameters control word2vec training.
+ The following parameters control word2vec training:
 ### W2V_MIN_COUNT (5)
 Minimum number of times a unique word must appear in corpus to be given a vector representation
 ### W2V_WINDOW (5)
@@ -157,14 +212,14 @@ Dimensionality of trained word vectors.
 If >1, number of cores to do parallel training on. Parallel-trained word2vec models will converge much more quickly 
 but training behavior is non-deterministic and not strictly replicable.
 
-# One-hot CNN activation features
+## One-hot CNN activation features
 The one-hot CNN will use the full_vocab parameters
 ### CNN_APPEND (False)
 ### CNN_DIFFERENCE (False)
 ### CNN_PRODUCT (False)
 ### CNN_COS (False)
 
-# Word-level one-hot encoding
+## Word-level one-hot encoding
 Not currently used.
 ### WORDONEHOT (False)
 Use word-level one-hot encoding?
@@ -205,11 +260,11 @@ Kernel function to use. Can be any predefined setting accepted by `sklearn.svm.S
 ### SVM_GAMMA ('auto')
 If kernel is `'poly'`, `'rbf'`, or `'sigmoid'`, the kernel coefficient.
 
-# XGBoost
+## XGBoost
 
 Boosted decision tree algorithm. Fast and performant, but may not scale to much larger datasets.
 
-Original manuscript: [http://arxiv.org/abs/1603.02754](http://arxiv.org/abs/1603.02754)
+Original manuscript: [http://arxiv.org/abs/1603.02754](http://arxiv.org/abs/1603.02754)  
 Implementation used: [https://github.com/dmlc/xgboost](https://github.com/dmlc/xgboost)
 
 ### XGB (False)
