@@ -77,7 +77,8 @@ set -e
 
     conda install -q -y python="$python_version" scikit-learn \
         beautifulsoup4==4.4.1 lxml==3.6.1 jupyter==1.0.0 pandas==0.18.1 nltk==3.2.1 \
-        seaborn==0.7.1 gensim==0.12.4 pip==8.1.1 pymongo==3.0.3 pytest
+        seaborn==0.7.1 gensim==0.12.4 pip==8.1.1 pymongo==3.0.3 pytest \
+        h5py psutil memory_profiler
 
     # install tensorflow
     conda install -q -y -c conda-forge tensorflow==0.9.0
@@ -115,6 +116,9 @@ set -e
     git apply "$script_dir/requirement_parse_patch.txt"
     python setup.py install
     cd "$save_dir"
+
+    # Install Hyperopt
+    pip install git+https://github.com/Lab41/hyperopt.git
 
     # install Jupyter kernel, preserving PYTHONPATH and adding Pythia
     pip install -q ipykernel==4.3.1

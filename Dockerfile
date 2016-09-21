@@ -62,11 +62,11 @@ ENTRYPOINT [ "tini", "--" ]
 
 # Add Pythia repo to image and create environments
 ADD . /pythia
-ENV PYTHONPATH=/pythia:$PYTHONPATH
 WORKDIR /pythia
 RUN envs/make_envs.sh
 
 # Set py3-pythia as default in container
+ENV PYTHONPATH /opt/conda/envs/py3-pythia/lib/python3.5:/pythia:$PYTHONPATH
 ENV PATH /opt/conda/envs/py3-pythia/bin:$PATH
 ENV CONDA_DEFAULT_ENV py3-pythia
 ENV CONDA_ENV_PATH /opt/conda/envs/py3-pythia

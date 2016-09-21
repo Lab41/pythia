@@ -7,7 +7,7 @@ Skip-thought vectors
 #sys.setdefaultencoding('utf8')
 
 import os
-os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=gpu,floatX=float32"  # Sets flags for use of GPU
+os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=gpu,floatX=float32,allow_gc=True"  # Sets flags for use of GPU
 import theano
 import theano.tensor as tensor
 

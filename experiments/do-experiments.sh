@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if test "$#" -lt 1
+if test "$#" -ne 2
 then
     echo "Usage: do-experiments.sh CONFIG_DIR MONGODB_PATH"
     echo "    CONFIG_DIR - directory of JSON experiment configurations"

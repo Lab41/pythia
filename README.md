@@ -4,6 +4,7 @@
 
 [![CircleCI](https://circleci.com/gh/Lab41/pythia.svg?style=shield)](https://circleci.com/gh/Lab41/pythia)
 [![codecov](https://codecov.io/gh/Lab41/pythia/branch/master/graph/badge.svg)](https://codecov.io/gh/Lab41/pythia)
+[![Docker Automated build](https://img.shields.io/docker/automated/jrottenberg/ffmpeg.svg?maxAge=2592000)](https://hub.docker.com/r/lab41/pythia/)
 
 
 ## Novelty detection in text corpora
