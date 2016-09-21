@@ -33,4 +33,12 @@ docker build -t lab41/pythia .     # runs tests and builds project image
 
 ## Prerequisites
 
-Our code is written in Python 3. [envs/make_envs.sh](envs/make_envs.sh) will install the necessary dependencies on a Debian/Ubuntu system with Anaconda installed.
+Our code is written in Python 3. It requires a recent version of Anaconda, as well as a C/C++ compiler system,
+e.g. GNU gcc/g++ (available in package `build-essential` on Ubuntu/Debian systems).
+
+Once these have been installed on your system, 
+[envs/make_envs.sh](envs/make_envs.sh) will install the necessary Python dependencies in
+an Anaconda environment called `py3-pythia`.
+
+The Docker-based distribution comes prepackaged with all necessary dependencies, provided
+Docker itself is available.
