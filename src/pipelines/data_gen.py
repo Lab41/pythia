@@ -694,7 +694,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
     # smaller class size for both classes with or w/o replacement
     if 'resampling' in parameters:
         resampling_parameters = parameters['resampling']
-        if 'over' in resampling_parameters:
+        if resampling_parameters.get('over', False):
             desired_size = None
             resampling_parameters['replacement'] = True
         else:
