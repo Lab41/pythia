@@ -699,7 +699,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
             resampling_parameters['replacement'] = True
         else:
             desired_size = -np.Inf
-        if 'replacement' in resampling_parameters:
+        if resampling_parameters.get('replacement', False):
             replacement = True
         else:
             replacement = False
