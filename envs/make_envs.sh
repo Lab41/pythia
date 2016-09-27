@@ -32,32 +32,37 @@ make_env () {
     echo $PYTHIA_CONFIG
 
 
-set +e
-    # Does not work with BSD grep (OS X)
-    search_for_environment="$(conda info -e 2>/dev/null | grep -Po '^ *'$env_name'(?= )' | head -n1)"
-    echo "Matched environment line: $search_for_environment"
-    source deactivate 2>/dev/null || true
-set -e
-    if [ ! "$search_for_environment" = "$env_name" ]; then
-        echo "Creating new environment..."
-        sleep 2
-        conda create -q -y --name "$env_name" python="$python_version"
-    fi
+#set +e
+#    # Does not work with BSD grep (OS X)
+#    search_for_environment="$(conda info -e 2>/dev/null | grep -Po '^ *'$env_name'(?= )' | head -n1)"
+#    echo "Matched environment line: $search_for_environment"
+#    source deactivate 2>/dev/null || true
+#set -e
+#    if [ ! "$search_for_environment" = "$env_name" ]; then
+#        echo "Creating new environment..."
+#        sleep 2
+#        conda create -q -y --name "$env_name" python="$python_version"
+#    fi
+    set +e
+    conda create -q -y --name "$env_name" python="$python_version"
+    set -e
 
     # basics
-    source activate "$env_name"
+#    source activate "$env_name"
+    CONDA_PYTHON="$CONDA_DIR/envs/$env_name/bin/python"
+    envloc="$CONDA_DIR/envs/$env_name/"
 
     # If a JSON config file was provided, map Pythia env variables whenever Pythia conda env is activated
     if [ $jsonfile != 0 ]; then
-        # Look for Pythia's Anaconda environment path in system environment variables, depending on conda version
-        envloc=0
-        if [ ! -z "$CONDA_PREFIX" ]; then
-            envloc=$CONDA_PREFIX
-        else
-            if [ ! -z "$CONDA_ENV_PATH" ]; then
-                envloc=$CONDA_ENV_PATH
-            fi
-        fi
+        ## Look for Pythia's Anaconda environment path in system environment variables, depending on conda version
+        #envloc=0
+        #if [ ! -z "$CONDA_PREFIX" ]; then
+        #    envloc=$CONDA_PREFIX
+        #else
+        #    if [ ! -z "$CONDA_ENV_PATH" ]; then
+        #        envloc=$CONDA_ENV_PATH
+        #    fi
+        #fi
 
         # If Anaconda's env path was found, map Pythia env variables from JSON config file to Pythia conda env
         if [ $envloc != 0 ]; then
@@ -75,38 +80,44 @@ set -e
         fi
     fi
 
-    conda install -q -y python="$python_version" scikit-learn \
+    echo "Python binary location:"
+    echo $CONDA_PYTHON
+
+    conda install -n "$env_name" -q -y python="$python_version" scikit-learn \
         beautifulsoup4==4.4.1 lxml==3.6.1 jupyter==1.0.0 pandas==0.18.1 nltk==3.2.1 \
         seaborn==0.7.1 gensim==0.12.4 pip==8.1.1 pymongo==3.0.3 pytest
 
     # install tensorflow
-    conda install -q -y -c conda-forge tensorflow==0.9.0
+    conda install -n "$env_name" -q -y -c conda-forge tensorflow==0.9.0
 
     # Download some NLTK data (punkt tokenizer)
-    python -m nltk.downloader punkt
+    "$CONDA_PYTHON" -m nltk.downloader punkt
 
     # Install XGBoost classifier
-    pip install -q xgboost==0.4a30
+    "$CONDA_PYTHON" -m pip install -q xgboost==0.4a30
+
+    # Install plotly
+    "$CONDA_PYTHON" -m pip install -q plotly
 
     # Install auto-sklearn (Linux only) and dependencies for experimentation and hyperparameter optimization
     # http://automl.github.io/auto-sklearn/stable/index.html
-    pip install -q Cython==0.24.1
-    pip install -q -r https://raw.githubusercontent.com/automl/auto-sklearn/master/requirements.txt
-    pip install auto-sklearn==0.0.1
+    "$CONDA_PYTHON" -m pip install -q Cython==0.24.1
+    "$CONDA_PYTHON" -m pip install -q -r https://raw.githubusercontent.com/automl/auto-sklearn/master/requirements.txt
+    "$CONDA_PYTHON" -m pip install auto-sklearn==0.0.1
 
     # install theano and keras
-    pip install -q nose-parameterized==0.5.0 Theano==0.8.2 keras==1.0.7
+    "$CONDA_PYTHON" -m pip install -q nose-parameterized==0.5.0 Theano==0.8.2 keras==1.0.7
 
     # install Lasagne
-    pip install -r https://raw.githubusercontent.com/Lasagne/Lasagne/master/requirements.txt
-    pip install https://github.com/Lasagne/Lasagne/archive/master.zip
+    "$CONDA_PYTHON" -m pip install -r https://raw.githubusercontent.com/Lasagne/Lasagne/master/requirements.txt
+    "$CONDA_PYTHON" -m pip install https://github.com/Lasagne/Lasagne/archive/master.zip
 
     # install bleeding-edge pylzma (for Stack Exchange)
-    pip install -q git+https://github.com/fancycode/pylzma@996570e
+    "$CONDA_PYTHON" -m pip install -q git+https://github.com/fancycode/pylzma@996570e
 
     # Install Sacred (with patch for parse error)
     # pip install sacred
-    pip install -q docopt==0.6.2 pymongo==3.0.3
+    "$CONDA_PYTHON" -m pip install -q docopt==0.6.2 pymongo==3.0.3
     save_dir=`pwd`
     rm -rf /tmp/sacred || true
     git clone https://github.com/IDSIA/sacred /tmp/sacred
@@ -116,8 +127,11 @@ set -e
     python setup.py install
     cd "$save_dir"
 
+    # Install Hyperopt
+    "$CONDA_PYTHON" -m pip install git+https://github.com/Lab41/hyperopt.git
+
     # install Jupyter kernel, preserving PYTHONPATH and adding Pythia
-    pip install -q ipykernel==4.3.1
+    "$CONDA_PYTHON" -m pip install -q ipykernel==4.3.1
 
     # Install the kernel and retrieve its destination directory
     path_info=$(python -m ipykernel install --user --name $env_name --display-name "$display_name")
