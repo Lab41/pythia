@@ -33,7 +33,7 @@ docker build -t lab41/pythia .     # runs tests and builds project image
 
 ## Prerequisites
 
-Our code is written in Python 3. It requires a recent version of Anaconda, as well as a C/C++ compiler system,
+Our code is written in Python 3. It requires a recent version of [Anaconda](https://www.continuum.io/downloads), as well as a C/C++ compiler system,
 e.g. GNU gcc/g++ (available in package `build-essential` on Ubuntu/Debian systems).
 
 Once these have been installed on your system, 
