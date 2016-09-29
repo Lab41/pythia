@@ -4,13 +4,16 @@ from src.pipelines import data_gen
 import numpy as np
 import random
 import sys
+import os
 
 
 class tensorflow_cnn:
 
-    def __init__(self, trainingdata, vocab={}, doc_length=500, batch_size=32, rand_seed = 41, \
+    def __init__(self, trainingdata, mode = 'load', model_path='', vocab={}, doc_length=500, batch_size=32, rand_seed = 41, \
                  hidden_layer_len = 32, connected_layer_len = 600, learning_rate = 0.001, num_steps=100, print_step=10, **kwargs):
         self.trainingdata = trainingdata
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
         if len(vocab)==0:
             print("Error: Must pass in a vocabulary with at least one entry", file=sys.stderr)
             quit()
@@ -21,9 +24,9 @@ class tensorflow_cnn:
 
         self.vocab_dict = vocab
         self.doc_length = doc_length
-        print("starting to train the CNN")
+        print("Starting to initialize the CNN", file=sys.stderr)
 
-        hot_docs, hot_clusters, n_classes = self.prep_data(self.trainingdata, self.vocab_dict, self.doc_length, self.doc_length)
+        hot_docs, hot_clusters, n_classes = self.prep_news_data(self.vocab_dict, self.doc_length, self.doc_length)
         #grab a label randomly for when we fit a document - it doesn't matter what this is...
         self.hot_fake_label = hot_clusters[0]
         #set up the elements of the tensorflow model
@@ -84,31 +87,56 @@ class tensorflow_cnn:
         correct_pred = tf.equal(tf.argmax(pred,1), tf.argmax(self.y,1))
         accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
-        # Initializing the variables
-        init = tf.initialize_all_variables()
+        session_file_path = os.path.join(model_path, "tf_trained_session.cpt")
 
-        sess = tf.Session()
-        sess.run(init)
-        step = 1
-        print("Building Tensorflow CNN")
+        if mode=='load':
+            print('Loading the CNN Model', file=sys.stderr)
+            saver = tf.train.Saver({"my_w1": W_1, "my_wcon": W_connect,
+                                   "my_b1": b_1, "my_bcon": b_connect})
+            init = tf.initialize_all_variables()
+            sess = tf.Session()
+            # Restore variables from disk.
+            saver.restore(sess, session_file_path)
 
-        while step < num_steps:
+            self.session = sess
+        else:
+            print('Training the CNN Model', file=sys.stderr)
+            # Initializing the variables
+            init = tf.initialize_all_variables()
 
-            batch_doc, batch_label = self.generate_batch(hot_docs, hot_clusters, batch_size)
+            # Add weights and biases to the be saved
+            # We don't actually have to save the out variables as we are interested in the connected layer only
+            # This is good because otherwise Tensorflow errors out because of the model's sizes (appears the model must be less than 2gb)
+            saver = tf.train.Saver({"my_w1": W_1, "my_wcon": W_connect,
+                                   "my_b1": b_1, "my_bcon": b_connect})
 
-            sess.run(optimizer, feed_dict={self.x: batch_doc, self.y: batch_label})
-            if step % print_step == 0:
-                # Calculate batch accuracy
-                acc = sess.run(accuracy, feed_dict={self.x: batch_doc, self.y: batch_label})
-                # Calculate batch loss
-                loss = sess.run(cost, feed_dict={self.x: batch_doc, self.y: batch_label})
-                print("Iter " + str(step) + ", Minibatch Loss= " +
-                      "{:.6f}".format(loss) + ", Training Accuracy= " +
-                      "{:.5f}".format(acc))
-            step += 1
+            sess = tf.Session()
+            sess.run(init)
+            step = 1
+            print("Building Tensorflow CNN", file=sys.stderr)
 
-        self.session = sess
-        print("Tensorflow CNN trained")
+            while step < num_steps:
+
+                batch_doc, batch_label = self.generate_batch(hot_docs, hot_clusters, batch_size)
+
+                sess.run(optimizer, feed_dict={self.x: batch_doc, self.y: batch_label})
+                if step % print_step == 0:
+                    # Calculate batch accuracy
+                    acc = sess.run(accuracy, feed_dict={self.x: batch_doc, self.y: batch_label})
+                    # Calculate batch loss
+                    loss = sess.run(cost, feed_dict={self.x: batch_doc, self.y: batch_label})
+                    print("Iter " + str(step) + ", Minibatch Loss= " +
+                          "{:.6f}".format(loss) + ", Training Accuracy= " +
+                          "{:.5f}".format(acc))
+                step += 1
+
+            self.session = sess
+            print("Tensorflow CNN trained", file=sys.stderr)
+
+
+            print("Saving the session", file=sys.stderr)
+            saver.save(sess, session_file_path)
+            print("Session Saved", file=sys.stderr)
 
 
     def transform_doc(self, doc, corpus):
@@ -126,6 +154,30 @@ class tensorflow_cnn:
         #the labels aren't used so it doesn't matter what those are
         connected_layers = self.session.run(self.connected_layer, feed_dict={self.x: hot_docs, self.y: fake_labels})
         return connected_layers
+
+    def prep_news_data(self, vocab, min_length, max_length):
+        from sklearn.datasets import fetch_20newsgroups
+        newsgroups= fetch_20newsgroups()
+
+        documents = [data_gen.run_onehot(text, vocab, min_length, max_length) for text in newsgroups.data]
+        labels = newsgroups.target
+
+        #encode the labels in a dictionary
+        unique_labels = np.unique(labels)
+        i = 0
+        unique_label_dict = {}
+        for u_c in unique_labels:
+            unique_label_dict[u_c] = i
+            i +=1
+
+        hot_labels = []
+        n_classes = len(unique_labels)
+        for c in labels:
+            cluster_vect = np.zeros(n_classes, dtype=int)
+            cluster_vect[unique_label_dict[c]]=1
+            hot_labels.append(cluster_vect.tolist())
+
+        return documents, hot_labels, n_classes
 
     def prep_data(self, in_data, vocab, min_length, max_length):
         documents = []
