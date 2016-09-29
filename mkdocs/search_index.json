@@ -1,0 +1,484 @@
+{
+    "docs": [
+        {
+            "location": "/",
+            "text": "Pythia\n\n\nDetecting novelty and redundancy in text\n\n\nPythia is Lab41's exploration of approaches to novel content detection. It adopts \na supervised machine learning approach to the problem, and provides an\ninterface for processing data, training classification systems, and evaluating\ntheir performance.\n\n\nUsage and Runtime Options\n\n\nA simple experiment can be kicked off with \nexperiments/experiments.py\n.\nThe basic syntax pairs the keyword \nwith\n with a number of valid Python expressions setting\nthe various run parameters:\n\n\nexperiments/experiments.py with OPTION=value OPTION_2=value_2 OPTION_3='value with spaces'\n\n\nA stock logistic regression on binary bag-of-words features would be specified like this:\n\n\nexperiments/experiments.py with BOW_APPEND=True LOG_REG=True\n\n\nRuntime parameters are all documented below.\n\n\nTerminology\n\n\ncorpus\n\n\nThe whole collection of documents in a given experiment.\n\n\ncluster\n\n\nOne of a number of small, potentially overlapping groups of mutually relevant documents. \nPythia assumes documents have already been grouped with topically similar neighbors via some\nmechanism. Clusters should also have some kind of linear ordering, either in time of\npublication, time of ingest, or whatever is relevant to the data.\n\n\nquery\n\n\nA document of interest, which a classification system should decide is novel or redundant.\n\n\nbackground\n\n\nThe documents against which a query should be compared. In Pythia, these are the\nmembers of the query's cluster that come \nbefore\n it (hence the need for linear order)\n\n\nobservation, case\n\n\nA query, its background documents, and a novelty label (novel or redundant)\n\n\nThe pipeline\n\n\nRaw data > Processed Data > Featurization > Training > Testing/Evaluation\n\n\nData processing\n\n\nThe user (you!) is responsible for converting data into the form Pythia consumes. \nsrc/data/\n\nhas scripts for (acquiring and) processing two sources of data. The processed data should a folder of \n.json\n files, each one \nwith data on a cluster of documents. Each line of the cluster file is a JSON object whose form is \ndocumented at \ndata/cluster_schema.json\n\nand and example cluster can be found at \ndata/SKNews.json\n\n\nA full sample corpus is contained at \ndata/stackexchange/anime\n\n\nOnce you have supplied the data, Pythia generates observations pairing query documents with background documents.\n\n\nFeaturization\n\n\nNumerous methods for converting observations into feature vectors are available for experimentation.\nThey are documented below. All Pythia experiments must use at least one featurization method.\n\n\nTraining, testing, evaluation\n\n\nPythia does training, testing, and evaluation all in one fell swoop, since it is mostly\nan experimentation platform. Available learning methods are documented below. You must\nchoose exactly one classifier for each experiment.\n\n\nUsage and runtime options\n\n\nData location\n\n\ndirectory ('data/stackexchange/anime')\n\n\nPath to a folder with \n.json\n files describing the clusters in a corpus.\n\n\nFeaturization techniques\n\n\nBag of words\n\n\nBag-of-words features can be generated for query and background documents.\nAggregating the vectors for query document and background documents can be done by concatenating\nthem, subtracting one from the other, or other operations. A temporal \ntf-idf\n score is also \navailable in this family of settings.\n\n\nBag-of-words vectors will automatically be used if any of the following aggregation\nparameters is set to \nTrue\n:\n\n\nBOW_APPEND (False)\n\n\nCalculate bag-of-words vectors for query document, background documents. Concatenate \nquery document and sum of vectors for background documents.  \n\n\nBOW_DIFFERENCE (False)\n\n\nUse difference vector, i.e. \nbow(query) - bow(background)\n\n\nBOW_PRODUCT (False)\n\n\nTake the product of bag-of-words vectors\n\n\nBOW_COS (False)\n\n\nTake the cosine similarity of query and background vectors\n\n\nBOW_TFIDF (False)\n\n\nTake the temporal TF-IDF score for the cluster\n\n\nSkip-thought vectors\n\n\nSkip-thought vectors are a method for representing the structure and content\nof sentences in a fixed-size, dense vector. They can be concatenated, subtracted,\nmultiplied elementwise, or compared with the cosine distance.\n\n\nDescription of method: \nhttps://arxiv.org/abs/1506.06726\n\nBasis of implementation: \nhttps://github.com/ryankiros/skip-thoughts\n\n\nSee notes on Bag-of-Words for all of the below options for aggregating skip-thought feature vectors:  \n\n\nST_APPEND (False)\n\n\nConcatenate vectors\n\n\nST_DIFFERENCE (False)\n\n\nDifference of vectors\n\n\nST_PRODUCT (False)\n\n\nProduct of vectors\n\n\nST_COS (False)\n\n\nLatent Dirichlet Allocation\n\n\nLatent Dirichlet Allocation (LDA) is a widely-used method for representing the topic \ndistribution in a corpus of documents. Given a corpus of \nM\n documents with \nN\n unique\nwords, LDA yields two matrices, one \nM \\times k\n repesenting the 'weight' of each\ndocument across the \nk\n possible topics, and one \nk \\times N\n describing which unique words \nare associated with each topic. \n\n\nLDA posits that co-occurring words within documents are\n'generated' by the hidden topic variables with document-specific frequencies, so it is\na good way of expressing the assumptions that a) some words naturally co-occur with each other\nand b) which co-occurrence patterns are relevant for a given document depend on what\nthe document is talking about.\n\n\nOriginal paper: \nhttp://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf\n\nLibrary used: \nscikit-learn\n\n\nLDA_TOPICS (50)\n\n\nThe number of possible topics represented in the corpus. Higher is often better as LDA should learn not to use unnecessary topics; in\npractice some tuning is usually necessary to find a happy medium.\n\n\nLDA_APPEND (False)\n\n\nLDA_DIFFERENCE (False)\n\n\nLDA_PRODUCT (False)\n\n\nLDA_COS (False)\n\n\nDynamic Memory Networks\n\n\nDynamic memory networks (DMN) are a 2016 deep learning architecture designed for automatic question answering. They take in\nnatural language representations of background knowledge and natural language representations of a query and learn\na decoding function to provide an answer. In our adaptation of DMN, background documents are fed in to the background knowledge\nmodule, the query document is used as the query, and the possible responses are True (novel) or False.\n\n\nOriginal manuscript: \nhttp://arxiv.org/abs/1506.07285\n\nBasis implementation: \nhttps://github.com/YerevaNN/Dynamic-memory-networks-in-Theano\n\n\nMEM_NET (False)\n\n\nSet to True to use DMN algorithm\n\n\nMEM_VOCAB (50)\n\n\nVocabulary size for encoding functions. Ideally, this would be rather large, but memory and processing constraints may force \nthe use of unnaturally small values.\n\n\nMEM_TYPE ('dmn_basic')\n\n\nArchitectural variant to use. \n'dmn_basic'\n is the only supported value at present.\n\n\nMEM_BATCH (1)\n\n\nMinibatch size for gradient-based training of DMN. Currently values other than 1 are unsupported.\n\n\nMEM_EPOCHS (5)\n\n\nNumber of training epochs to conduct.\n\n\nMEM_MASK_MODE ('word')\n\n\nAccepts values \n'word'\n and \n'sentence'\n. Tells DMN which unit to treat as an 'epsiode' to \nencode in memory.\n\n\nMEM_EMBED_MODE ('word2vec')\n\n\nMEM_ONEHOT_MIN_LEN (140)\n\n\nIf \nMEM_MASK_MODE\n is \n'word_onehot'\n, set the minimum length of a one-hot-encoded document\n\n\nMEM_ONEHOT_MAX_LEN (1000)\n\n\nMaximum length of a one-hot-encoded document\n\n\nword2vec\n\n\nword2vec is a popular algorithm for learning 'distributed' vector representations of words. In practice,\nword2vec learns to represent each unique word in a corpus as a 50- to 300-dimensional vector of real\nnumbers, providing plenty of room to account for semantic and syntactic similarities and differences between words.\n\n\nIn Pythia, documents are represented by word2vec by finding vectors representing the individual words in \nthe input documents and aggregating these vectors in creative ways. Word vectors are extracted from\nthe first and last sentences of input documents and then combined using averaging, concatenation, \nelementwise max, elementwise min, or absolute elementwise max. Once query and background vectors\nhave been generated, they are combined using any of the customary aggregation techniques (see bag of words\nfor discussion)\n\n\nOriginal paper: \nhttp://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf\n\nImplementation used: \ngensim\n\n\nAggregating query and background vectors:  \n\n\nW2V_APPEND (False)\n\n\nW2V_DIFFERENCE (False)\n\n\nW2V_PRODUCT (False)\n\n\nW2V_COS (False)\n\n\nOther parameters:  \n\n\nW2V_PRETRAINED (False)\n\n\nUse pretrained model? This should be available in the directory described by the \nPYTHIA_MODELS_PATH environment variable. Currently only the 300-dimensional\nGoogle News model is supported, so this should have the file name \nGoogleNews-vectors-negative300.bin\n or\n\nGoogleNews-vectors-negative300.bin.gz\n\n\nIf \nW2V_PRETRAINED\n is False, Pythia will train a word2vec model based on your corpus (not recommended for small collections).\n The following parameters control word2vec training:\n\n\nW2V_MIN_COUNT (5)\n\n\nMinimum number of times a unique word must appear in corpus to be given a vector representation\n\n\nW2V_WINDOW (5)\n\n\nWindow size, in words, to the left or right of the word being trained.\n\n\nW2V_SIZE (100)\n\n\nDimensionality of trained word vectors.\n\n\nW2V_WORKERS (3)\n\n\nIf >1, number of cores to do parallel training on. Parallel-trained word2vec models will converge much more quickly \nbut training behavior is non-deterministic and not strictly replicable.\n\n\nOne-hot CNN activation features\n\n\nThe one-hot CNN will use the full_vocab parameters\n\n\nCNN_APPEND (False)\n\n\nCNN_DIFFERENCE (False)\n\n\nCNN_PRODUCT (False)\n\n\nCNN_COS (False)\n\n\nWord-level one-hot encoding\n\n\nNot currently used.\n\n\nWORDONEHOT (False)\n\n\nUse word-level one-hot encoding?\n\n\nWORDONEHOT_VOCAB (5000)\n\n\nClassification Algorithms\n\n\nIf traditional (non-DMN) featurization techniques are chosen, a classifier must also be selected. Pythia\nsupports batch logistic regression, batch SVM, and the popular boosting algorithm XGBoost, as well as SGD-based\n(minibatch) logistic regression and linear SVM, which may have favorable memory performance for very large corpora.\n\n\nLogistic Regression\n\n\nTried-and-true statistical classification technique. Learns a linear combination of input features and\napplies a nonlinear transform to output a hypothesis between 0.0 and 1.0, with values equal to or above \n0.5 typically taken as true and the rest as false.\n\n\nPythia uses \nscikit-learn\n to do logistic regression.\n\n\nLOG_REG (False)\n\n\nSet to True to use logistic regression\n\n\nLOG_PENALTY ('l2')\n\n\nForm of regularization penalty to use (see scikit-learn docs)\n\n\nLOG_TOL (1e-4)\n\n\nConvergence criterion during model fitting\n\n\nLOG_C (1e-4)\n\n\nInverse regularization strength\n\n\nSupport Vector Machine\n\n\nNonparametric classifer. Can take a prohibitively long time to converge for large datasets.\n\n\nAlso uses \nscikit-learn\n's implementation.\n\n\nSVM (False)\n\n\nSet to True to use SVM\n\n\nSVM_C (2000)\n\n\nInverse regularization strength\n\n\nSVM_KERNEL ('linear')\n\n\nKernel function to use. Can be any predefined setting accepted by \nsklearn.svm.SVC\n\n\nSVM_GAMMA ('auto')\n\n\nIf kernel is \n'poly'\n, \n'rbf'\n, or \n'sigmoid'\n, the kernel coefficient.\n\n\nXGBoost\n\n\nBoosted decision tree algorithm. Fast and performant, but may not scale to much larger datasets.\n\n\nOriginal manuscript: \nhttp://arxiv.org/abs/1603.02754\n\nImplementation used: \nhttps://github.com/dmlc/xgboost\n\n\nXGB (False)\n\n\nSet to true to use XGBoost\n\n\nXGB_LEARNRATE (0.1)\n\n\n\"Learning rate\" (see documentation)\n\n\nXGB_MAXDEPTH (3)\n\n\nMaximum depth of tree\n\n\nXGB_MINCHILDWEIGHT (1)\n\n\nTypically, minimum number of children allowed in any child node\n\n\nXGB_COLSAMPLEBYTREE (1)\n\n\nProportion (0 to 1) of features to sample when building a tree\n\n\nOther run parameters\n\n\nResampling\n\n\nRESAMPLING (True)\n\n\nResample observations by label to achieve a 1-to-1 ratio of positive to negative observations\n\n\nOVERSAMPLING (False)\n\n\nResample so that total number of observations per class is equal to the largest class. \nImplies REPLACEMENT=True\n\n\nREPLACEMENT (False)\n\n\nWhen doing resampling, choose observations with replacement from original samples.\n\n\nSave training data for grid search\n\n\nWhen using \nexperiments/conduct_grid_search.py\n, use these variables\nto allow GridSearchCV to cooperate with the Pythia pipeline.\n\n\nSAVEEXPERIMENTDATA (False)\n\n\nEXPERIMENTDATAFILE ('data/experimentdatafile.pkl')\n\n\nVocabulary\n\n\nTwo seaparate vocabularies are computed. One, a reduced vocabulary, excludes stop words and punctuation tokens, and the\nother, \nFULL_VOCAB\n, retains them. \nFULL_VOCAB\n can also be set to use character-level tokenization \ninstead of word-level tokenization.\n\n\nVOCAB_SIZE (10000)\n\n\nSize of reduced vocabulary\n\n\nSTEM (False)\n\n\nConduct stemming?\n\n\nFULL_VOCAB_SIZE (1000)\n\n\nNumber of unique tokens in word-level full vocabulary.\n\n\nFULL_VOCAB_TYPE ('character')\n\n\nEither \n'word'\n or \n'character'\n. Determines tokenization strategy for full vocabulary\n\n\nFULL_CHAR_VOCAB (\"abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\\\"/|_@#$%^&*~`+-=<>()[]{}\")\n\n\nSEED (41)\n\n\nRandom number generator seed value.\n\n\nUSE_CACHE (False)\n\n\nCache preprocessed JSON documents in \n./.cache\n; this can reduce experiment time significantly for large corpora.",
+            "title": "main"
+        },
+        {
+            "location": "/#pythia",
+            "text": "",
+            "title": "Pythia"
+        },
+        {
+            "location": "/#detecting-novelty-and-redundancy-in-text",
+            "text": "Pythia is Lab41's exploration of approaches to novel content detection. It adopts \na supervised machine learning approach to the problem, and provides an\ninterface for processing data, training classification systems, and evaluating\ntheir performance.",
+            "title": "Detecting novelty and redundancy in text"
+        },
+        {
+            "location": "/#usage-and-runtime-options",
+            "text": "A simple experiment can be kicked off with  experiments/experiments.py .\nThe basic syntax pairs the keyword  with  with a number of valid Python expressions setting\nthe various run parameters:  experiments/experiments.py with OPTION=value OPTION_2=value_2 OPTION_3='value with spaces'  A stock logistic regression on binary bag-of-words features would be specified like this:  experiments/experiments.py with BOW_APPEND=True LOG_REG=True  Runtime parameters are all documented below.",
+            "title": "Usage and Runtime Options"
+        },
+        {
+            "location": "/#terminology",
+            "text": "",
+            "title": "Terminology"
+        },
+        {
+            "location": "/#corpus",
+            "text": "The whole collection of documents in a given experiment.",
+            "title": "corpus"
+        },
+        {
+            "location": "/#cluster",
+            "text": "One of a number of small, potentially overlapping groups of mutually relevant documents. \nPythia assumes documents have already been grouped with topically similar neighbors via some\nmechanism. Clusters should also have some kind of linear ordering, either in time of\npublication, time of ingest, or whatever is relevant to the data.",
+            "title": "cluster"
+        },
+        {
+            "location": "/#query",
+            "text": "A document of interest, which a classification system should decide is novel or redundant.",
+            "title": "query"
+        },
+        {
+            "location": "/#background",
+            "text": "The documents against which a query should be compared. In Pythia, these are the\nmembers of the query's cluster that come  before  it (hence the need for linear order)",
+            "title": "background"
+        },
+        {
+            "location": "/#observation-case",
+            "text": "A query, its background documents, and a novelty label (novel or redundant)",
+            "title": "observation, case"
+        },
+        {
+            "location": "/#the-pipeline",
+            "text": "Raw data > Processed Data > Featurization > Training > Testing/Evaluation",
+            "title": "The pipeline"
+        },
+        {
+            "location": "/#data-processing",
+            "text": "The user (you!) is responsible for converting data into the form Pythia consumes.  src/data/ \nhas scripts for (acquiring and) processing two sources of data. The processed data should a folder of  .json  files, each one \nwith data on a cluster of documents. Each line of the cluster file is a JSON object whose form is \ndocumented at  data/cluster_schema.json \nand and example cluster can be found at  data/SKNews.json  A full sample corpus is contained at  data/stackexchange/anime  Once you have supplied the data, Pythia generates observations pairing query documents with background documents.",
+            "title": "Data processing"
+        },
+        {
+            "location": "/#featurization",
+            "text": "Numerous methods for converting observations into feature vectors are available for experimentation.\nThey are documented below. All Pythia experiments must use at least one featurization method.",
+            "title": "Featurization"
+        },
+        {
+            "location": "/#training-testing-evaluation",
+            "text": "Pythia does training, testing, and evaluation all in one fell swoop, since it is mostly\nan experimentation platform. Available learning methods are documented below. You must\nchoose exactly one classifier for each experiment.",
+            "title": "Training, testing, evaluation"
+        },
+        {
+            "location": "/#usage-and-runtime-options_1",
+            "text": "",
+            "title": "Usage and runtime options"
+        },
+        {
+            "location": "/#data-location",
+            "text": "",
+            "title": "Data location"
+        },
+        {
+            "location": "/#directory-datastackexchangeanime",
+            "text": "Path to a folder with  .json  files describing the clusters in a corpus.",
+            "title": "directory ('data/stackexchange/anime')"
+        },
+        {
+            "location": "/#featurization-techniques",
+            "text": "",
+            "title": "Featurization techniques"
+        },
+        {
+            "location": "/#bag-of-words",
+            "text": "Bag-of-words features can be generated for query and background documents.\nAggregating the vectors for query document and background documents can be done by concatenating\nthem, subtracting one from the other, or other operations. A temporal  tf-idf  score is also \navailable in this family of settings.  Bag-of-words vectors will automatically be used if any of the following aggregation\nparameters is set to  True :",
+            "title": "Bag of words"
+        },
+        {
+            "location": "/#bow_append-false",
+            "text": "Calculate bag-of-words vectors for query document, background documents. Concatenate \nquery document and sum of vectors for background documents.",
+            "title": "BOW_APPEND (False)"
+        },
+        {
+            "location": "/#bow_difference-false",
+            "text": "Use difference vector, i.e.  bow(query) - bow(background)",
+            "title": "BOW_DIFFERENCE (False)"
+        },
+        {
+            "location": "/#bow_product-false",
+            "text": "Take the product of bag-of-words vectors",
+            "title": "BOW_PRODUCT (False)"
+        },
+        {
+            "location": "/#bow_cos-false",
+            "text": "Take the cosine similarity of query and background vectors",
+            "title": "BOW_COS (False)"
+        },
+        {
+            "location": "/#bow_tfidf-false",
+            "text": "Take the temporal TF-IDF score for the cluster",
+            "title": "BOW_TFIDF (False)"
+        },
+        {
+            "location": "/#skip-thought-vectors",
+            "text": "Skip-thought vectors are a method for representing the structure and content\nof sentences in a fixed-size, dense vector. They can be concatenated, subtracted,\nmultiplied elementwise, or compared with the cosine distance.  Description of method:  https://arxiv.org/abs/1506.06726 \nBasis of implementation:  https://github.com/ryankiros/skip-thoughts  See notes on Bag-of-Words for all of the below options for aggregating skip-thought feature vectors:",
+            "title": "Skip-thought vectors"
+        },
+        {
+            "location": "/#st_append-false",
+            "text": "Concatenate vectors",
+            "title": "ST_APPEND (False)"
+        },
+        {
+            "location": "/#st_difference-false",
+            "text": "Difference of vectors",
+            "title": "ST_DIFFERENCE (False)"
+        },
+        {
+            "location": "/#st_product-false",
+            "text": "Product of vectors",
+            "title": "ST_PRODUCT (False)"
+        },
+        {
+            "location": "/#st_cos-false",
+            "text": "",
+            "title": "ST_COS (False)"
+        },
+        {
+            "location": "/#latent-dirichlet-allocation",
+            "text": "Latent Dirichlet Allocation (LDA) is a widely-used method for representing the topic \ndistribution in a corpus of documents. Given a corpus of  M  documents with  N  unique\nwords, LDA yields two matrices, one  M \\times k  repesenting the 'weight' of each\ndocument across the  k  possible topics, and one  k \\times N  describing which unique words \nare associated with each topic.   LDA posits that co-occurring words within documents are\n'generated' by the hidden topic variables with document-specific frequencies, so it is\na good way of expressing the assumptions that a) some words naturally co-occur with each other\nand b) which co-occurrence patterns are relevant for a given document depend on what\nthe document is talking about.  Original paper:  http://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf \nLibrary used:  scikit-learn",
+            "title": "Latent Dirichlet Allocation"
+        },
+        {
+            "location": "/#lda_topics-50",
+            "text": "The number of possible topics represented in the corpus. Higher is often better as LDA should learn not to use unnecessary topics; in\npractice some tuning is usually necessary to find a happy medium.",
+            "title": "LDA_TOPICS (50)"
+        },
+        {
+            "location": "/#lda_append-false",
+            "text": "",
+            "title": "LDA_APPEND (False)"
+        },
+        {
+            "location": "/#lda_difference-false",
+            "text": "",
+            "title": "LDA_DIFFERENCE (False)"
+        },
+        {
+            "location": "/#lda_product-false",
+            "text": "",
+            "title": "LDA_PRODUCT (False)"
+        },
+        {
+            "location": "/#lda_cos-false",
+            "text": "",
+            "title": "LDA_COS (False)"
+        },
+        {
+            "location": "/#dynamic-memory-networks",
+            "text": "Dynamic memory networks (DMN) are a 2016 deep learning architecture designed for automatic question answering. They take in\nnatural language representations of background knowledge and natural language representations of a query and learn\na decoding function to provide an answer. In our adaptation of DMN, background documents are fed in to the background knowledge\nmodule, the query document is used as the query, and the possible responses are True (novel) or False.  Original manuscript:  http://arxiv.org/abs/1506.07285 \nBasis implementation:  https://github.com/YerevaNN/Dynamic-memory-networks-in-Theano",
+            "title": "Dynamic Memory Networks"
+        },
+        {
+            "location": "/#mem_net-false",
+            "text": "Set to True to use DMN algorithm",
+            "title": "MEM_NET (False)"
+        },
+        {
+            "location": "/#mem_vocab-50",
+            "text": "Vocabulary size for encoding functions. Ideally, this would be rather large, but memory and processing constraints may force \nthe use of unnaturally small values.",
+            "title": "MEM_VOCAB (50)"
+        },
+        {
+            "location": "/#mem_type-dmn_basic",
+            "text": "Architectural variant to use.  'dmn_basic'  is the only supported value at present.",
+            "title": "MEM_TYPE ('dmn_basic')"
+        },
+        {
+            "location": "/#mem_batch-1",
+            "text": "Minibatch size for gradient-based training of DMN. Currently values other than 1 are unsupported.",
+            "title": "MEM_BATCH (1)"
+        },
+        {
+            "location": "/#mem_epochs-5",
+            "text": "Number of training epochs to conduct.",
+            "title": "MEM_EPOCHS (5)"
+        },
+        {
+            "location": "/#mem_mask_mode-word",
+            "text": "Accepts values  'word'  and  'sentence' . Tells DMN which unit to treat as an 'epsiode' to \nencode in memory.",
+            "title": "MEM_MASK_MODE ('word')"
+        },
+        {
+            "location": "/#mem_embed_mode-word2vec",
+            "text": "",
+            "title": "MEM_EMBED_MODE ('word2vec')"
+        },
+        {
+            "location": "/#mem_onehot_min_len-140",
+            "text": "If  MEM_MASK_MODE  is  'word_onehot' , set the minimum length of a one-hot-encoded document",
+            "title": "MEM_ONEHOT_MIN_LEN (140)"
+        },
+        {
+            "location": "/#mem_onehot_max_len-1000",
+            "text": "Maximum length of a one-hot-encoded document",
+            "title": "MEM_ONEHOT_MAX_LEN (1000)"
+        },
+        {
+            "location": "/#word2vec",
+            "text": "word2vec is a popular algorithm for learning 'distributed' vector representations of words. In practice,\nword2vec learns to represent each unique word in a corpus as a 50- to 300-dimensional vector of real\nnumbers, providing plenty of room to account for semantic and syntactic similarities and differences between words.  In Pythia, documents are represented by word2vec by finding vectors representing the individual words in \nthe input documents and aggregating these vectors in creative ways. Word vectors are extracted from\nthe first and last sentences of input documents and then combined using averaging, concatenation, \nelementwise max, elementwise min, or absolute elementwise max. Once query and background vectors\nhave been generated, they are combined using any of the customary aggregation techniques (see bag of words\nfor discussion)  Original paper:  http://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf \nImplementation used:  gensim  Aggregating query and background vectors:",
+            "title": "word2vec"
+        },
+        {
+            "location": "/#w2v_append-false",
+            "text": "",
+            "title": "W2V_APPEND (False)"
+        },
+        {
+            "location": "/#w2v_difference-false",
+            "text": "",
+            "title": "W2V_DIFFERENCE (False)"
+        },
+        {
+            "location": "/#w2v_product-false",
+            "text": "",
+            "title": "W2V_PRODUCT (False)"
+        },
+        {
+            "location": "/#w2v_cos-false",
+            "text": "Other parameters:",
+            "title": "W2V_COS (False)"
+        },
+        {
+            "location": "/#w2v_pretrained-false",
+            "text": "Use pretrained model? This should be available in the directory described by the \nPYTHIA_MODELS_PATH environment variable. Currently only the 300-dimensional\nGoogle News model is supported, so this should have the file name  GoogleNews-vectors-negative300.bin  or GoogleNews-vectors-negative300.bin.gz  If  W2V_PRETRAINED  is False, Pythia will train a word2vec model based on your corpus (not recommended for small collections).\n The following parameters control word2vec training:",
+            "title": "W2V_PRETRAINED (False)"
+        },
+        {
+            "location": "/#w2v_min_count-5",
+            "text": "Minimum number of times a unique word must appear in corpus to be given a vector representation",
+            "title": "W2V_MIN_COUNT (5)"
+        },
+        {
+            "location": "/#w2v_window-5",
+            "text": "Window size, in words, to the left or right of the word being trained.",
+            "title": "W2V_WINDOW (5)"
+        },
+        {
+            "location": "/#w2v_size-100",
+            "text": "Dimensionality of trained word vectors.",
+            "title": "W2V_SIZE (100)"
+        },
+        {
+            "location": "/#w2v_workers-3",
+            "text": "If >1, number of cores to do parallel training on. Parallel-trained word2vec models will converge much more quickly \nbut training behavior is non-deterministic and not strictly replicable.",
+            "title": "W2V_WORKERS (3)"
+        },
+        {
+            "location": "/#one-hot-cnn-activation-features",
+            "text": "The one-hot CNN will use the full_vocab parameters",
+            "title": "One-hot CNN activation features"
+        },
+        {
+            "location": "/#cnn_append-false",
+            "text": "",
+            "title": "CNN_APPEND (False)"
+        },
+        {
+            "location": "/#cnn_difference-false",
+            "text": "",
+            "title": "CNN_DIFFERENCE (False)"
+        },
+        {
+            "location": "/#cnn_product-false",
+            "text": "",
+            "title": "CNN_PRODUCT (False)"
+        },
+        {
+            "location": "/#cnn_cos-false",
+            "text": "",
+            "title": "CNN_COS (False)"
+        },
+        {
+            "location": "/#word-level-one-hot-encoding",
+            "text": "Not currently used.",
+            "title": "Word-level one-hot encoding"
+        },
+        {
+            "location": "/#wordonehot-false",
+            "text": "Use word-level one-hot encoding?",
+            "title": "WORDONEHOT (False)"
+        },
+        {
+            "location": "/#wordonehot_vocab-5000",
+            "text": "",
+            "title": "WORDONEHOT_VOCAB (5000)"
+        },
+        {
+            "location": "/#classification-algorithms",
+            "text": "If traditional (non-DMN) featurization techniques are chosen, a classifier must also be selected. Pythia\nsupports batch logistic regression, batch SVM, and the popular boosting algorithm XGBoost, as well as SGD-based\n(minibatch) logistic regression and linear SVM, which may have favorable memory performance for very large corpora.",
+            "title": "Classification Algorithms"
+        },
+        {
+            "location": "/#logistic-regression",
+            "text": "Tried-and-true statistical classification technique. Learns a linear combination of input features and\napplies a nonlinear transform to output a hypothesis between 0.0 and 1.0, with values equal to or above \n0.5 typically taken as true and the rest as false.  Pythia uses  scikit-learn  to do logistic regression.",
+            "title": "Logistic Regression"
+        },
+        {
+            "location": "/#log_reg-false",
+            "text": "Set to True to use logistic regression",
+            "title": "LOG_REG (False)"
+        },
+        {
+            "location": "/#log_penalty-l2",
+            "text": "Form of regularization penalty to use (see scikit-learn docs)",
+            "title": "LOG_PENALTY ('l2')"
+        },
+        {
+            "location": "/#log_tol-1e-4",
+            "text": "Convergence criterion during model fitting",
+            "title": "LOG_TOL (1e-4)"
+        },
+        {
+            "location": "/#log_c-1e-4",
+            "text": "Inverse regularization strength",
+            "title": "LOG_C (1e-4)"
+        },
+        {
+            "location": "/#support-vector-machine",
+            "text": "Nonparametric classifer. Can take a prohibitively long time to converge for large datasets.  Also uses  scikit-learn 's implementation.",
+            "title": "Support Vector Machine"
+        },
+        {
+            "location": "/#svm-false",
+            "text": "Set to True to use SVM",
+            "title": "SVM (False)"
+        },
+        {
+            "location": "/#svm_c-2000",
+            "text": "Inverse regularization strength",
+            "title": "SVM_C (2000)"
+        },
+        {
+            "location": "/#svm_kernel-linear",
+            "text": "Kernel function to use. Can be any predefined setting accepted by  sklearn.svm.SVC",
+            "title": "SVM_KERNEL ('linear')"
+        },
+        {
+            "location": "/#svm_gamma-auto",
+            "text": "If kernel is  'poly' ,  'rbf' , or  'sigmoid' , the kernel coefficient.",
+            "title": "SVM_GAMMA ('auto')"
+        },
+        {
+            "location": "/#xgboost",
+            "text": "Boosted decision tree algorithm. Fast and performant, but may not scale to much larger datasets.  Original manuscript:  http://arxiv.org/abs/1603.02754 \nImplementation used:  https://github.com/dmlc/xgboost",
+            "title": "XGBoost"
+        },
+        {
+            "location": "/#xgb-false",
+            "text": "Set to true to use XGBoost",
+            "title": "XGB (False)"
+        },
+        {
+            "location": "/#xgb_learnrate-01",
+            "text": "\"Learning rate\" (see documentation)",
+            "title": "XGB_LEARNRATE (0.1)"
+        },
+        {
+            "location": "/#xgb_maxdepth-3",
+            "text": "Maximum depth of tree",
+            "title": "XGB_MAXDEPTH (3)"
+        },
+        {
+            "location": "/#xgb_minchildweight-1",
+            "text": "Typically, minimum number of children allowed in any child node",
+            "title": "XGB_MINCHILDWEIGHT (1)"
+        },
+        {
+            "location": "/#xgb_colsamplebytree-1",
+            "text": "Proportion (0 to 1) of features to sample when building a tree",
+            "title": "XGB_COLSAMPLEBYTREE (1)"
+        },
+        {
+            "location": "/#other-run-parameters",
+            "text": "",
+            "title": "Other run parameters"
+        },
+        {
+            "location": "/#resampling",
+            "text": "",
+            "title": "Resampling"
+        },
+        {
+            "location": "/#resampling-true",
+            "text": "Resample observations by label to achieve a 1-to-1 ratio of positive to negative observations",
+            "title": "RESAMPLING (True)"
+        },
+        {
+            "location": "/#oversampling-false",
+            "text": "Resample so that total number of observations per class is equal to the largest class. \nImplies REPLACEMENT=True",
+            "title": "OVERSAMPLING (False)"
+        },
+        {
+            "location": "/#replacement-false",
+            "text": "When doing resampling, choose observations with replacement from original samples.",
+            "title": "REPLACEMENT (False)"
+        },
+        {
+            "location": "/#save-training-data-for-grid-search",
+            "text": "When using  experiments/conduct_grid_search.py , use these variables\nto allow GridSearchCV to cooperate with the Pythia pipeline.",
+            "title": "Save training data for grid search"
+        },
+        {
+            "location": "/#saveexperimentdata-false",
+            "text": "",
+            "title": "SAVEEXPERIMENTDATA (False)"
+        },
+        {
+            "location": "/#experimentdatafile-dataexperimentdatafilepkl",
+            "text": "",
+            "title": "EXPERIMENTDATAFILE ('data/experimentdatafile.pkl')"
+        },
+        {
+            "location": "/#vocabulary",
+            "text": "Two seaparate vocabularies are computed. One, a reduced vocabulary, excludes stop words and punctuation tokens, and the\nother,  FULL_VOCAB , retains them.  FULL_VOCAB  can also be set to use character-level tokenization \ninstead of word-level tokenization.",
+            "title": "Vocabulary"
+        },
+        {
+            "location": "/#vocab_size-10000",
+            "text": "Size of reduced vocabulary",
+            "title": "VOCAB_SIZE (10000)"
+        },
+        {
+            "location": "/#stem-false",
+            "text": "Conduct stemming?",
+            "title": "STEM (False)"
+        },
+        {
+            "location": "/#full_vocab_size-1000",
+            "text": "Number of unique tokens in word-level full vocabulary.",
+            "title": "FULL_VOCAB_SIZE (1000)"
+        },
+        {
+            "location": "/#full_vocab_type-character",
+            "text": "Either  'word'  or  'character' . Determines tokenization strategy for full vocabulary",
+            "title": "FULL_VOCAB_TYPE ('character')"
+        },
+        {
+            "location": "/#full_char_vocab-abcdefghijklmnopqrstuvwxyz0123456789_-",
+            "text": "",
+            "title": "FULL_CHAR_VOCAB (\"abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\\\"/|_@#$%^&amp;*~`+-=&lt;&gt;()[]{}\")"
+        },
+        {
+            "location": "/#seed-41",
+            "text": "Random number generator seed value.",
+            "title": "SEED (41)"
+        },
+        {
+            "location": "/#use_cache-false",
+            "text": "Cache preprocessed JSON documents in  ./.cache ; this can reduce experiment time significantly for large corpora.",
+            "title": "USE_CACHE (False)"
+        }
+    ]
+}

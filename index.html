@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <title>Pythia</title>
+  
+
+  <link rel="shortcut icon" href="./img/favicon.ico">
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="./css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="./css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="./css/highlight.css">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "None";
+    var mkdocs_page_input_path = "index.md";
+    var mkdocs_page_url = "/";
+  </script>
+  
+  <script src="./js/jquery-2.1.1.min.js"></script>
+  <script src="./js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="./js/highlight.pack.js"></script>
+  <script src="./js/theme.js"></script> 
+  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="." class="icon icon-home"> Pythia</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href=".">main</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#pythia">Pythia</a></li>
+                
+                    <li><a class="toctree-l4" href="#detecting-novelty-and-redundancy-in-text">Detecting novelty and redundancy in text</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#usage-and-runtime-options">Usage and Runtime Options</a></li>
+                
+                    <li><a class="toctree-l4" href="#terminology">Terminology</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#the-pipeline">The pipeline</a></li>
+                
+                    <li><a class="toctree-l4" href="#data-processing">Data processing</a></li>
+                
+                    <li><a class="toctree-l4" href="#featurization">Featurization</a></li>
+                
+                    <li><a class="toctree-l4" href="#training-testing-evaluation">Training, testing, evaluation</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#usage-and-runtime-options_1">Usage and runtime options</a></li>
+                
+                    <li><a class="toctree-l4" href="#data-location">Data location</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#featurization-techniques">Featurization techniques</a></li>
+                
+                    <li><a class="toctree-l4" href="#bag-of-words">Bag of words</a></li>
+                
+                    <li><a class="toctree-l4" href="#skip-thought-vectors">Skip-thought vectors</a></li>
+                
+                    <li><a class="toctree-l4" href="#latent-dirichlet-allocation">Latent Dirichlet Allocation</a></li>
+                
+                    <li><a class="toctree-l4" href="#dynamic-memory-networks">Dynamic Memory Networks</a></li>
+                
+                    <li><a class="toctree-l4" href="#word2vec">word2vec</a></li>
+                
+                    <li><a class="toctree-l4" href="#one-hot-cnn-activation-features">One-hot CNN activation features</a></li>
+                
+                    <li><a class="toctree-l4" href="#word-level-one-hot-encoding">Word-level one-hot encoding</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#classification-algorithms">Classification Algorithms</a></li>
+                
+                    <li><a class="toctree-l4" href="#logistic-regression">Logistic Regression</a></li>
+                
+                    <li><a class="toctree-l4" href="#support-vector-machine">Support Vector Machine</a></li>
+                
+                    <li><a class="toctree-l4" href="#xgboost">XGBoost</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#other-run-parameters">Other run parameters</a></li>
+                
+                    <li><a class="toctree-l4" href="#resampling">Resampling</a></li>
+                
+                    <li><a class="toctree-l4" href="#save-training-data-for-grid-search">Save training data for grid search</a></li>
+                
+                    <li><a class="toctree-l4" href="#vocabulary">Vocabulary</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href=".">Pythia</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>main</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="pythia">Pythia</h1>
+<h2 id="detecting-novelty-and-redundancy-in-text">Detecting novelty and redundancy in text</h2>
+<p>Pythia is Lab41's exploration of approaches to novel content detection. It adopts 
+a supervised machine learning approach to the problem, and provides an
+interface for processing data, training classification systems, and evaluating
+their performance.</p>
+<h1 id="usage-and-runtime-options">Usage and Runtime Options</h1>
+<p>A simple experiment can be kicked off with <a href="https://github.com/lab41/pythia/blob/master/experiments/experiments.py">experiments/experiments.py</a>.
+The basic syntax pairs the keyword <code>with</code> with a number of valid Python expressions setting
+the various run parameters:</p>
+<p><code>experiments/experiments.py with OPTION=value OPTION_2=value_2 OPTION_3='value with spaces'</code></p>
+<p>A stock logistic regression on binary bag-of-words features would be specified like this:</p>
+<p><code>experiments/experiments.py with BOW_APPEND=True LOG_REG=True</code></p>
+<p>Runtime parameters are all documented below.</p>
+<h2 id="terminology">Terminology</h2>
+<h3 id="corpus">corpus</h3>
+<p>The whole collection of documents in a given experiment.</p>
+<h3 id="cluster">cluster</h3>
+<p>One of a number of small, potentially overlapping groups of mutually relevant documents. 
+Pythia assumes documents have already been grouped with topically similar neighbors via some
+mechanism. Clusters should also have some kind of linear ordering, either in time of
+publication, time of ingest, or whatever is relevant to the data.</p>
+<h3 id="query">query</h3>
+<p>A document of interest, which a classification system should decide is novel or redundant.</p>
+<h3 id="background">background</h3>
+<p>The documents against which a query should be compared. In Pythia, these are the
+members of the query's cluster that come <em>before</em> it (hence the need for linear order)</p>
+<h3 id="observation-case">observation, case</h3>
+<p>A query, its background documents, and a novelty label (novel or redundant)</p>
+<h1 id="the-pipeline">The pipeline</h1>
+<p><code>Raw data &gt; Processed Data &gt; Featurization &gt; Training &gt; Testing/Evaluation</code></p>
+<h2 id="data-processing">Data processing</h2>
+<p>The user (you!) is responsible for converting data into the form Pythia consumes. <a href="https://github.com/Lab41/pythia/tree/master/src/data">src/data/</a>
+has scripts for (acquiring and) processing two sources of data. The processed data should a folder of <code>.json</code> files, each one 
+with data on a cluster of documents. Each line of the cluster file is a JSON object whose form is 
+documented at <a href="https://github.com/Lab41/pythia/blob/master/data/cluster_schema.json">data/cluster_schema.json</a>
+and and example cluster can be found at <a href="https://github.com/Lab41/pythia/blob/master/data/SKNews.json">data/SKNews.json</a></p>
+<p>A full sample corpus is contained at <a href="https://github.com/Lab41/pythia/tree/master/data/stackexchange/anime">data/stackexchange/anime</a></p>
+<p>Once you have supplied the data, Pythia generates observations pairing query documents with background documents.</p>
+<h2 id="featurization">Featurization</h2>
+<p>Numerous methods for converting observations into feature vectors are available for experimentation.
+They are documented below. All Pythia experiments must use at least one featurization method.</p>
+<h2 id="training-testing-evaluation">Training, testing, evaluation</h2>
+<p>Pythia does training, testing, and evaluation all in one fell swoop, since it is mostly
+an experimentation platform. Available learning methods are documented below. You must
+choose exactly one classifier for each experiment.</p>
+<h1 id="usage-and-runtime-options_1">Usage and runtime options</h1>
+<h2 id="data-location">Data location</h2>
+<h3 id="directory-datastackexchangeanime">directory ('data/stackexchange/anime')</h3>
+<p>Path to a folder with <code>.json</code> files describing the clusters in a corpus.</p>
+<h1 id="featurization-techniques">Featurization techniques</h1>
+<h2 id="bag-of-words">Bag of words</h2>
+<p>Bag-of-words features can be generated for query and background documents.
+Aggregating the vectors for query document and background documents can be done by concatenating
+them, subtracting one from the other, or other operations. A temporal <script type="math/tex">tf-idf</script> score is also 
+available in this family of settings.</p>
+<p>Bag-of-words vectors will automatically be used if any of the following aggregation
+parameters is set to <code>True</code>:</p>
+<h3 id="bow_append-false">BOW_APPEND (False)</h3>
+<p>Calculate bag-of-words vectors for query document, background documents. Concatenate 
+query document and sum of vectors for background documents.  </p>
+<h3 id="bow_difference-false">BOW_DIFFERENCE (False)</h3>
+<p>Use difference vector, i.e. <code>bow(query) - bow(background)</code></p>
+<h3 id="bow_product-false">BOW_PRODUCT (False)</h3>
+<p>Take the product of bag-of-words vectors</p>
+<h3 id="bow_cos-false">BOW_COS (False)</h3>
+<p>Take the cosine similarity of query and background vectors</p>
+<h3 id="bow_tfidf-false">BOW_TFIDF (False)</h3>
+<p>Take the temporal TF-IDF score for the cluster</p>
+<h2 id="skip-thought-vectors">Skip-thought vectors</h2>
+<p>Skip-thought vectors are a method for representing the structure and content
+of sentences in a fixed-size, dense vector. They can be concatenated, subtracted,
+multiplied elementwise, or compared with the cosine distance.</p>
+<p>Description of method: <a href="https://arxiv.org/abs/1506.06726">https://arxiv.org/abs/1506.06726</a><br />
+Basis of implementation: <a href="https://github.com/ryankiros/skip-thoughts">https://github.com/ryankiros/skip-thoughts</a></p>
+<p>See notes on Bag-of-Words for all of the below options for aggregating skip-thought feature vectors:  </p>
+<h3 id="st_append-false">ST_APPEND (False)</h3>
+<p>Concatenate vectors</p>
+<h3 id="st_difference-false">ST_DIFFERENCE (False)</h3>
+<p>Difference of vectors</p>
+<h3 id="st_product-false">ST_PRODUCT (False)</h3>
+<p>Product of vectors</p>
+<h3 id="st_cos-false">ST_COS (False)</h3>
+<h2 id="latent-dirichlet-allocation">Latent Dirichlet Allocation</h2>
+<p>Latent Dirichlet Allocation (LDA) is a widely-used method for representing the topic 
+distribution in a corpus of documents. Given a corpus of <script type="math/tex">M</script> documents with <script type="math/tex">N</script> unique
+words, LDA yields two matrices, one <script type="math/tex">M \times k</script> repesenting the 'weight' of each
+document across the <script type="math/tex">k</script> possible topics, and one <script type="math/tex">k \times N</script> describing which unique words 
+are associated with each topic. </p>
+<p>LDA posits that co-occurring words within documents are
+'generated' by the hidden topic variables with document-specific frequencies, so it is
+a good way of expressing the assumptions that a) some words naturally co-occur with each other
+and b) which co-occurrence patterns are relevant for a given document depend on what
+the document is talking about.</p>
+<p>Original paper: <a href="http://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf">http://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf</a><br />
+Library used: <a href="http://scikit-learn.org/stable/modules/generated/sklearn.decomposition.LatentDirichletAllocation.html">scikit-learn</a></p>
+<h3 id="lda_topics-50">LDA_TOPICS (50)</h3>
+<p>The number of possible topics represented in the corpus. Higher is often better as LDA should learn not to use unnecessary topics; in
+practice some tuning is usually necessary to find a happy medium.</p>
+<h3 id="lda_append-false">LDA_APPEND (False)</h3>
+<h3 id="lda_difference-false">LDA_DIFFERENCE (False)</h3>
+<h3 id="lda_product-false">LDA_PRODUCT (False)</h3>
+<h3 id="lda_cos-false">LDA_COS (False)</h3>
+<h2 id="dynamic-memory-networks">Dynamic Memory Networks</h2>
+<p>Dynamic memory networks (DMN) are a 2016 deep learning architecture designed for automatic question answering. They take in
+natural language representations of background knowledge and natural language representations of a query and learn
+a decoding function to provide an answer. In our adaptation of DMN, background documents are fed in to the background knowledge
+module, the query document is used as the query, and the possible responses are True (novel) or False.</p>
+<p>Original manuscript: <a href="http://arxiv.org/abs/1506.07285">http://arxiv.org/abs/1506.07285</a><br />
+Basis implementation: <a href="https://github.com/YerevaNN/Dynamic-memory-networks-in-Theano">https://github.com/YerevaNN/Dynamic-memory-networks-in-Theano</a></p>
+<h3 id="mem_net-false">MEM_NET (False)</h3>
+<p>Set to True to use DMN algorithm</p>
+<h3 id="mem_vocab-50">MEM_VOCAB (50)</h3>
+<p>Vocabulary size for encoding functions. Ideally, this would be rather large, but memory and processing constraints may force 
+the use of unnaturally small values.</p>
+<h3 id="mem_type-dmn_basic">MEM_TYPE ('dmn_basic')</h3>
+<p>Architectural variant to use. <code>'dmn_basic'</code> is the only supported value at present.</p>
+<h3 id="mem_batch-1">MEM_BATCH (1)</h3>
+<p>Minibatch size for gradient-based training of DMN. Currently values other than 1 are unsupported.</p>
+<h3 id="mem_epochs-5">MEM_EPOCHS (5)</h3>
+<p>Number of training epochs to conduct.</p>
+<h3 id="mem_mask_mode-word">MEM_MASK_MODE ('word')</h3>
+<p>Accepts values <code>'word'</code> and <code>'sentence'</code>. Tells DMN which unit to treat as an 'epsiode' to 
+encode in memory.</p>
+<h3 id="mem_embed_mode-word2vec">MEM_EMBED_MODE ('word2vec')</h3>
+<h3 id="mem_onehot_min_len-140">MEM_ONEHOT_MIN_LEN (140)</h3>
+<p>If <code>MEM_MASK_MODE</code> is <code>'word_onehot'</code>, set the minimum length of a one-hot-encoded document</p>
+<h3 id="mem_onehot_max_len-1000">MEM_ONEHOT_MAX_LEN (1000)</h3>
+<p>Maximum length of a one-hot-encoded document</p>
+<h2 id="word2vec">word2vec</h2>
+<p>word2vec is a popular algorithm for learning 'distributed' vector representations of words. In practice,
+word2vec learns to represent each unique word in a corpus as a 50- to 300-dimensional vector of real
+numbers, providing plenty of room to account for semantic and syntactic similarities and differences between words.</p>
+<p>In Pythia, documents are represented by word2vec by finding vectors representing the individual words in 
+the input documents and aggregating these vectors in creative ways. Word vectors are extracted from
+the first and last sentences of input documents and then combined using averaging, concatenation, 
+elementwise max, elementwise min, or absolute elementwise max. Once query and background vectors
+have been generated, they are combined using any of the customary aggregation techniques (see bag of words
+for discussion)</p>
+<p>Original paper: <a href="http://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf">http://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf</a><br />
+Implementation used: <a href="https://radimrehurek.com/gensim/models/word2vec.html">gensim</a></p>
+<p>Aggregating query and background vectors:  </p>
+<h3 id="w2v_append-false">W2V_APPEND (False)</h3>
+<h3 id="w2v_difference-false">W2V_DIFFERENCE (False)</h3>
+<h3 id="w2v_product-false">W2V_PRODUCT (False)</h3>
+<h3 id="w2v_cos-false">W2V_COS (False)</h3>
+<p>Other parameters:  </p>
+<h3 id="w2v_pretrained-false">W2V_PRETRAINED (False)</h3>
+<p>Use pretrained model? This should be available in the directory described by the 
+PYTHIA_MODELS_PATH environment variable. Currently only the 300-dimensional
+Google News model is supported, so this should have the file name <code>GoogleNews-vectors-negative300.bin</code> or
+<code>GoogleNews-vectors-negative300.bin.gz</code></p>
+<p>If <code>W2V_PRETRAINED</code> is False, Pythia will train a word2vec model based on your corpus (not recommended for small collections).
+ The following parameters control word2vec training:</p>
+<h3 id="w2v_min_count-5">W2V_MIN_COUNT (5)</h3>
+<p>Minimum number of times a unique word must appear in corpus to be given a vector representation</p>
+<h3 id="w2v_window-5">W2V_WINDOW (5)</h3>
+<p>Window size, in words, to the left or right of the word being trained.</p>
+<h3 id="w2v_size-100">W2V_SIZE (100)</h3>
+<p>Dimensionality of trained word vectors.</p>
+<h3 id="w2v_workers-3">W2V_WORKERS (3)</h3>
+<p>If &gt;1, number of cores to do parallel training on. Parallel-trained word2vec models will converge much more quickly 
+but training behavior is non-deterministic and not strictly replicable.</p>
+<h2 id="one-hot-cnn-activation-features">One-hot CNN activation features</h2>
+<p>The one-hot CNN will use the full_vocab parameters</p>
+<h3 id="cnn_append-false">CNN_APPEND (False)</h3>
+<h3 id="cnn_difference-false">CNN_DIFFERENCE (False)</h3>
+<h3 id="cnn_product-false">CNN_PRODUCT (False)</h3>
+<h3 id="cnn_cos-false">CNN_COS (False)</h3>
+<h2 id="word-level-one-hot-encoding">Word-level one-hot encoding</h2>
+<p>Not currently used.</p>
+<h3 id="wordonehot-false">WORDONEHOT (False)</h3>
+<p>Use word-level one-hot encoding?</p>
+<h3 id="wordonehot_vocab-5000">WORDONEHOT_VOCAB (5000)</h3>
+<h1 id="classification-algorithms">Classification Algorithms</h1>
+<p>If traditional (non-DMN) featurization techniques are chosen, a classifier must also be selected. Pythia
+supports batch logistic regression, batch SVM, and the popular boosting algorithm XGBoost, as well as SGD-based
+(minibatch) logistic regression and linear SVM, which may have favorable memory performance for very large corpora.</p>
+<h2 id="logistic-regression">Logistic Regression</h2>
+<p>Tried-and-true statistical classification technique. Learns a linear combination of input features and
+applies a nonlinear transform to output a hypothesis between 0.0 and 1.0, with values equal to or above 
+0.5 typically taken as true and the rest as false.</p>
+<p>Pythia uses <a href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html">scikit-learn</a> to do logistic regression.</p>
+<h3 id="log_reg-false">LOG_REG (False)</h3>
+<p>Set to True to use logistic regression</p>
+<h3 id="log_penalty-l2">LOG_PENALTY ('l2')</h3>
+<p>Form of regularization penalty to use (see scikit-learn docs)</p>
+<h3 id="log_tol-1e-4">LOG_TOL (1e-4)</h3>
+<p>Convergence criterion during model fitting</p>
+<h3 id="log_c-1e-4">LOG_C (1e-4)</h3>
+<p>Inverse regularization strength</p>
+<h2 id="support-vector-machine">Support Vector Machine</h2>
+<p>Nonparametric classifer. Can take a prohibitively long time to converge for large datasets.</p>
+<p>Also uses <a href="http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC">scikit-learn</a>'s implementation.</p>
+<h3 id="svm-false">SVM (False)</h3>
+<p>Set to True to use SVM</p>
+<h3 id="svm_c-2000">SVM_C (2000)</h3>
+<p>Inverse regularization strength</p>
+<h3 id="svm_kernel-linear">SVM_KERNEL ('linear')</h3>
+<p>Kernel function to use. Can be any predefined setting accepted by <code>sklearn.svm.SVC</code></p>
+<h3 id="svm_gamma-auto">SVM_GAMMA ('auto')</h3>
+<p>If kernel is <code>'poly'</code>, <code>'rbf'</code>, or <code>'sigmoid'</code>, the kernel coefficient.</p>
+<h2 id="xgboost">XGBoost</h2>
+<p>Boosted decision tree algorithm. Fast and performant, but may not scale to much larger datasets.</p>
+<p>Original manuscript: <a href="http://arxiv.org/abs/1603.02754">http://arxiv.org/abs/1603.02754</a><br />
+Implementation used: <a href="https://github.com/dmlc/xgboost">https://github.com/dmlc/xgboost</a></p>
+<h3 id="xgb-false">XGB (False)</h3>
+<p>Set to true to use XGBoost</p>
+<h3 id="xgb_learnrate-01">XGB_LEARNRATE (0.1)</h3>
+<p>"Learning rate" (see documentation)</p>
+<h3 id="xgb_maxdepth-3">XGB_MAXDEPTH (3)</h3>
+<p>Maximum depth of tree</p>
+<h3 id="xgb_minchildweight-1">XGB_MINCHILDWEIGHT (1)</h3>
+<p>Typically, minimum number of children allowed in any child node</p>
+<h3 id="xgb_colsamplebytree-1">XGB_COLSAMPLEBYTREE (1)</h3>
+<p>Proportion (0 to 1) of features to sample when building a tree</p>
+<h1 id="other-run-parameters">Other run parameters</h1>
+<h2 id="resampling">Resampling</h2>
+<h3 id="resampling-true">RESAMPLING (True)</h3>
+<p>Resample observations by label to achieve a 1-to-1 ratio of positive to negative observations</p>
+<h3 id="oversampling-false">OVERSAMPLING (False)</h3>
+<p>Resample so that total number of observations per class is equal to the largest class. 
+Implies REPLACEMENT=True</p>
+<h3 id="replacement-false">REPLACEMENT (False)</h3>
+<p>When doing resampling, choose observations with replacement from original samples.</p>
+<h2 id="save-training-data-for-grid-search">Save training data for grid search</h2>
+<p>When using <code>experiments/conduct_grid_search.py</code>, use these variables
+to allow GridSearchCV to cooperate with the Pythia pipeline.</p>
+<h3 id="saveexperimentdata-false">SAVEEXPERIMENTDATA (False)</h3>
+<h3 id="experimentdatafile-dataexperimentdatafilepkl">EXPERIMENTDATAFILE ('data/experimentdatafile.pkl')</h3>
+<h2 id="vocabulary">Vocabulary</h2>
+<p>Two seaparate vocabularies are computed. One, a reduced vocabulary, excludes stop words and punctuation tokens, and the
+other, <code>FULL_VOCAB</code>, retains them. <code>FULL_VOCAB</code> can also be set to use character-level tokenization 
+instead of word-level tokenization.</p>
+<h3 id="vocab_size-10000">VOCAB_SIZE (10000)</h3>
+<p>Size of reduced vocabulary</p>
+<h3 id="stem-false">STEM (False)</h3>
+<p>Conduct stemming?</p>
+<h3 id="full_vocab_size-1000">FULL_VOCAB_SIZE (1000)</h3>
+<p>Number of unique tokens in word-level full vocabulary.</p>
+<h3 id="full_vocab_type-character">FULL_VOCAB_TYPE ('character')</h3>
+<p>Either <code>'word'</code> or <code>'character'</code>. Determines tokenization strategy for full vocabulary</p>
+<h3 id="full_char_vocab-abcdefghijklmnopqrstuvwxyz0123456789_-">FULL_CHAR_VOCAB ("abcdefghijklmnopqrstuvwxyz0123456789,;.!?:'\"/|_@#$%^&amp;*~`+-=&lt;&gt;()[]{}")</h3>
+<h3 id="seed-41">SEED (41)</h3>
+<p>Random number generator seed value.</p>
+<h3 id="use_cache-false">USE_CACHE (False)</h3>
+<p>Cache preprocessed JSON documents in <code>./.cache</code>; this can reduce experiment time significantly for large corpora.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+      
+    </span>
+</div>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 0.15.3
+Build Date UTC : 2016-09-29 17:52:23.490492
+-->
