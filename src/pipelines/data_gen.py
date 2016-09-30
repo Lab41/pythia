@@ -36,6 +36,9 @@ def gen_feature(new_vectors, request_parameters, feature_vector):
         feature_vector.append(np.multiply(new_vectors[0], new_vectors[1]))
     if request_parameters.get('cos', False):
         similarity = 1 - spatial.distance.cosine(new_vectors[0], new_vectors[1])
+        # Set similarity to zero when zero vector(s) result in cosine distance of NaN/Inf
+        if np.isnan(similarity) or np.isinf(similarity):
+            similarity = 0                
         feature_vector.append(np.array([similarity]))
     return feature_vector
 
