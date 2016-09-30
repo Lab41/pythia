@@ -42,3 +42,7 @@ an Anaconda environment called `py3-pythia`.
 
 The Docker-based distribution comes prepackaged with all necessary dependencies, provided
 Docker itself is available.
+
+## Documentation
+
+Prebuilt documentation available at http://lab41.github.io/pythia
