@@ -175,13 +175,13 @@ def run_lda(lda_topics, doc, vocab):
     docvector = vectorizer.transform([doc])
     return lda_topics.transform(docvector)[0]
 
-def w2v(doc, corpus, w2v_model, w2v, feature):
+def w2v(doc, background_docs, w2v_model, w2v, feature):
     '''
      Calculates Word2Vec features for a document and corpus
 
      Args:
-         doc (str): the text of the document (before any preprocessing)
-         corpus (str): the text of the corpus
+         doc (str): the text of the document (normalized but with stop words and punctuation)
+         background_docs (list): background documents (normalized but with stop words and punctuation)
          w2v_model (gensim.Word2Vec): Trained Word2Vec model
           w2v (dict): Dictionary of Word2Vec parameters as set in master_pipeline. The dictionary
            will include keys for the model building parameters min_count, window, size, workers and pretrained.
@@ -194,8 +194,11 @@ def w2v(doc, corpus, w2v_model, w2v, feature):
 
     if w2v.get('avg', False):
         docw2v = run_w2v(w2v_model, doc, w2v)
-        corpusw2v = run_w2v(w2v_model, corpus, w2v)
-        vectors = [docw2v, corpusw2v]
+        background_vectors = list()
+        for item in background_docs:
+            background_vectors.append(run_w2v(w2v_model, item, w2v))
+        backgroundw2v = np.mean(background_vectors, axis=0)
+        vectors = [docw2v, backgroundw2v]
         feature = gen_feature(vectors, w2v, feature)
 
     vectormath = []
@@ -204,8 +207,11 @@ def w2v(doc, corpus, w2v_model, w2v, feature):
     if w2v.get('abs', False): vectormath.append('abs')
     for operation in vectormath:
         docw2v = run_w2v_elemwise(w2v_model, doc, w2v, operation)
-        corpusw2v = run_w2v_elemwise(w2v_model, corpus, w2v, operation)
-        vectors = [docw2v,corpusw2v]
+        background_vectors = list()
+        for entry in background_docs:
+            background_vectors.append(run_w2v_elemwise(w2v_model, entry, w2v, operation))
+        backgroundw2v = np.mean(background_vectors, axis=0)
+        vectors = [docw2v,backgroundw2v]
         feature = gen_feature(vectors, w2v, feature)
 
     return feature
@@ -759,7 +765,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
                 feature_vectors = lda(doc_no_stop_words, bkgd_text_no_stop_words, vocab, lda_model, features['lda'], feature_vectors)
 
             if 'w2v' in features:
-                feature_vectors = w2v(doc_normalized, bkgd_text_normalized, w2v_model, features['w2v'], feature_vectors)
+                feature_vectors = w2v(doc_normalized, bkgd_docs_normalized, w2v_model, features['w2v'], feature_vectors)
 
             if 'cnn' in features:
                 feature_vectors = run_cnn(normalize.xml_normalize(doc_raw), normalize.xml_normalize(bkgd_text_raw), tf_session)
