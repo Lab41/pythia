@@ -96,7 +96,7 @@ def build_lda(trainingdata, vocabdict, topics=40, random_state=0, **kwargs):
     vectorizer = CountVectorizer(analyzer = "word", vocabulary = vocabdict)
     trainingdocs = []
 
-    for entry in trainingdata: trainingdocs.append(entry['body_text'])
+    for entry in trainingdata: trainingdocs.append(normalize_and_remove_stop_words(entry['body_text']))
     trainingvectors = vectorizer.transform(trainingdocs)
 
     lda_model = LatentDirichletAllocation(n_topics=topics, random_state=random_state)
