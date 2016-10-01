@@ -229,16 +229,10 @@ def run_w2v_elemwise(w2v_model, doc, w2v, operation):
     # Get first and last sentences of document, break down sentences into words and remove stop words
 
     sentences = get_first_and_last_sentence(doc)
-    normalizedsentences = []
-
-    for sentence in sentences:
-        words = normalize.remove_stop_words(tokenize.word_punct_tokens(sentence))
-        normalizedsentences.append(words)
-
     sentencevectorarray = []
 
     # Look up word vectors in trained Word2Vec model and build array of word vectors and sentence vectors
-    for phrase in normalizedsentences:
+    for phrase in sentences:
 
         # Set up comparison vector based on requested operation
         if operation == 'max':
@@ -292,17 +286,11 @@ def run_w2v(w2v_model, doc, w2v):
 
     # Get first and last sentences of document, break down sentences into words and remove stop words
     sentences = get_first_and_last_sentence(doc)
-    normalizedsentences = []
-
-    for sentence in sentences:
-        words = normalize.remove_stop_words(tokenize.word_punct_tokens(sentence))
-        normalizedsentences.append(words)
-
     wordvectorarray = []
     sentencevectorarray = []
 
     # Look up word vectors in trained Word2Vec model and build array of word vectors and sentence vectors
-    for phrase in normalizedsentences:
+    for phrase in sentences:
         for word in phrase:
             try:
                 wordvector = w2v_model[word]
@@ -339,9 +327,11 @@ def run_w2v_matrix(w2v_model, doc, w2v_params, mask_mode):
 
     sentence_mask = []
     for sentence in sentences:
-        words = normalize.remove_stop_words(tokenize.word_punct_tokens(sentence))
-        if len(sentence_mask)>0: prev_mask = sentence_mask[-1]
-        else: prev_mask = -1
+        words = tokenize.word_punct_tokens(sentence)
+        if len(sentence_mask)>0: 
+            prev_mask = sentence_mask[-1]
+        else: 
+            prev_mask = -1
         sentence_mask.append(prev_mask + len(words))
         normalizedsentences.append(words)
 
