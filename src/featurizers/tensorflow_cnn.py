@@ -5,6 +5,7 @@ import numpy as np
 import random
 import sys
 import os
+from src.utils import normalize, tokenize
 
 
 class tensorflow_cnn:
@@ -159,7 +160,8 @@ class tensorflow_cnn:
         from sklearn.datasets import fetch_20newsgroups
         newsgroups= fetch_20newsgroups()
 
-        documents = [data_gen.run_onehot(text, vocab, min_length, max_length) for text in newsgroups.data]
+        documents = [data_gen.run_onehot(normalize.xml_normalize(text), vocab, min_length, max_length)
+                     for text in newsgroups.data]
         labels = newsgroups.target
 
         #encode the labels in a dictionary
