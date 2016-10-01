@@ -229,16 +229,10 @@ def run_w2v_elemwise(w2v_model, doc, w2v, operation):
     # Get first and last sentences of document, break down sentences into words and remove stop words
 
     sentences = get_first_and_last_sentence(doc)
-    normalizedsentences = []
-
-    for sentence in sentences:
-        words = normalize.remove_stop_words(tokenize.word_punct_tokens(sentence))
-        normalizedsentences.append(words)
-
     sentencevectorarray = []
 
     # Look up word vectors in trained Word2Vec model and build array of word vectors and sentence vectors
-    for phrase in normalizedsentences:
+    for phrase in sentences:
 
         # Set up comparison vector based on requested operation
         if operation == 'max':
@@ -292,17 +286,11 @@ def run_w2v(w2v_model, doc, w2v):
 
     # Get first and last sentences of document, break down sentences into words and remove stop words
     sentences = get_first_and_last_sentence(doc)
-    normalizedsentences = []
-
-    for sentence in sentences:
-        words = normalize.remove_stop_words(tokenize.word_punct_tokens(sentence))
-        normalizedsentences.append(words)
-
     wordvectorarray = []
     sentencevectorarray = []
 
     # Look up word vectors in trained Word2Vec model and build array of word vectors and sentence vectors
-    for phrase in normalizedsentences:
+    for phrase in sentences:
         for word in phrase:
             try:
                 wordvector = w2v_model[word]
@@ -339,9 +327,11 @@ def run_w2v_matrix(w2v_model, doc, w2v_params, mask_mode):
 
     sentence_mask = []
     for sentence in sentences:
-        words = normalize.remove_stop_words(tokenize.word_punct_tokens(sentence))
-        if len(sentence_mask)>0: prev_mask = sentence_mask[-1]
-        else: prev_mask = -1
+        words = tokenize.word_punct_tokens(sentence)
+        if len(sentence_mask)>0: 
+            prev_mask = sentence_mask[-1]
+        else: 
+            prev_mask = -1
         sentence_mask.append(prev_mask + len(words))
         normalizedsentences.append(words)
 
@@ -359,7 +349,8 @@ def run_w2v_matrix(w2v_model, doc, w2v_params, mask_mode):
             if wordvector is not None:
                 wordvectorarray.append(wordvector)
 
-    if mask_mode=='sentence': mask = sentence_mask
+    if mask_mode=='sentence': 
+        mask = sentence_mask
     else:
         mask = np.array([index for index, w in enumerate(wordvectorarray)], dtype=np.int32)
 
@@ -722,7 +713,8 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
         
         # Create raw and normalized document arrays
         case_docs_raw = [ record['body_text'] for record in case['data'] ]
-        case_docs_normalized = [ normalize.normalize_and_remove_stop_words(body_text) for body_text in case_docs_raw ]
+        case_docs_normalized = [ normalize.xml_normalize(body_text) for body_text in case_docs_raw ]
+        case_docs_no_stop_words = [ normalize.normalize_and_remove_stop_words(body_text) for body_text in case_docs_raw ]
         #create ids for individual data points
         postid = [record['post_id'] for record in case['data'] ][-1]
         postids.append(postid)
@@ -731,11 +723,14 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
         # Pull out query documents
         doc_raw = case_docs_raw[-1]
         doc_normalized = case_docs_normalized[-1]
+        doc_no_stop_words = case_docs_no_stop_words[-1]
         # Create lists of background documents
         bkgd_docs_raw = case_docs_raw[:-1]
         bkgd_docs_normalized = case_docs_normalized[:-1]
+        bkgd_docs_no_stop_words = case_docs_no_stop_words[:-1]
         bkgd_text_raw = '\n'.join(bkgd_docs_raw)
         bkgd_text_normalized = '\n'.join(bkgd_docs_normalized) 
+        bkgd_text_no_stop_words = '\n'.join(bkgd_docs_no_stop_words)
         feature_vectors = list()
 
         if 'mem_net' in features:
@@ -751,7 +746,8 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
         else:
 
             if 'bow' in features:
-                feature_vectors = bow(doc_normalized, bkgd_text_raw, bkgd_docs_normalized, vocab, features['bow'], feature_vectors)
+                feature_vectors = bow(doc_no_stop_words, bkgd_text_no_stop_words,
+                    bkgd_docs_no_stop_words, vocab, features['bow'], feature_vectors)
             if 'st' in features:
                 sentences = []
                 for doc in bkgd_docs_raw:
@@ -760,10 +756,10 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
                 feature_vectors = st(doc_raw, sentences, encoder_decoder, features['st'], feature_vectors)
 
             if 'lda' in features:
-                feature_vectors = lda(doc_normalized, bkgd_text_normalized, vocab, lda_model, features['lda'], feature_vectors)
+                feature_vectors = lda(doc_no_stop_words, bkgd_text_no_stop_words, vocab, lda_model, features['lda'], feature_vectors)
 
             if 'w2v' in features:
-                feature_vectors = w2v(doc_raw, bkgd_text_normalized, w2v_model, features['w2v'], feature_vectors)
+                feature_vectors = w2v(doc_normalized, bkgd_text_normalized, w2v_model, features['w2v'], feature_vectors)
 
             if 'cnn' in features:
                 feature_vectors = run_cnn(normalize.xml_normalize(doc_raw), normalize.xml_normalize(bkgd_text_raw), tf_session)
