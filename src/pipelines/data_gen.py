@@ -766,7 +766,7 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
                 feature_vectors = w2v(doc_raw, bkgd_text_normalized, w2v_model, features['w2v'], feature_vectors)
 
             if 'cnn' in features:
-                feature_vectors = run_cnn(doc_normalized, bkgd_text_normalized, tf_session)
+                feature_vectors = run_cnn(normalize.xml_normalize(doc_raw), normalize.xml_normalize(bkgd_text_raw), tf_session)
 
             if 'wordonehot' in features:
                 feature_vectors = wordonehot(doc_raw, bkgd_text_raw, full_vocab, features['wordonehot'], feature_vectors)
