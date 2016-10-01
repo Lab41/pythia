@@ -746,7 +746,8 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
         else:
 
             if 'bow' in features:
-                feature_vectors = bow(doc_normalized, bkgd_text_raw, bkgd_docs_normalized, vocab, features['bow'], feature_vectors)
+                feature_vectors = bow(doc_no_stop_words, bkgd_text_no_stop_words,
+                    bkgd_docs_no_stop_words, vocab, features['bow'], feature_vectors)
             if 'st' in features:
                 sentences = []
                 for doc in bkgd_docs_raw:
@@ -755,10 +756,10 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
                 feature_vectors = st(doc_raw, sentences, encoder_decoder, features['st'], feature_vectors)
 
             if 'lda' in features:
-                feature_vectors = lda(doc_normalized, bkgd_text_normalized, vocab, lda_model, features['lda'], feature_vectors)
+                feature_vectors = lda(doc_no_stop_words, bkgd_text_no_stop_words, vocab, lda_model, features['lda'], feature_vectors)
 
             if 'w2v' in features:
-                feature_vectors = w2v(doc_raw, bkgd_text_normalized, w2v_model, features['w2v'], feature_vectors)
+                feature_vectors = w2v(doc_normalized, bkgd_text_normalized, w2v_model, features['w2v'], feature_vectors)
 
             if 'cnn' in features:
                 feature_vectors = run_cnn(doc_normalized, bkgd_text_normalized, tf_session)
