@@ -349,7 +349,8 @@ def run_w2v_matrix(w2v_model, doc, w2v_params, mask_mode):
             if wordvector is not None:
                 wordvectorarray.append(wordvector)
 
-    if mask_mode=='sentence': mask = sentence_mask
+    if mask_mode=='sentence': 
+        mask = sentence_mask
     else:
         mask = np.array([index for index, w in enumerate(wordvectorarray)], dtype=np.int32)
 
