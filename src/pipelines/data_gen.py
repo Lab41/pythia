@@ -713,7 +713,8 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
         
         # Create raw and normalized document arrays
         case_docs_raw = [ record['body_text'] for record in case['data'] ]
-        case_docs_normalized = [ normalize.normalize_and_remove_stop_words(body_text) for body_text in case_docs_raw ]
+        case_docs_normalized = [ normalize.xml_normalize(body_text) for body_text in case_docs_raw ]
+        case_docs_no_stop_words = [ normalize.normalize_and_remove_stop_words(body_text) for body_text in case_docs_raw ]
         #create ids for individual data points
         postid = [record['post_id'] for record in case['data'] ][-1]
         postids.append(postid)
@@ -722,11 +723,14 @@ def gen_observations(all_clusters, lookup_order, document_data, features, parame
         # Pull out query documents
         doc_raw = case_docs_raw[-1]
         doc_normalized = case_docs_normalized[-1]
+        doc_no_stop_words = case_docs_no_stop_words[-1]
         # Create lists of background documents
         bkgd_docs_raw = case_docs_raw[:-1]
         bkgd_docs_normalized = case_docs_normalized[:-1]
+        bkgd_docs_no_stop_words = case_docs_no_stop_words[:-1]
         bkgd_text_raw = '\n'.join(bkgd_docs_raw)
         bkgd_text_normalized = '\n'.join(bkgd_docs_normalized) 
+        bkgd_text_no_stop_words = '\n'.join(bkgd_docs_no_stop_words)
         feature_vectors = list()
 
         if 'mem_net' in features:
