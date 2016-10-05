@@ -210,10 +210,14 @@ def w2v(doc, background_docs, w2v_model, w2v, feature):
         background_vectors = list()
         for entry in background_docs:
             background_vectors.append(run_w2v_elemwise(w2v_model, entry, w2v, operation))
-        backgroundw2v = np.mean(background_vectors, axis=0)
+        if operation == 'min':
+            backgroundw2v = np.amin(background_vectors, axis=0)
+        elif operation == 'max':
+            backgroundw2v = np.amax(background_vectors, axis=0)
+        elif operation == 'abs':
+            backgroundw2v = np.fabs(background_vectors)[0]
         vectors = [docw2v,backgroundw2v]
         feature = gen_feature(vectors, w2v, feature)
-
     return feature
 
 def run_w2v_elemwise(w2v_model, doc, w2v, operation):
