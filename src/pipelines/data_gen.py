@@ -215,7 +215,7 @@ def w2v(doc, background_docs, w2v_model, w2v, feature):
         elif operation == 'max':
             backgroundw2v = np.amax(background_vectors, axis=0)
         elif operation == 'abs':
-            backgroundw2v = np.fabs(background_vectors)[0]
+            backgroundw2v = np.amax(np.fabs(background_vectors), axis=0)
         vectors = [docw2v,backgroundw2v]
         feature = gen_feature(vectors, w2v, feature)
     return feature
